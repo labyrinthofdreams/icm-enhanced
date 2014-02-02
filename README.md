@@ -1,0 +1,1 @@
+This script adds various functionality to iCheckMovies.
