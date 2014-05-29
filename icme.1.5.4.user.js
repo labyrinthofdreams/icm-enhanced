@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.5.8
+// @version        1.6.0
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -115,8 +115,8 @@ ICM_Config.prototype.Init = function()
     {
         script_config: // script config
         {
-            version: "1.5.6",
-            revision: 1560 // numerical representation of version number
+            version: "1.6.0",
+            revision: 1600 // numerical representation of version number
         },
         ua: // upcoming awards list 
         {  
@@ -167,6 +167,14 @@ ICM_Config.prototype.Init = function()
         {
             enabled: true,
             autoload: false
+        },
+        toplists_sort: 
+        { 
+            enabled: true, 
+            autoload: true, 
+            order: true,
+            single_col: false,
+            icebergs: false
         }
     };
     
@@ -2222,6 +2230,158 @@ ICM_LargeList.prototype.getConfig = function()
     return out;                                
 }
 
+// Inherit methods from BaseFeature
+ICM_ListOverviewSort.prototype = new ICM_BaseFeature();
+ICM_ListOverviewSort.prototype.constructor = ICM_ListOverviewSort;
+
+function ICM_ListOverviewSort( config )
+{
+    this.config = config;
+    
+    this.includes = ["icheckmovies.com/profiles/progress"];
+    this.excludes = [];
+    
+    this.sections = ["imdb", "country", "critics", "director", 
+                     "website", "institute", "misc", "all", "award"];
+}
+
+ICM_ListOverviewSort.prototype.Attach = function()
+{
+    if(!this.config.enabled) 
+    {
+        return;
+    }
+
+    if( this.config.single_col )
+    {
+        GM_addStyle('.itemList .listItem.listItemProgress { float: none !important; }');
+    }
+    
+    if( this.config.autoload )
+    {
+        for( var i = 0; i < this.sections.length; i++ )
+        {
+            var order = this.config.order === true ? "asc" : "desc";
+            this.Sort( order, this.sections[i] );
+        }
+    }
+}
+
+ICM_ListOverviewSort.prototype.Sort = function(order, section)
+{
+    $toplist_list = $("#progress" + section);
+    $toplist_items = $toplist_list.children("li").get();
+    
+    var lookup_table = [];
+    
+    // construct a lookup table for percentages
+    for( var i = 0; i < $toplist_items.length; i++ )
+    {
+        var tmp = $( $toplist_items[i] ).find("span.progress").css("width").replace("px", "");
+        
+        lookup_table.push( parseInt( tmp ) );
+    }
+    
+    var lut_len = lookup_table.length;
+
+    for( var i = 0; i < lut_len; i++ )
+    {
+        var tmp = i;
+        var smallest = i;                   
+        
+        // find the smallest value...
+        while( tmp < lut_len )
+        {                    
+                                                                                         
+            if( order === "asc" && lookup_table[ tmp ] < lookup_table[ smallest ] )
+            {
+                smallest = tmp;            
+            }     
+            else if( order === "desc" && lookup_table[ tmp ] > lookup_table[ smallest ] )
+            {
+                smallest = tmp;            
+            }  
+            
+            tmp++;   
+        }
+        
+        // and swap with current position i
+        var tmp_list = $toplist_items[i];
+        $toplist_items[i] = $toplist_items[smallest];
+        $toplist_items[smallest] = tmp_list;
+        
+        var tmp_val = lookup_table[i];
+        lookup_table[i] = lookup_table[smallest];
+        lookup_table[smallest] = tmp_val;
+    }
+
+    if( this.config.single_col || this.config.icebergs )
+    {
+        for( var i = 0; i < lut_len; i++ )
+        {
+            $toplist_list.append( $toplist_items[i] );
+        }
+    }
+    else
+    {
+        // exclude last entry if odd numbered
+        half_point = Math.ceil( lookup_table.length / 2 );
+        
+        // place the elements in such order that lowest / highest appear on the left side and the opposite on the right side
+        for( var i = 0, first_half = 0, second_half = half_point; i < lut_len; i++ )
+        {
+            if( i % 2 === 0 )
+            {
+                $toplist_list.append( $( $toplist_items[first_half] ).removeClass("right").addClass("left") );
+                first_half++;
+            }
+            else
+            {
+                $toplist_list.append( $( $toplist_items[second_half] ).removeClass("left").addClass("right") );
+                second_half++;
+            }
+        }
+    }
+}
+
+ICM_ListOverviewSort.prototype.getConfig = function()
+{                
+    var out = {title: "Sort Progress Page",
+                desc: "Sort lists on progress page by completion rate",
+                config: {
+                    index: "toplists_sort",
+                    options: [
+                        {name: "enabled",
+                         desc: "Enabled",
+                         type: "checkbox",
+                         value: this.config.enabled
+                        },
+                        {name: "autoload",
+                         desc: "Autoload",
+                         type: "checkbox",
+                         value: this.config.autoload 
+                        },
+                        {name: "order",
+                        desc: "Ascending",
+                        type: "checkbox",
+                        value: this.config.order
+                        },
+                        {name: "single_col",
+                        desc: "Single column",
+                        type: "checkbox",
+                        value: this.config.single_col
+                        },
+                        {name: "icebergs",
+                        desc: "Ascending/Descending columns (requires Single column is unchecked)",
+                        type: "checkbox",
+                        value: this.config.icebergs
+                        }
+                    ]}
+                };
+                
+    return out;                                
+}
+
 /**
  * Main application
  * Register and load modules 
@@ -2265,5 +2425,6 @@ $(document).ready(function()
     app.register(new ICM_WatchlistTab(config.Get("watchlist_tab")));
     app.register(new ICM_Owned(config.Get("owned_tab")));
     app.register(new ICM_LargeList(config.Get("large_lists")));
+    app.register(new ICM_ListOverviewSort(config.Get("toplists_sort")));
     app.load();
 });
