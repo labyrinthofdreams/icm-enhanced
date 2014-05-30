@@ -170,7 +170,7 @@ ICM_Config.prototype.Init = function()
         },
         toplists_sort: 
         { 
-            enabled: true, 
+            enabled: false, 
             autoload: true, 
             order: true,
             single_col: false,
