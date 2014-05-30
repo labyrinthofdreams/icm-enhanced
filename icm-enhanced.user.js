@@ -2372,7 +2372,7 @@ ICM_ListOverviewSort.prototype.getConfig = function()
                         value: this.config.single_col
                         },
                         {name: "icebergs",
-                        desc: "Ascending/Descending columns (requires Single column is unchecked)",
+                        desc: "Keep most completed on top in both columns (requires 'Single column' is unchecked)",
                         type: "checkbox",
                         value: this.config.icebergs
                         }
