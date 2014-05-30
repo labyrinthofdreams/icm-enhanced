@@ -2261,7 +2261,7 @@ ICM_ListOverviewSort.prototype.Attach = function()
     {
         for( var i = 0; i < this.sections.length; i++ )
         {
-            var order = this.config.order === true ? "asc" : "desc";
+            var order = this.config.order === true ? "desc" : "asc";
             this.Sort( order, this.sections[i] );
         }
     }
