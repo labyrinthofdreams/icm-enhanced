@@ -37,7 +37,7 @@ shift(),i.sort());if(!!e&&!f.event.customEvent[h]||!!f.event.global[h]){c=typeof
  * Dual licensed under the MIT and GPL licenses:
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
- * 
+ *
  * $Version: 03/01/2009 +r14
  */
 
@@ -77,25 +77,25 @@ ICM_BaseFeature.prototype.IsEnabled = function()
     for( var i = 0; i < this.excludes.length; i++ )
     {
         var pattern = new RegExp( this.excludes[i] );
-        
+
         // if current page is on the excludes array
         if( pattern.test( window.location.href ) )
         {
             return false;
         }
     }
-    
+
     for( var i = 0; i < this.includes.length; i++ )
     {
         var pattern = new RegExp( this.includes[i] );
-        
+
         // if current page is on the includes array
         if( pattern.test( window.location.href ) )
         {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -103,35 +103,35 @@ ICM_BaseFeature.prototype.IsEnabled = function()
 function ICM_Config()
 {
     this.cfgOptions = {};
-    
-    this.Init();        
+
+    this.Init();
 }
 
 // Initialize stuff
 ICM_Config.prototype.Init = function()
 {
     // defaults
-    this.cfgOptions = 
+    this.cfgOptions =
     {
         script_config: // script config
         {
             version: "1.6.0",
             revision: 1600 // numerical representation of version number
         },
-        ua: // upcoming awards list 
-        {  
-            enabled: true, 
+        ua: // upcoming awards list
+        {
+            enabled: true,
             autoload: true
         },
         ua_list: // upcoming awards on individual list pages
-        { 
+        {
             enabled: true,
             show_absolute: true
         },
         random_film: // help me pick a film link on individual list pages
-        { 
-            enabled: true, 
-            unique: true 
+        {
+            enabled: true,
+            unique: true
         },
         list_colors: // custom colors for things like favorites and watchlists on lists
         {
@@ -168,33 +168,33 @@ ICM_Config.prototype.Init = function()
             enabled: true,
             autoload: false
         },
-        toplists_sort: 
-        { 
-            enabled: false, 
-            autoload: true, 
+        toplists_sort:
+        {
+            enabled: false,
+            autoload: true,
             order: true,
             single_col: false,
             icebergs: false
         }
     };
-    
+
     if( GM_getValue( "icm_enhanced_cfg" ) !== undefined )
     {
         var old_config = eval( GM_getValue( "icm_enhanced_cfg" ) );
 
-        // If new version of the script                                               
+        // If new version of the script
         if( this.cfgOptions.script_config.revision > old_config.script_config.revision
             || old_config.script_config.revision === undefined )
-        {                          
+        {
             // Copy old settings and save new config
             // jQuery helper function extend() copies and overwrites elements from conf (old settings)
             // to this.cfgOptions leaving any new elements in this.cfgOptions untouched
             var tmp_script_cfg = {};
             $.extend( tmp_script_cfg, this.cfgOptions.script_config );
-            
+
             $.extend( true, this.cfgOptions, old_config );
             $.extend( this.cfgOptions.script_config, tmp_script_cfg );
-            
+
             this.Save();
         }
         else
@@ -233,18 +233,18 @@ ICM_Config.prototype.Set = function( index, value )
 ICM_Config.prototype.Toggle = function( index )
 {
     var val = this.Get( index );
-    
+
     if( val === true || val === false )
     {
         this.Set( index, !val );
-        
+
         return true;
     }
     else if( val === "asc" || val === "desc" )
     {
         var change_val = (val === "asc" ? "desc" : "asc");
         this.Set( index, change_val );
-        
+
         return true;
     }
     else
@@ -268,7 +268,7 @@ ICM_ConfigWindow.prototype.addModule = function(module)
             return;
         }
     }
-    
+
     this.modules.push(module);
 }
 
@@ -276,11 +276,11 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx)
 {
     $c = jQuery("#module_settings");
     $c.html("");
-    
+
     var m = this.modules[idx];
-    
+
     var str = '<p>' + m.desc + '</p>';
-    
+
     if(m.config.options.length > 0)
     {
         for(var i = 0; i < m.config.options.length; ++i)
@@ -290,16 +290,16 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx)
             {
                 str += '<p><input type="checkbox" data-cfg-index="' + m.config.index + '.'
                     + opt.name + '"' + (opt.value ? ' checked="checked"' : '') + '>'
-                    + opt.desc + '</p>'; 
+                    + opt.desc + '</p>';
             }
             else if(opt.type === "textinput")
             {
                 str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + m.config.index + '.'
-                    + opt.name + '" value="' + opt.value + '"></p>';  
+                    + opt.name + '" value="' + opt.value + '"></p>';
             }
         }
     }
-    
+
     $c.append(str);
 }
 
@@ -307,12 +307,12 @@ ICM_ConfigWindow.prototype.build = function()
 {
     // Sort module list by title
     this.modules.sort(function(a,b){ return a.title > b.title; });
-    
+
     // Create and append a new item in the drop down menu under your username
     var cfgLink = '<li><a id="icm_enhanced_cfg" href="#" title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a></li>';
-    
+
     $("ul#profileOptions").append( cfgLink );
-    
+
     // Custom CSS for jqmodal
     var customCSS = '.jqmWindow { display: none; position: absolute; font-family: verdana, arial, sans-serif; '
                   + 'background-color:#fff; color:#000; padding: 12px 30px;}'
@@ -325,9 +325,9 @@ ICM_ConfigWindow.prototype.build = function()
                   + '#module_settings { margin:10px 0; }'
                   + '#configSave { position: absolute; bottom:15px; left: 30px }'
                   + 'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
-        
+
     GM_addStyle(customCSS);
-    
+
     var module_list = '<select id="modulelist" name="modulelist">';
     for(var i = 0; i < this.modules.length; ++i)
     {
@@ -335,46 +335,46 @@ ICM_ConfigWindow.prototype.build = function()
         module_list += '<option value="' + i + '">' + m.title + '</option>';
     }
     module_list += '</select>';
-    
+
     // HTML for the main jqmodal window
-    var cfgMainHtml = '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">' 
+    var cfgMainHtml = '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">'
                     + '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.Get("script_config").version + ' configuration</h3>'
                     + module_list
-                    + '<hr><div id="module_settings"></div>'                    
+                    + '<hr><div id="module_settings"></div>'
                     + '<button id="configSave">Save settings</button>'
                     + '</div>';
-                    
+
     // append config window
-    $("body").append( cfgMainHtml ); 
-    
+    $("body").append( cfgMainHtml );
+
     var _t = this;
-    
+
     $("div#cfgModal").delegate( "input", "change", function( e )
-    {    
+    {
         if( !_t.config.Toggle( $(this).data("cfg-index") ) )
         {
             _t.config.Set( $(this).data("cfg-index"), $(this).val() );
         }
-        
+
         $("button#configSave").removeAttr("disabled");
-    });    
-    
-    $("div#cfgModal").delegate( "button#configSave", "click", function( e ) 
-    { 
-        _t.config.Save();
-        
-        $(this).attr("disabled", "disabled"); 
     });
-    
+
+    $("div#cfgModal").delegate( "button#configSave", "click", function( e )
+    {
+        _t.config.Save();
+
+        $(this).attr("disabled", "disabled");
+    });
+
     jQuery("#modulelist").bind("change", function(e){
         var idx = document.getElementById("modulelist").selectedIndex;
-        _t.loadOptions(idx);        
+        _t.loadOptions(idx);
     });
-    
+
     jQuery("#modulelist").trigger("change");
-    
+
     // initialize config window
-    $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );                   
+    $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );
 }
 
 // Inherit methods from BaseFeature
@@ -385,11 +385,11 @@ function ICM_RandomFilmLink( config )
 {
     this.includes = ["icheckmovies.com/lists/(.+)"];
     this.excludes = ["icheckmovies.com/lists/$"];
-    
+
     this.config = config;
-    
+
     this.random_nums = [];
-} 
+}
 
 // Creates an element and inserts it into the DOM
 ICM_RandomFilmLink.prototype.Attach = function()
@@ -397,24 +397,24 @@ ICM_RandomFilmLink.prototype.Attach = function()
     if( this.config.enabled )
     {
         var random_film = '<span style="float:right; margin-left: 15px"><a href="#" id="random_film">Help me pick a film!</a></span>';
-        
+
         if( $("div#list_container").length !== 1 )
         {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + random_film + '</div>';
-            
+
             $("div#topList").next("div").after( container );
         }
         else
         {
             $("div#list_container").append( random_film );
         }
-        
+
         var that = this;
-        
+
         $("div#list_container").delegate( "a#random_film", "click", function(e)
         {
             e.preventDefault();
-            
+
             that.PickRandomFilm();
         });
     }
@@ -422,11 +422,11 @@ ICM_RandomFilmLink.prototype.Attach = function()
 
 // Displays a random film on a list
 ICM_RandomFilmLink.prototype.PickRandomFilm = function()
-{    
+{
     $unchecked = $("ol#itemListMovies > li.unchecked");
-    
+
     if( $unchecked.length > 0 )
-    {                
+    {
         if( this.config.unique )
         {
             // Generate random numbers
@@ -437,20 +437,20 @@ ICM_RandomFilmLink.prototype.PickRandomFilm = function()
                 {
                     this.random_nums.push( i );
                 }
-                
+
                 // Shuffle the results for randomness
                 this.random_nums = shuffle( this.random_nums );
             }
-                
+
             var rand_num = this.random_nums.pop();
         }
         else
         {
             var rand_num = Math.floor( Math.random() * $unchecked.length );
         }
-        
+
         $("ol#itemListMovies > li").hide();
-                
+
         $( $unchecked[ rand_num ] ).show();
     }
 }
@@ -470,7 +470,7 @@ ICM_RandomFilmLink.prototype.getConfig = function()
                         {name: "unique",
                          desc: "Unique suggestions (shows each entry only once until every entry has been shown once)",
                          type: "checkbox",
-                         value: this.config.autoload 
+                         value: this.config.autoload
                         }
                     ]}
                 };
@@ -483,26 +483,26 @@ ICM_UpcomingAwardsList.prototype.constructor = ICM_UpcomingAwardsList;
 function ICM_UpcomingAwardsList( config )
 {
     this.config = config;
-    
+
     this.includes = ["icheckmovies.com/lists/(.+)"];
     this.excludes = ["icheckmovies.com/list/$"];
 }
 
 ICM_UpcomingAwardsList.prototype.Attach = function()
-{    
+{
     if( this.config.enabled && $("#itemListMovies").length )
     {
         var total_items = parseInt($("li#listFilterMovies").text().match(/([0-9]+)/)[1]);
         var checks      = parseInt(document.getElementById("topListMoviesCheckedCount")
                           .innerHTML.replace("(", "").replace(")", ""));
-        
-        var statistics = '<span><b>Upcoming awards:</b>';                              
-    
+
+        var statistics = '<span><b>Upcoming awards:</b>';
+
         var bronze = (Math.ceil(total_items * 0.5) - checks);
         var silver = (Math.ceil(total_items * 0.75) - checks);
         var gold = (Math.ceil(total_items * 0.9) - checks);
         var platinum = (total_items - checks);
-        
+
         if(!this.config.show_absolute)
         {
             bronze = (bronze > 0) ? bronze : 0;
@@ -510,19 +510,19 @@ ICM_UpcomingAwardsList.prototype.Attach = function()
             gold = (gold > 0) ? gold : 0;
             platinum = (platinum > 0) ? platinum : 0;
         }
-        
+
         statistics += '<span style="margin-left: 30px">Bronze: <b>' + bronze + '</b></span>';
-                                                                       
+
         statistics += '<span style="margin-left: 30px">Silver: <b>' + silver + '</b></span>';
-                                                                       
+
         statistics += '<span style="margin-left: 30px">Gold: <b>' + gold + '</b></span>';
-                                                                        
+
         statistics += '<span style="margin-left: 30px">Platinum: <b>' + platinum + '</b></span>';
-        
+
         if( $("div#list_container").length !== 1 )
         {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + statistics + '</div>';
-            
+
             $("div#topList").next("div").after( container );
         }
         else
@@ -547,7 +547,7 @@ ICM_UpcomingAwardsList.prototype.getConfig = function()
                         {name: "show_absolute",
                          desc: "Display negative values",
                          type: "checkbox",
-                         value: this.config.show_absolute 
+                         value: this.config.show_absolute
                         }
                     ]}
                 };
@@ -559,16 +559,16 @@ ICM_UpcomingAwardsOverview.prototype.constructor = ICM_UpcomingAwardsOverview;
 
 function ICM_UpcomingAwardsOverview( config )
 {
-    this.includes = ["/profiles/progress/", 
+    this.includes = ["/profiles/progress/",
                         "/lists/favorited/",
                         "/lists/watchlist/",
                         "/lists/disliked/"];
     this.excludes = [];
-    
+
     this.config = config;
-    
-    this.lists = [];                     
-    
+
+    this.lists = [];
+
     this.hidden_lists = [];
 }
 
@@ -583,18 +583,18 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function()
         else
         {
             var load_link = '<p id="lad_container"><a id="load_award_data" href="#">Load upcoming awards for this user</a></p>';
-        
+
             $("#listOrdering").before(load_link);
-        
+
             var that = this;
-        
+
             $("p#lad_container").delegate("a#load_award_data", "click", function(e)
             {
                 e.preventDefault();
-                
+
                 $elem = $( e.target );
                 $elem.remove();
-                
+
                 that.LoadAwardData();
             });
         }
@@ -602,19 +602,19 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function()
 }
 
 ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function()
-{    
+{
     this.lists = [];
     this.hidden_lists = eval(GM_getValue("hidden_lists", "[]"));
-    
-    this.PopulateLists();    
+
+    this.PopulateLists();
     this.SortLists();
-    this.HTMLOut();    
+    this.HTMLOut();
 }
 
 ICM_UpcomingAwardsOverview.prototype.PopulateLists = function()
-{              
+{
     $all_lists = $("ol#progressall, ol#itemListToplists").children("li");
-    
+
     for( var i = 0; i < $all_lists.length; i++ )
     {
         $el = jQuery($all_lists[i]);
@@ -622,114 +622,114 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function()
         {
             var count_arr   = $el.find("span.rank").html().split("<br>")[0];
             count_arr = count_arr.split(" / ");
-            
+
             var checks      = parseInt( count_arr[0] );
             var total_items = parseInt( count_arr[1].split("#")[0] );
-            
+
             $t = $el.find("h3 > a");
-        
+
             var list_title  = $t.find("span").text();
             var list_url    = $t.attr("href");
         }
-        else 
+        else
         {
             var count_arr = $el.find("span.info > strong:first").text().split("/");
-            
+
             var checks = parseInt(count_arr[0]);
             var total_items = parseInt(count_arr[1]);
-            
+
             $t = $el.find("h2 > a.title");
-            
+
             var list_title = $t.text();
-            var list_url = $t.attr("href"); 
+            var list_url = $t.attr("href");
         }
-            
-                        
-        
+
+
+
         var list_bronze = { "award_checks" : ( Math.ceil(total_items * 0.5 ) - checks ),
-                            "award_type"   : "Bronze",                           
+                            "award_type"   : "Bronze",
                             "list_title"   : list_title,
                             "list_url"     : list_url
                           };
-                        
+
         var list_silver = { "award_checks" : ( Math.ceil( total_items * 0.75 ) - checks ),
-                            "award_type"   : "Silver",                           
+                            "award_type"   : "Silver",
                             "list_title"   : list_title,
                             "list_url"     : list_url
                           };
-                        
+
         var list_gold = { "award_checks" : ( Math.ceil( total_items * 0.9 ) - checks ),
-                          "award_type"   : "Gold",                           
+                          "award_type"   : "Gold",
                           "list_title"   : list_title,
                           "list_url"     : list_url
                         };
-                        
+
         var list_platinum = { "award_checks" : ( total_items - checks ),
-                              "award_type"   : "Platinum",                           
+                              "award_type"   : "Platinum",
                               "list_title"   : list_title,
                               "list_url"     : list_url
-                            };                                                                                                                                                                                                    
-                       
+                            };
+
         if( list_platinum.award_checks > 0 )
         {
             this.lists.push( list_platinum );
-            
+
             if( list_gold.award_checks > 0 )
             {
                 this.lists.push( list_gold );
-                
+
                 if( list_silver.award_checks > 0 )
                 {
                     this.lists.push( list_silver );
-                    
+
                     if( list_bronze.award_checks > 0 )
                     {
                         this.lists.push( list_bronze );
                     }
                 }
             }
-        }            
+        }
     } // End for loop
 }
 
 ICM_UpcomingAwardsOverview.prototype.SortLists = function()
 {
-    // sort lists array by least required checks (ORDER BY award_checks ASC)   
+    // sort lists array by least required checks (ORDER BY award_checks ASC)
     for( var i = 0; i < this.lists.length; i++ )
-    {            
+    {
         var tmp = i;
         var smallest = i;
-        
+
         // find the smallest next_award value...
         while( tmp < this.lists.length )
-        {                                                                                                 
+        {
             if( this.lists[tmp].award_checks < this.lists[smallest].award_checks )
             {
-                smallest = tmp;            
-            }     
-            
-            tmp++;   
+                smallest = tmp;
+            }
+
+            tmp++;
         }
-        
+
         // and swap with current position i
         var tmp_list = this.lists[i];
         this.lists[i] = this.lists[smallest];
-        this.lists[smallest] = tmp_list;                             
+        this.lists[smallest] = tmp_list;
     }
-    
+
     // sort lists array by awards where checks are equal (ORDER BY award_checks ASC, award_type ASC)
     var award_order = { "Bronze": 0, "Silver": 1, "Gold": 2, "Platinum": 3 };
-      
+
     for( var i = 0; i < this.lists.length; i++ )
-    {            
+    {
         var swap = i;
         var high_diff = -100;
-        
-        // find if there's different awards that have the same amount of checks 
+
+        // find if there's different awards that have the same amount of checks
         for( var tmp = i; tmp < this.lists.length; tmp++ )
         {
             var diff = award_order[ this.lists[i].award_type ] - award_order[ this.lists[tmp].award_type ];
-            
+
             if( this.lists[i].award_checks === this.lists[tmp].award_checks )
             {
                 // here we find the next position with the lowest award type in award_order,
@@ -740,125 +740,125 @@ ICM_UpcomingAwardsOverview.prototype.SortLists = function()
                     {
                         high_diff = diff;
                         swap = tmp;
-                    }                        
+                    }
                 }
-            }   
+            }
             else
             {
                 // break the loop since checks don't equal anymore,
                 // no need to go through the rest of the list
                 break;
-            }  
+            }
         }
-        
+
         // and swap with current position i
         var tmp_list = this.lists[i];
         this.lists[i] = this.lists[swap];
-        this.lists[swap] = tmp_list;                             
+        this.lists[swap] = tmp_list;
     }
-    
+
     // sort lists array by list title (ORDER BY award_checks ASC, award_type ASC, list_title ASC)
     for( var i = 0; i < this.lists.length; i++ )
-    {            
+    {
         var swap = i;
         var title_smallest = "";
-        
-        // find if there's different awards that have the same amount of checks 
+
+        // find if there's different awards that have the same amount of checks
         for( var tmp = i; tmp < this.lists.length; tmp++ )
-        {                
+        {
             if( this.lists[i].award_checks === this.lists[tmp].award_checks
                 && this.lists[i].award_type === this.lists[tmp].award_type )
             {
-                var title_diff = this.lists[tmp].list_title < this.lists[i].list_title; 
- 
+                var title_diff = this.lists[tmp].list_title < this.lists[i].list_title;
+
                 if( title_diff ) // if current list title is "smaller" than lists[i]
                 {
                     if( this.lists[tmp].list_title < title_smallest || title_smallest === "" ) // if current list title is "smaller" than list_smallest
                     {
                         title_smallest = this.lists[tmp].list_title;
                         swap = tmp;
-                    }                        
+                    }
                 }
-            }   
+            }
             else
             {
                 // break the loop since checks and awards don't equal anymore,
                 // no need to go through the rest of the list
                 break;
-            }  
+            }
         }
-        
+
         // and swap with current position i
         var tmp_list = this.lists[i];
         this.lists[i] = this.lists[swap];
-        this.lists[swap] = tmp_list;                             
-    } 
+        this.lists[swap] = tmp_list;
+    }
 }
 
 ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
 {
     var unhide_icon_data = "data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjRuqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/26gXmviW5bqnb8yUK028qZjPfoPWEj4Ku5HBspgAz941IXZeze8N1bottSo8BTZviVWrEh546EO03EXpuJOdG63otJbjBKHkEp/Ml6yNYYzpuezWL4s5VMtT8acCMQcb5XL3eJE8VgBlR7BeMGW9Z4yT9y1CeyucuhdTGDxfftaBO7G4L+zg91UocxVmCiy51NpiP3n2treUPujL8xhOjYOzZYsQWANyRYlU4Y9Br6oHd5bDh0bCpSOixJiWx71YY09J5pM/WEbzFcDmHvwwBu2wnikg+lEj4mwBe5bC5h1OUqcwpdC60dxegRmR06TyjCF9G9z+qM2uCJmuMJmaNZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzSCwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTkSuQmCC";
     var hide_icon_data = "data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAADtSURBVHjajFC7DkFREJy9iXg0t+EHRKJDJSqRuIVaJT7AF+jR+xuNRiJyS8WlRaHWeOU+kBy7eyKhs8lkJrOzZ3OWzMAD15gxYhB+yzAm0ndez+eYMYLngdkIf2vpSYbCfsNkOx07n8kgWa1UpptNII5VR/M56Nyt6Qq33bbhQsHy6aR0WSyEyEmiCG6vR2ffB65X4HCwYC2e9CTjJGGok4/7Hcjl+ImLBWv1uCRDu3peV5eGQ2C5/P1zq4X9dGpXP+LYhmYz4HbDMQgUosWTnmQoKKf0htVKBZvtFsx6S9bm48ktaV3EXwd/CzAAVjt+gHT5me0AAAAASUVORK5CYII=";
-    
+
     var list_table = '<table id="award_table"><thead><tr id="award_table_head"><th>Awards</th><th>Checks</th><th>List title</th><th>(Un)Hide</th></tr></head><tbody>';
-        
+
     for( var i = 0; i < this.lists.length; i++ )
-    {                            
+    {
         unhide_icon = '<img title="Unhide ' + jQuery.trim(this.lists[i].list_title) + '" alt="Unhide icon" src="' + unhide_icon_data + '">';
         hide_icon = '<img title="Hide ' + jQuery.trim(this.lists[i].list_title) + '" alt="Hide icon" src="' + hide_icon_data + '">';
-        var is_hidden = (this.hidden_lists.indexOf(this.lists[i].list_url) !== -1);        
-        
+        var is_hidden = (this.hidden_lists.indexOf(this.lists[i].list_url) !== -1);
+
         list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") + '" data-award-type="' + this.lists[i].award_type + '" data-list-url="' + this.lists[i].list_url + '"><td style="width: 65px">'
-                    + this.lists[i].award_type + '</td><td style="width: 65px">' + this.lists[i].award_checks 
+                    + this.lists[i].award_type + '</td><td style="width: 65px">' + this.lists[i].award_checks
                     + '</td><td><div style="height: 28px; overflow: hidden"><a class="list-title" href="' + this.lists[i].list_url + '">' + this.lists[i].list_title + '</a></div></td>'
-                    + '<td style="width: 70px"><a href="#" class="icm_hide_list">' + (is_hidden ? unhide_icon : hide_icon) + '</a></td></tr>';            
+                    + '<td style="width: 70px"><a href="#" class="icm_hide_list">' + (is_hidden ? unhide_icon : hide_icon) + '</a></td></tr>';
     }
-    
-    list_table += '</tbody></table>';        
+
+    list_table += '</tbody></table>';
 
     // build the html...
     var toggle_upcoming_link    = '<p id="ua_toggle_link_container" style="position: relative; left:0; top:0; width: 200px"><a id="toggle_upcoming_awards" href="#"><span class="_show" style="display: none">Show upcoming awards</span><span class="_hide">Hide upcoming awards</span></a></p>';
     var toggle_full_link        = '<a id="toggle_full_list" href="#"><span class="_show">Show full list</span><span class="_hide" style="display: none">Minimize full list</span></a>';
     var toggle_hidden_link      = '<a id="toggle_hidden_list" href="#">Show hidden</a>';
-    
+
     var links   = '<p id="award_display_links" style="position: absolute; right: 0; top: 0; font-weight: bold">Display: <a id="display_all" href="#">All</a>, '
                 + '<a id="display_bronze" href="#">Bronze</a>, <a id="display_silver" href="#">Silver</a>, <a id="display_gold" href="#">Gold</a>, '
-                + '<a id="display_platinum" href="#">Platinum</a>, ' + toggle_full_link + ', ' + toggle_hidden_link + '</p>';             
-    
-    var award_container = '<div id="award_container" class="container" style="position: relative; top: 0; width: 830px; height: 240px; overflow: scroll">' + list_table + '</div>';                                                                                                                                   
-    
-    var all_html = '<div id="icm_award_html_container" style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">' 
-                + toggle_upcoming_link + links + award_container + '</div>'; 
-    
+                + '<a id="display_platinum" href="#">Platinum</a>, ' + toggle_full_link + ', ' + toggle_hidden_link + '</p>';
+
+    var award_container = '<div id="award_container" class="container" style="position: relative; top: 0; width: 830px; height: 240px; overflow: scroll">' + list_table + '</div>';
+
+    var all_html = '<div id="icm_award_html_container" style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">'
+                + toggle_upcoming_link + links + award_container + '</div>';
+
     jQuery("#icm_award_html_container, #ua_toggle_link_container").remove();
-    
+
     if(location.href.indexOf("progress") !== -1)
         jQuery("#listOrdering").before(all_html);
-    else        
-        jQuery("#itemContainer").before(all_html);  
-    
+    else
+        jQuery("#itemContainer").before(all_html);
+
     $lists = jQuery("#award_table");
-    
+
     // hide hidden
-    $lists.find(".hidden-list").hide(); 
-    
+    $lists.find(".hidden-list").hide();
+
     _this = this;
-    
+
     jQuery("a.icm_hide_list").bind("click", function(e)
     {
         e.preventDefault();
-        
+
         $this = jQuery(this);
         $parent = $this.parent().parent();
-        
+
         var list_title = jQuery.trim($parent.find(".list-title").text());
-        
+
         var ind = _this.hidden_lists.indexOf($parent.data("list-url"));
         if(ind === -1)
         {
             // hide list
             _this.hidden_lists.push($parent.data("list-url"));
-            
+
             jQuery("#award_table").find("tr").each(function(e)
             {
                 $t = jQuery(this);
@@ -871,13 +871,13 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
             });
         }
         else
-        {            
+        {
             // unhide list
             _this.hidden_lists.splice(ind, 1);
-            
+
             jQuery("#award_table").find("tr.hidden-list").each(function(e)
             {
-                $t = jQuery(this); 
+                $t = jQuery(this);
                 if($t.data("list-url") === $parent.data("list-url"))
                 {
                     $t.removeClass("hidden-list").css("display", "none");
@@ -886,112 +886,112 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
                 }
             });
         }
-        
+
         // save hidden lists
-        GM_setValue("hidden_lists", uneval(_this.hidden_lists));                       
+        GM_setValue("hidden_lists", uneval(_this.hidden_lists));
     });
-    
+
     jQuery("#toggle_hidden_list").bind("click", function(e)
     {
         e.preventDefault();
-        
+
         $lists.find("tr").hide();
         $lists.find("#award_table_head").show();
         $lists.find("tr.hidden-list").show();
     });
-    
+
     $("a#toggle_upcoming_awards span._show").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("#award_display_links, #award_container, a#toggle_upcoming_awards span._hide").show();
         $(this).hide();
     });
-    
+
     $("a#toggle_upcoming_awards span._hide").live("click", function(e)
     {
         e.preventDefault();
-        
-        $("#award_display_links, #award_container, a#toggle_upcoming_awards span._hide").hide();        
+
+        $("#award_display_links, #award_container, a#toggle_upcoming_awards span._hide").hide();
         $("a#toggle_upcoming_awards span._show").show();
     });
-    
+
     $("a#display_all").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("table#award_table tr").hide();
         $("table#award_table tr").filter(function(index){
             if($(this).hasClass("hidden-list")) return false;
-            return true;                    
-        }).show();    
+            return true;
+        }).show();
     });
-    
+
     $("a#display_bronze").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("table#award_table tr").hide();
         $("table#award_table tr").filter(function(index){
             if($(this).hasClass("hidden-list")) return false;
             if($(this).data("award-type") === "Bronze") return true;
             if($(this).attr("id") === "award_table_head") return true;
-            return false;                    
-        }).show();    
+            return false;
+        }).show();
     });
-    
+
     $("a#display_silver").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("table#award_table tr").hide();
         $("table#award_table tr").filter(function(index){
             if($(this).hasClass("hidden-list")) return false;
             if($(this).data("award-type") === "Silver") return true;
             if($(this).attr("id") === "award_table_head") return true;
-            return false;                    
-        }).show();   
+            return false;
+        }).show();
     });
-    
+
     $("a#display_gold").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("table#award_table tr").hide();
         $("table#award_table tr").filter(function(index){
             if($(this).hasClass("hidden-list")) return false;
             if($(this).data("award-type") === "Gold") return true;
             if($(this).attr("id") === "award_table_head") return true;
-            return false;                    
-        }).show();   
+            return false;
+        }).show();
     });
-    
+
     $("a#display_platinum").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("table#award_table tr").hide();
         $("table#award_table tr").filter(function(index){
             if($(this).hasClass("hidden-list")) return false;
             if($(this).data("award-type") === "Platinum") return true;
             if($(this).attr("id") === "award_table_head") return true;
-            return false;                    
-        }).show();  
+            return false;
+        }).show();
     });
-    
+
     $("a#toggle_full_list span._show").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("a#toggle_full_list span._hide").show();
         $("a#toggle_full_list span._show").hide();
         $("div#award_container").css("height", "auto");
     });
-    
+
     $("a#toggle_full_list span._hide").live("click", function(e)
     {
         e.preventDefault();
-        
+
         $("a#toggle_full_list span._hide").hide();
         $("a#toggle_full_list span._show").show();
         $("div#award_container").css("height", "240px");
@@ -1013,7 +1013,7 @@ ICM_UpcomingAwardsOverview.prototype.getConfig = function()
                         {name: "autoload",
                          desc: "Autoload",
                          type: "checkbox",
-                         value: this.config.autoload 
+                         value: this.config.autoload
                         }
                     ]}
                 };
@@ -1026,34 +1026,34 @@ ICM_ListCustomColors.prototype.constructor = ICM_ListCustomColors;
 function ICM_ListCustomColors( config )
 {
     this.config = config;
-    
+
     this.includes = ["icheckmovies.com/"];
-    
+
     this.excludes = [];
 }
 
 ICM_ListCustomColors.prototype.Attach = function()
 {
     if( this.config.enabled )
-    { 
-       
+    {
+
         var list_colors_css = "";
-         
+
         if( this.config.colors.favorite.length )
         {
             list_colors_css += 'ol#itemListMovies li.favorite, ol#itemListMovies li.favorite ul.optionIconMenu { background-color: ' + this.config.colors.favorite + ' !important; }';
         }
-        
+
         if( this.config.colors.watchlist.length )
         {
             list_colors_css += 'ol#itemListMovies li.watch, ol#itemListMovies li.watch ul.optionIconMenu { background-color: ' + this.config.colors.watchlist + ' !important; }';
         }
-        
+
         if( this.config.colors.disliked.length )
         {
             list_colors_css += 'ol#itemListMovies li.hated, ol#itemListMovies li.hated ul.optionIconMenu { background-color: ' + this.config.colors.disliked + ' !important; }';
         }
-        
+
         GM_addStyle(list_colors_css);
     }
 }
@@ -1094,94 +1094,94 @@ ICM_ListCrossCheck.prototype = new ICM_BaseFeature();
 ICM_ListCrossCheck.prototype.constructor = ICM_ListCrossCheck;
 
 function ICM_ListCrossCheck(config)
-{    
+{
     this.config = config;
-    
+
     this.includes = ["icheckmovies.com/lists/"];
     this.excludes = [];
-    
+
     this.activated_once = false;
     this.Init();
 }
 
 /**
  * Initialize object variables
- */ 
+ */
 ICM_ListCrossCheck.prototype.Init = function()
 {
     this.activated = false;
-    
+
     // array of movie objects
-    this.movies = [];                    
-    
+    this.movies = [];
+
     this.movies_html = [];
-    
+
     // array of top list objects
     this.toplists = [];
-    
+
     // number of total toplists
     this.num_toplists = 0;
-    
+
     // cross-referencing in progress
     this.in_progress = false;
-    
+
     // current top list's number that is checked
     this.sequence_number = 0;
-}                        
+}
 
 ICM_ListCrossCheck.prototype.Attach = function()
-{                      
+{
     if(this.config.enabled && $("#itemListToplists").length)
-    {   
+    {
         var actions = '<div id="crActions" style="margin-bottom: 18px"><button id="cfgListCCActivate">Activate CR</button></div>';
-        
-        $("#itemContainer").before(actions);                
-        
+
+        $("#itemContainer").before(actions);
+
         var _t = this;
-        
-        $("div#crActions").delegate( "button#cfgListCCActivate", "click", function( e ) 
-        { 
+
+        $("div#crActions").delegate( "button#cfgListCCActivate", "click", function( e )
+        {
             $(this).attr("disabled", "disabled");
-        
+
             _t.CreateTab();
-            
-            _t.Activate();                
-        });                                                                                                                               
-        
+
+            _t.Activate();
+        });
+
         var customCSS = '<style type="text/css">'
                       + 'ol#itemListToplists li.icme_listcc_selected, ol#itemListToplists li.icme_listcc_hover, '
                       + '.icme_listcc_selected .progress, .icme_listcc_hover .progress'
                       + ' { background-color: #cccccc !important; }'
                       + 'ol#itemListToplists li.icme_listcc_pending, .icme_listcc_pending .progress { background-color: #ffffb2 !important; }'
                       + '</style>';
-        
+
         $("body").append(customCSS);
     }
-}                    
+}
 
 ICM_ListCrossCheck.prototype.Activate = function()
 {
     this.Init();
-    
+
     this.activated = true;
-    
+
     var _t = this;
-    
+
     $("button#cfgListCCActivate").after(' <button id="cfgListCCDeactivate">Deactivate</button>');
-    
+
     $("div#crActions").delegate("button#cfgListCCDeactivate", "click", function(e)
     {
         _t.Deactivate();
-        
+
         $("button#cfgListCCActivate").removeAttr("disabled");
-    });  
-    
+    });
+
     if( !this.activated_once ) // ff 3.6 compatibility (ff 3.6 fails to unbind the events in all possible ways)
     {
         $("ol#itemListToplists li").bind("click mouseover mouseout", function(e)
-        {        
+        {
             if( _t.activated && !_t.in_progress ) // ff 3.6 compatibility
-            {        
+            {
                 // these event actions must not work for cloned toplists under the selected tab
                 if( !$(this).hasClass("icme_listcc") )
                 {
@@ -1192,26 +1192,26 @@ ICM_ListCrossCheck.prototype.Activate = function()
                     else if( e.type == "mouseout" && !$(this).hasClass("icme_listcc_selected") )
                     {
                         $(this).removeClass("icme_listcc_hover").find("span.percentage").show();
-                    }              
+                    }
                     else if( e.type == "click" )
                     {
                         $(this).removeClass("icme_listcc_hover");
-                        
+
                         if( $(this).hasClass("icme_listcc_selected") )
                         {
                             $(this).removeClass("icme_listcc_selected").addClass("icme_listcc_hover");
                         }
                         else
-                        {                               
-                            $(this).addClass("icme_listcc_selected");                                
+                        {
+                            $(this).addClass("icme_listcc_selected");
                         }
                     }
                 }
-                
+
                 return false; // ff 3.6 compatibility
             }
         });
-        
+
         this.activated_once = true;
     }
 }
@@ -1219,76 +1219,76 @@ ICM_ListCrossCheck.prototype.Activate = function()
 ICM_ListCrossCheck.prototype.Deactivate = function()
 {
     var selected_toplists = $("li.icme_listcc_selected", "ul#topLists");
-    
+
     // if there's still selected top lists, change them back to normal
     $(selected_toplists).removeClass("icme_listcc_selected").find("span.percentage").show();
-    
+
     $("ol#itemListToplists").children("li").removeClass("icme_listcc_selected").removeClass("icme_listcc_hover");
     $("button#icme_listcc_check, button#cfgListCCDeactivate").remove();
-    $("li#topListCategoryCCSelected").remove(); 
+    $("li#topListCategoryCCSelected").remove();
     $("button#cfgListCCActivate").removeAttr("disabled");
-    
+
     this.Init();
-}                    
+}
 
 /**
  * Check through every selected top list
- */ 
+ */
 ICM_ListCrossCheck.prototype.Check = function()
-{    
+{
     var toplist_cnt = $("ol#itemListToplists");
-    
+
     // make selected top lists normal under the regular tabs
     $(toplist_cnt).children("li.icme_listcc_selected").removeClass("icme_listcc_selected").find("span.percentage").show();
-    
+
     // get selected top lists
     jq_toplists = $(toplist_cnt).children("li.icme_listcc");
-    
+
     this.num_toplists = $(jq_toplists).length;
     this.in_progress = true;
-    
+
     var request_number = 1;
-    
+
     // sort selected top lists in ascending order by number of unchecked films
     for( var i = 0; i < this.num_toplists; i++ )
-    {            
+    {
         var tmp = i;
         var smallest = i;
-        
+
         // find the next smallest number of unchecked films in a top list...
         while( tmp < this.num_toplists )
-        {                           
-            var tmp_checks = $(jq_toplists[tmp]).find("span.info > strong:first").text().split("/");                                                                      
+        {
+            var tmp_checks = $(jq_toplists[tmp]).find("span.info > strong:first").text().split("/");
             var tmp_unchecked = tmp_checks[1] - tmp_checks[0];
-            
-            var smallest_checks = $(jq_toplists[smallest]).find("span.info > strong:first").text().split("/");                                                                      
+
+            var smallest_checks = $(jq_toplists[smallest]).find("span.info > strong:first").text().split("/");
             var smallest_unchecked = smallest_checks[1] - smallest_checks[0];
-             
+
             if( tmp_unchecked < smallest_unchecked )
             {
-                smallest = tmp;            
-            }     
-            
-            tmp++;   
+                smallest = tmp;
+            }
+
+            tmp++;
         }
-        
+
         // and swap with current position i
         var tmp_list = jq_toplists[i];
         jq_toplists[i] = jq_toplists[smallest];
-        jq_toplists[smallest] = tmp_list;                             
+        jq_toplists[smallest] = tmp_list;
     }
-    
+
     // push top lists to this.toplists array
     for(var i = 0; i < this.num_toplists; i++)
-    {        
+    {
         // make selected toplists highlighted under the selected tab
         $(jq_toplists[i]).addClass("icme_listcc_selected").find("span.percentage").hide();
-        
-        var checks = $(jq_toplists[i]).find("span.info > strong:first").text().split("/");         
-        
-        this.toplists.push(jq_toplists[i]);                       
+
+        var checks = $(jq_toplists[i]).find("span.info > strong:first").text().split("/");
+
+        this.toplists.push(jq_toplists[i]);
     }
-    
+
     //var first_toplist = this.toplists.shift();
     //this.GetUncheckedFilms(first_toplist);
     this.GetUncheckedFilms(this.toplists[this.sequence_number]);
@@ -1296,17 +1296,17 @@ ICM_ListCrossCheck.prototype.Check = function()
 
 /**
  * Get unchecked films from a top list
- * 
+ *
  * @param list_elem jQuery object of the top list element
- */      
+ */
 ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem)
 {
     var url = "http://www.icheckmovies.com" + $(list_elem).find("a").attr("href");
-    
+
     $(list_elem).addClass("icme_listcc_pending");
-                             
-    var _t = this;                            
-                                     
+
+    var _t = this;
+
     GM_xmlhttpRequest(
     {
         method: "GET",
@@ -1314,17 +1314,18 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem)
         onload: function(response)
         {
             $(list_elem).removeClass("icme_listcc_selected icme_listcc_pending").find("span.percentage").show();
-            
+
             var result = response.responseText.replace(/\t/g, "").replace(/\n/g, "").replace(/\r/g, "");
-            
+
             var body_start = result.indexOf("<body");
             var body_end = result.indexOf("</body>");
-            
+
             var movies_res = result.substr(body_start, body_end);
 
             var jq_movies = $(movies_res);
 
             var unchecked = $(jq_movies).find("ol#itemListMovies").children("li.unchecked");
+
 
             _t.UpdateMovies( unchecked );
         }
@@ -1333,30 +1334,30 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem)
 
 /**
  * Update array of movies
- * 
+ *
  * @param content jQuery object that consists of unchecked movies (<li> elements) on a top list page
- */   
+ */
 ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
 {
     var movie_titles = content.find("h2");
-    
+
     this.sequence_number += 1;
-    
+
     // keeps track if at least one movie on the current top list is also found on all previous top lists
     // if the script is currently checking for movies found on all top lists. it's a major optimization
     // that halts the script if there's a top list with 0 matches especially early on and doesn't go on
     // to check all the rest of the lists wasting time
-    var global_toplist_match = false; 
-    
+    var global_toplist_match = false;
+
     var show_perfect_matches = this.config.match_all;
-    
+
     for(var i = 0; i < $(movie_titles).length; i++)
     {
         var found = false;
         var movie = $.trim( $( movie_titles[i] ).text() );
         var movie_url = $( movie_titles[i] ).find("a").attr("href");
         var movie_year = $( movie_titles[i] ).next("span.info").text();
-         
+
         for ( var j = 0; j < this.movies.length; j++ )
         {
             // compare urls as they're guaranteed to be unique
@@ -1365,34 +1366,34 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
             if ( movie_url === this.movies[j].u )
             {
                 this.movies[j].c += 1;
-                                
+
                 this.movies_html[j].find(".rank").html(this.movies[j].c);
                 found = true;
-                
+
                 global_toplist_match = true;
-                
+
                 break;
             }
         }
-        
+
         // if a movie wasn't found on previous top lists
         if ( !found )
         {
             // add it to the main movies array only if the script is not checking for matches on all top lists
-            // OR if the script is checking for matches on all top lists, but this is just the first top list 
-            if( !show_perfect_matches || ( show_perfect_matches && this.sequence_number == 1 ) ) 
+            // OR if the script is checking for matches on all top lists, but this is just the first top list
+            if( !show_perfect_matches || ( show_perfect_matches && this.sequence_number == 1 ) )
             {
                 // t = title, c = count, u = url, y = year
                 this.movies.push( {t: movie, c: 1, u: movie_url, y: movie_year} );
-                
+
                 $item = jQuery(content[i]);
                 $item.find(".rank").html("0");
                 $item.remove(".tagList");
-                
+
                 var itemid = $item.attr("id");
-                
+
                 // check if owned
-                var owned = eval(GM_getValue("owned_movies"));    
+                var owned = eval(GM_getValue("owned_movies"));
                 if(owned === undefined)
                 {
                     owned = [];
@@ -1404,14 +1405,14 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
                         $item.removeClass("notowned").addClass("owned");
                     }
                 }
-                
-                this.movies_html.push($item); 
-            }    
+
+                this.movies_html.push($item);
+            }
         }
     }
-    
+
     var has_toplists_left = (this.sequence_number < this.toplists.length);
-    
+
     // if finding movies on all selected top lists
     if( show_perfect_matches )
     {
@@ -1423,7 +1424,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
             {
                 var tmp_movies = [];
                 var tmp_movies_html = [];
-                
+
                 for( var i = 0; i < this.movies.length; i++ )
                 {
                     if( this.movies[i].c == this.sequence_number )
@@ -1431,15 +1432,15 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
                         tmp_movies.push( this.movies[i] );
                         tmp_movies_html.push(this.movies_html[i]);
                     }
-                }           
-                
+                }
+
                 this.movies = tmp_movies;
                 this.movies_html = tmp_movies_html;
                 console.log(this.sequence_number);
                 console.log(this.movies.length);
                 console.log(tmp_movies.length);
             }
-            
+
             // if there's still more top lists
             if( has_toplists_left )
             {
@@ -1463,7 +1464,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
                 this.GetUncheckedFilms(this.toplists[this.sequence_number]);
             }
             else
-            {                
+            {
                 this.movies = [];
                 this.OutputMovies();
             }
@@ -1486,18 +1487,18 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
 }
 
 ICM_ListCrossCheck.prototype.OutputMovies = function()
-{                                                      
+{
     var show_perfect_matches = this.config.match_all;
-                                                     
+
     if( !show_perfect_matches )
     {
         var limit = this.config.match_min;
-    
+
         if( limit > 0 )
         {
             var temp_movies = [];
             var temp_movies_html = [];
-            
+
             for ( var i = 0; i < this.movies.length; i++ )
             {
                 if( this.movies[i].c >= limit )
@@ -1505,96 +1506,96 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
                     temp_movies.push( this.movies[i] );
                     temp_movies_html.push( this.movies_html[i] );
                 }
-            } 
-            
-            this.movies = temp_movies; 
+            }
+
+            this.movies = temp_movies;
             this.movies_html = temp_movies_html;
         }
-                    
+
         // Sort by number of checks
         for( var i = 0; i < this.movies.length; i++ )
-        {            
+        {
             var tmp = i;
             var smallest = i;
-            
+
             // find the largest count value...
             while( tmp < this.movies.length )
-            {                                                                                                 
+            {
                 if( this.movies[tmp].c > this.movies[smallest].c )
                 {
-                    smallest = tmp;            
-                }     
-                
-                tmp++;   
+                    smallest = tmp;
+                }
+
+                tmp++;
             }
-            
+
             // and swap with current position i
             var tmp_list = this.movies[i];
             this.movies[i] = this.movies[smallest];
-            this.movies[smallest] = tmp_list;    
-            
+            this.movies[smallest] = tmp_list;
+
             var tmp_list_html = this.movies_html[i];
             this.movies_html[i] = this.movies_html[smallest];
-            this.movies_html[smallest] = tmp_list_html;                           
+            this.movies_html[smallest] = tmp_list_html;
         }
-    }  
-    
+    }
+
     // Sort by year
     for( var i = 0; i < this.movies.length; i++ )
-    {            
+    {
         var swap = i;
         var year_smallest = 0;
-         
+
         for( var tmp = i; tmp < this.movies.length; tmp++ )
-        {                
+        {
             if( this.movies[i].c === this.movies[tmp].c )
-            { 
+            {
                 if( this.movies[tmp].y < this.movies[i].y ) // if current list title is "smaller" than lists[i]
                 {
                     if( this.movies[tmp].y < year_smallest || year_smallest === 0 ) // if current list title is "smaller" than list_smallest
                     {
                         year_smallest = this.movies[tmp].y;
                         swap = tmp;
-                    }                        
+                    }
                 }
-            }   
+            }
             else
             {
                 // break the loop since count field (top lists) doesn't equal anymore,
                 // no need to go through the rest of the list
                 break;
-            }  
+            }
         }
-        
+
         // and swap with current position i
         var tmp_list = this.movies[i];
         this.movies[i] = this.movies[swap];
         this.movies[swap] = tmp_list;
-        
+
         var tmp_list_html = this.movies_html[i];
         this.movies_html[i] = this.movies_html[swap];
-        this.movies_html[swap] = tmp_list_html;                             
+        this.movies_html[swap] = tmp_list_html;
     }
-    
+
     if( this.movies.length > 0 )
     {
         /*var movie_table = '<div id="icme_listcc_container" class="container" style="position: relative; width: 830px; height: 240px; overflow: scroll; margin-bottom: 10px">'
                         + '<table id="icme_listcc_movie_table"><tr><th style="width: 70px">Top lists</th><th>Movie title (total: ' + this.movies.length + ')</th></tr>';
-        
+
         for ( var i = 0; i < this.movies.length; i++ )
         {
-            movie_table += '<tr><td style="float: right; padding-right: 20px">' + this.movies[i].c 
+            movie_table += '<tr><td style="float: right; padding-right: 20px">' + this.movies[i].c
                         + '</td><td><a href="' + this.movies[i].u + '">' + this.movies[i].t + ', ' + this.movies[i].y + '</a></td></tr>'
         }
-        
+
         movie_table += '</table></div><ol id="itemListMovies" class="itemList listViewNormal"></ol>';*/
-        
+
         var menu = '<ul>';
         for(var i = 0; i < this.toplists.length; ++i)
         {
             menu += '<li><b>' + jQuery(this.toplists[i]).find("h2").text() + '</b></li>';
         }
-                
+
         menu += '</ul><ul class="tabMenu tabMenuPush">'
                  + '<li class="topListMoviesFilter active">'
                  + '<a href="#" title="View all movies">All (' + this.movies_html.length + ')</a></li>'
@@ -1604,44 +1605,44 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
                  + '<a title="View all your checked movies" href="#" id="linkListFilterChecked">Checked <span id="topListMoviesCheckedCount"></span></a></li>'
                  + '<li class="topListMoviesFilter " id="listFilterUnchecked">'
                  + '<a title="View all your unchecked movies" href="#" id="linkListFilterUnchecked">Unchecked <span id="topListMoviesUncheckedCount"></span></a></li>'*/
-                 + '</ul>';                          
-     
+                 + '</ul>';
+
         // hide previous movie list
         jQuery("#itemListMovies").removeAttr("id").hide();
-        
+
         jQuery("#itemContainer").after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
         jQuery("#itemContainer").after(menu);
         for(var i = 0; i < this.movies_html.length; ++i)
             jQuery("#itemListMovies").append(this.movies_html[i]);
-            
+
         jQuery("#itemListMovies").children("li").show();
-        
-        jQuery(".topListMoviesFilter a").bind("click", function(e) 
-        { 
+
+        jQuery(".topListMoviesFilter a").bind("click", function(e)
+        {
             e.preventDefault();
             e.stopImmediatePropagation();
-            
+
             $this = jQuery(this);
             $movielist = $this.parent().parent().next();
-                                        
+
             if($movielist.is(":visible"))
             {
                 $this.parent().removeClass("active");
                 $movielist.removeAttr("id").hide();
-            } 
+            }
             else
             {
                 $this.parent().addClass("active");
                 $movielist.attr("id", "itemListMovies").show();
-            }            
-        });        
+            }
+        });
         jQuery(".listFilterExportCSV a").bind("click", function(e)
         {
             e.preventDefault();
-            
-            var data = '"found_toplists","title","year","official_toplists","imdb"\n'; 
+
+            var data = '"found_toplists","title","year","official_toplists","imdb"\n';
             $items = jQuery("#itemListMovies").children("li");
-            
+
             for(var i = 0; i < $items.length; ++i)
             {
                 $item = jQuery($items[i]);
@@ -1655,10 +1656,10 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
                     + '"' + year + '",'
                     + '"' + toplists + '",'
                     + '"' + imdburl + '"\n';
-                                        
+
                 data += line;
             }
-            
+
             window.location.href = "data:text/csv;charset=utf-8," + encodeURIComponent(data);
         });
     }
@@ -1667,8 +1668,8 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
         jQuery("#icme-crossref-notfound").remove();
         jQuery("#itemContainer").after('<div id="icme-crossref-notfound">Found 0 movies.</div>');
     }
-    
-    this.Deactivate();    
+
+    this.Deactivate();
 }
 
 
@@ -1679,14 +1680,14 @@ ICM_ListCrossCheck.prototype.CreateTab = function()
     {
         return;
     }
-    
+
     var tab = '<li id="listFilterCRSelected"><a href="#" class="icme_listcc">Cross-reference</a><strong style="display: none">Cross-reference</strong></li>';
-    
+
     $tlfilter = $("ul.tabMenu", "div#itemContainer");
     $tlfilter.append( tab );
-    
+
     var _t = this;
-    
+
     // Modified from ICM source. Make the tab work.
     $("#listFilterCRSelected a").bind("click", function () {
         var a = $(this).attr("class"),
@@ -1695,33 +1696,33 @@ ICM_ListCrossCheck.prototype.CreateTab = function()
             $(this).removeClass("active");
         });
         b.addClass("active");
-        
+
         if( a == "icme_listcc" && !_t.in_progress )
         {
             $top_list_ul = $("ol#itemListToplists");
             $top_list_ul.children("li.icme_listcc").remove();
-    
+
             $top_lists = $top_list_ul.children("li.icme_listcc_selected").clone();
-            
+
             //$top_list_ul.children("li.icme_listcc_selected").removeClass("icme_listcc_selected");
-            
+
             $top_lists.removeClass("imdb critics prizes website institute misc icme_listcc_selected").addClass("icme_listcc").find("span.percentage").show();
-            
+
             $top_list_ul.append( $top_lists );
-            
+
             if( $("li.icme_listcc", "ol#itemListToplists").length >= 2 && $("button#icme_listcc_check").length == 0 )
             {
                 var btn = '<button id="icme_listcc_check">Cross-reference</button>';
-                
+
                 $("div#crActions").append(btn);
-                
-                $("button#icme_listcc_check").bind("click", function(e) 
+
+                $("button#icme_listcc_check").bind("click", function(e)
                 {
                     $(this).attr("disabled", "disabled");
-                    
+
                     _t.Check();
                 });
-                
+
                 // Make the current tab work if we want to return to it
                 jQuery("ul.tabMenu").children("li").each(function()
                 {
@@ -1741,14 +1742,14 @@ ICM_ListCrossCheck.prototype.CreateTab = function()
             else if( $("li.icme_listcc", "ol#itemListToplists").length < 2 && $("button#icme_listcc_check").length == 1 )
             {
                 $("button#icme_listcc_check").remove();
-            }            
+            }
         }
-        
+
         b = $("ol#itemListToplists");
         b.find("li").hide();
         b.find("li." + a).show();
         a == "imdb" ? b.addClass("doubleList") : b.removeClass("doubleList");
-        
+
         return false
     });
 }
@@ -1768,7 +1769,7 @@ ICM_ListCrossCheck.prototype.getConfig = function()
                         {name: "match_all",
                          desc: "Find films that appear on all selected lists",
                          type: "checkbox",
-                         value: this.config.match_all 
+                         value: this.config.match_all
                         },
                         {name: "match_min",
                          desc: "If the above checkbox is unchecked, find films that appear on this many lists",
@@ -1786,7 +1787,7 @@ ICM_HideTags.prototype.constructor = ICM_HideTags;
 function ICM_HideTags(config)
 {
     this.config = config;
-    
+
     this.includes = ["icheckmovies.com/"];
     this.excludes = [];
 }
@@ -1796,11 +1797,11 @@ ICM_HideTags.prototype.Attach = function()
     if(this.config.enabled)
     {
         GM_addStyle("ol#itemListToplists li .info:last-child, ol#itemListMovies li .tagList { display: none !important; }");
-        
+
         if(this.config.show_hover)
         {
             GM_addStyle("ol#itemListToplists li:hover .info:last-child, ol#itemListMovies li:hover .tagList { display: block !important; }");
-        }                                                                                                                                                                              
+        }
     }
 }
 
@@ -1819,7 +1820,7 @@ ICM_HideTags.prototype.getConfig = function()
                         {name: "show_hover",
                          desc: "Show tags when moving the cursor over a movie",
                          type: "checkbox",
-                         value: this.config.show_hover 
+                         value: this.config.show_hover
                         }
                     ]}
                 };
@@ -1830,7 +1831,7 @@ ICM_WatchlistTab.prototype = new ICM_BaseFeature();
 ICM_WatchlistTab.prototype.constructor = ICM_WatchlistTab;
 
 function ICM_WatchlistTab(config)
-{    
+{
     this.config = config;
     this.includes = ["icheckmovies.com/lists"];
     this.excludes = [];
@@ -1842,41 +1843,41 @@ ICM_WatchlistTab.prototype.Attach = function()
     {
         return;
     }
-    
+
     $movies = jQuery("#itemListMovies");
     if($movies.length === 0)
     {
         return;
     }
-    
+
     var watch_count = $movies.children("li.watch").length;
     var tabHtml = "<li id=\"listFilterWatch\" class=\"topListMoviesFilter\">"
     + "<a id=\"linkListFilterWatch\" href=\"#\" title=\"View all your watchlist movies\">Watchlist "
     + "<span id=\"topListMoviesWatchCount\">(" + watch_count + ")</span></a>"
     + "</li>";
-    
-    jQuery("#listFilterUnchecked").after(tabHtml); 
-    
+
+    jQuery("#listFilterUnchecked").after(tabHtml);
+
     $first = jQuery("#listFilterMovies").find("a");
     $first.text($first.text().replace(" movies", ""));
-    
+
     // move the order by and views to filter box
     if(jQuery("#orderByAndView").length === 0)
     {
         jQuery("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
-        jQuery("#listOrdering").detach().appendTo("#orderByAndView"); 
+        jQuery("#listOrdering").detach().appendTo("#orderByAndView");
         jQuery("#listViewswitch").detach().appendTo("#orderByAndView");
-    } 
-    
+    }
+
     jQuery("#linkListFilterWatch").bind("click", function(e)
-    {        
+    {
         $movies = jQuery("#itemListMovies");
         $movies.children("li").hide();
         $movies.children("li.watch").show();
-        
+
         jQuery(".tabMenu", "#itemContainer").children("li").removeClass("active");
         jQuery(this).parent("li").addClass("active");
-        
+
         return false;
     });
 }
@@ -1902,7 +1903,7 @@ ICM_Owned.prototype = new ICM_BaseFeature();
 ICM_Owned.prototype.constructor = ICM_Owned;
 
 function ICM_Owned(config)
-{    
+{
     this.config = config;
     this.includes = ["icheckmovies.com/"];
     this.excludes = [];
@@ -1914,45 +1915,45 @@ ICM_Owned.prototype.Attach = function()
     {
         return;
     }
-                  
-    $movielist = jQuery("#itemListMovies");  
+
+    $movielist = jQuery("#itemListMovies");
     if($movielist.length === 0)
-    {              
+    {
         // Check if movie page
         $markOwned = jQuery(".optionMarkOwned");
-        if($markOwned.length === 0) 
+        if($markOwned.length === 0)
         {
             return;
         }
-        
+
         if(this.config.free_account)
         {
             var owned = eval(GM_getValue("owned_movies"));
             $movielink = $markOwned.parent().parent().prev("a");
-        
+
             if(owned === undefined)
             {
                 owned = [];
             }
-                           
+
             var movie_id = $movielink.attr("id");
             movie_id = movie_id.replace("check", "movie");
             if(owned.indexOf(movie_id) !== -1)
             {
                 $movie = $movielink.parent();
                 $movie.removeClass("notowned").addClass("owned");
-            }   
-            
+            }
+
             jQuery(".optionMarkOwned").bind("click", function(e)
-            {    
-                e.preventDefault();        
+            {
+                e.preventDefault();
                 owned = eval(GM_getValue("owned_movies"));
-        
+
                 if(owned === undefined)
                 {
                     owned = [];
                 }
-                  
+
                 // if movie is found in cached owned movies
                 $parent = jQuery(this).parent().parent().prev("a");
                 var movie_id = $parent.attr("id");
@@ -1960,11 +1961,11 @@ ICM_Owned.prototype.Attach = function()
                 console.log(movie_id);
                 $movie = jQuery(this).parent().parent().parent();
                 var ind = owned.indexOf(movie_id);
-          
+
                 // if found movie in the owned array...
                 if(ind !== -1)
                 {
-                    console.log("found");                     
+                    console.log("found");
                     $movie.removeClass("owned").addClass("notowned");
                     owned.splice(ind, 1);
                 }
@@ -1974,58 +1975,58 @@ ICM_Owned.prototype.Attach = function()
                     $movie.removeClass("notowned").addClass("owned");
                     owned.push(movie_id);
                 }
-        
+
                 GM_setValue("owned_movies", uneval(owned));
-            });         
+            });
         }
-        
-    }        
+
+    }
     else {
     if(this.config.free_account)
     {
         var owned = eval(GM_getValue("owned_movies"));
-    
+
         if(owned === undefined)
         {
             owned = [];
-        }            
-                                            
-        $movies = $movielist.children("li");    
-        
+        }
+
+        $movies = $movielist.children("li");
+
         // mark owned movies as owned
         for(var i = 0; i < $movies.length; i++)
         {
             $el = jQuery($movies[i]);
             var movie_id = $el.attr("id");
             var ind = owned.indexOf(movie_id);
-    
+
             // if movie id is found in cached owned movies
             if(ind !== -1)
             {
                 $el.removeClass("notowned").addClass("owned");
             }
-            
+
             // remove paid feature crap
             jQuery($movies[i]).find(".optionIconMenu").find("li").find("a").removeClass("paidFeature");
-        }    
-        
+        }
+
         jQuery(".optionMarkOwned").bind("click", function(e)
-        {            
+        {
             owned = eval(GM_getValue("owned_movies"));
-    
+
             if(owned === undefined)
             {
                 owned = [];
             }
-              
+
             // if movie is found in cached owned movies
             $parent = jQuery(this).parent().parent().parent();
             var movie_id = $parent.attr("id");
             var ind = owned.indexOf(movie_id);
-                          
+
             // if found movie in the owned array...
             if(ind !== -1)
-            {                        
+            {
                 $parent.removeClass("owned").addClass("notowned");
                 owned.splice(ind, 1);
             }
@@ -2034,49 +2035,49 @@ ICM_Owned.prototype.Attach = function()
                 $parent.removeClass("notowned").addClass("owned");
                 owned.push(movie_id);
             }
-            
+
             var owned_count = $movielist.children("li.owned").length;
             jQuery("#topListMoviesOwnedCount").text("(" + owned_count + ")");
-    
+
             GM_setValue("owned_movies", uneval(owned));
-            
+
             return false;
         });
     }
     }
-    
+
     var owned_count = $movielist.children("li.owned").length;
     var tabHtml = "<li id=\"listFilterOwned\" class=\"topListMoviesFilter\">"
     + "<a id=\"linkListFilterOwned\" href=\"#\" title=\"View all your owned movies\">Owned "
     + "<span id=\"topListMoviesOwnedCount\">(" + owned_count + ")</span></a>"
     + "</li>";
-    
-    jQuery("#listFilterNew").before(tabHtml);   
-    
+
+    jQuery("#listFilterNew").before(tabHtml);
+
     $first = jQuery("#listFilterMovies").find("a");
     $first.text($first.text().replace(" movies", ""));
-    
+
     // move the order by and views to filter box
     var isWatchlist = new Boolean(jQuery("#topList").length);
     if(jQuery("#orderByAndView").length === 0 && !isWatchlist)
     {
         jQuery("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
-        jQuery("#listOrdering").detach().appendTo("#orderByAndView"); 
+        jQuery("#listOrdering").detach().appendTo("#orderByAndView");
         jQuery("#listViewswitch").detach().appendTo("#orderByAndView");
     }
-    
+
     jQuery("#linkListFilterOwned, #listFilterOwned").bind("click", function(e)
-    {                
+    {
         $movielist = jQuery("#itemListMovies");
         $movielist.children("li").hide();
         $movielist.children("li.owned").show();
-        
+
         jQuery(".tabMenu", "#itemContainer").children("li").removeClass("active");
-        jQuery(this).parent("li").addClass("active");    
-        
+        jQuery(this).parent("li").addClass("active");
+
         return false;
     });
-    
+
     jQuery("#listFilterWatchlist").bind("click", function(e)
     {
         $movielist = jQuery("#itemListMovies");
@@ -2100,7 +2101,7 @@ ICM_Owned.prototype.getConfig = function()
                         {name: "free_account",
                          desc: "I have a free account (must uncheck if you have a paid account)",
                          type: "checkbox",
-                         value: this.config.free_account 
+                         value: this.config.free_account
                         }
                     ]}
                 };
@@ -2111,7 +2112,7 @@ ICM_LargeList.prototype = new ICM_BaseFeature();
 ICM_LargeList.prototype.constructor = ICM_LargeList;
 
 function ICM_LargeList(config)
-{    
+{
     this.config = config;
     this.includes = ["icheckmovies\.com/lists/(.+)/(.*)"];
     this.excludes = ["icheckmovies\.com/lists/favorited","icheckmovies\.com/lists/disliked","icheckmovies\.com/lists/watchlist"];
@@ -2124,7 +2125,7 @@ ICM_LargeList.prototype.Attach = function()
     {
         return;
     }
-    
+
     if(this.config.autoload)
     {
         this.load();
@@ -2133,11 +2134,11 @@ ICM_LargeList.prototype.Attach = function()
     {
         // create link
         var link = '<span style="float: right; margin-left: 15px"><a id="icme_large_posters" href="#">Large posters</a></span>';
-        
+
         if( $("div#list_container").length !== 1 )
         {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + link + '</div>';
-            
+
             $("div#topList").next("div").after( container );
         }
         else
@@ -2150,26 +2151,26 @@ ICM_LargeList.prototype.Attach = function()
             {
                 $("div#list_container").append( link );
             }
-        }        
-        
+        }
+
         var _t = this;
         jQuery("#icme_large_posters").bind("click", function(e){
             e.preventDefault();
-            
+
             _t.load();
         });
     }
 }
 
 ICM_LargeList.prototype.load = function()
-{    
+{
     if(this.loaded)
     {
         return;
     }
-    
+
     this.loaded = true;
-    
+
     var style = "#itemListMovies > .listItem { float:left !important; height: 330px !important; width: 255px !important; }"
         + ".listItem .listImage { float:none !important; width: 230px !important; height: 305px !important; left:-18px !important; top:-18px !important; margin:0!important }"
         + ".listImage a {width:100% !important; height:100% !important; background: url(\"/images/dvdCover.png\") no-repeat scroll center center transparent !important;}"
@@ -2186,7 +2187,7 @@ ICM_LargeList.prototype.load = function()
         //+ ".optionIconMenu { display:none !important }";
 
     GM_addStyle(style);
-    
+
     $c = jQuery("#itemListMovies").find("div.coverImage").hide();
     for(var i = 0; i < $c.length; i++)
     {
@@ -2196,19 +2197,19 @@ ICM_LargeList.prototype.load = function()
         }
         else { // chrome handles urls differently
             cururl = cururl.slice(4,-1).replace("small", "medium").replace("Small", "Medium");
-        }               
+        }
         var img = document.createElement("img");
         img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY5j8rA8ABBcCCCnPKCcAAAAASUVORK5CYII=";
         img.className = "coverImage";
-        img.setAttribute("data-original", cururl);        
-        $c[i].parentNode.appendChild(img);            
+        img.setAttribute("data-original", cururl);
+        $c[i].parentNode.appendChild(img);
     }
-    
+
     jQuery("img.coverImage").lazyload({ threshold : 200 });
 }
 
 ICM_LargeList.prototype.getConfig = function()
-{                
+{
     var out = {title: "Large Posters",
                 desc: "Display large posters on individual lists (large posters are lazy loaded)",
                 config: {
@@ -2222,12 +2223,12 @@ ICM_LargeList.prototype.getConfig = function()
                         {name: "autoload",
                          desc: "Autoload",
                          type: "checkbox",
-                         value: this.config.autoload 
+                         value: this.config.autoload
                         }
                     ]}
                 };
-                
-    return out;                                
+
+    return out;
 }
 
 // Inherit methods from BaseFeature
@@ -2237,17 +2238,17 @@ ICM_ListOverviewSort.prototype.constructor = ICM_ListOverviewSort;
 function ICM_ListOverviewSort( config )
 {
     this.config = config;
-    
+
     this.includes = ["icheckmovies.com/profiles/progress"];
     this.excludes = [];
-    
-    this.sections = ["imdb", "country", "critics", "director", 
+
+    this.sections = ["imdb", "country", "critics", "director",
                      "website", "institute", "misc", "all", "award"];
 }
 
 ICM_ListOverviewSort.prototype.Attach = function()
 {
-    if(!this.config.enabled) 
+    if(!this.config.enabled)
     {
         return;
     }
@@ -2256,7 +2257,7 @@ ICM_ListOverviewSort.prototype.Attach = function()
     {
         GM_addStyle('.itemList .listItem.listItemProgress { float: none !important; }');
     }
-    
+
     if( this.config.autoload )
     {
         for( var i = 0; i < this.sections.length; i++ )
@@ -2271,45 +2272,45 @@ ICM_ListOverviewSort.prototype.Sort = function(order, section)
 {
     $toplist_list = $("#progress" + section);
     $toplist_items = $toplist_list.children("li").get();
-    
+
     var lookup_table = [];
-    
+
     // construct a lookup table for percentages
     for( var i = 0; i < $toplist_items.length; i++ )
     {
         var tmp = $( $toplist_items[i] ).find("span.progress").css("width").replace("px", "");
-        
+
         lookup_table.push( parseInt( tmp ) );
     }
-    
+
     var lut_len = lookup_table.length;
 
     for( var i = 0; i < lut_len; i++ )
     {
         var tmp = i;
-        var smallest = i;                   
-        
+        var smallest = i;
+
         // find the smallest value...
         while( tmp < lut_len )
-        {                    
-                                                                                         
+        {
+
             if( order === "asc" && lookup_table[ tmp ] < lookup_table[ smallest ] )
             {
-                smallest = tmp;            
-            }     
+                smallest = tmp;
+            }
             else if( order === "desc" && lookup_table[ tmp ] > lookup_table[ smallest ] )
             {
-                smallest = tmp;            
-            }  
-            
-            tmp++;   
+                smallest = tmp;
+            }
+
+            tmp++;
         }
-        
+
         // and swap with current position i
         var tmp_list = $toplist_items[i];
         $toplist_items[i] = $toplist_items[smallest];
         $toplist_items[smallest] = tmp_list;
-        
+
         var tmp_val = lookup_table[i];
         lookup_table[i] = lookup_table[smallest];
         lookup_table[smallest] = tmp_val;
@@ -2326,7 +2327,7 @@ ICM_ListOverviewSort.prototype.Sort = function(order, section)
     {
         // exclude last entry if odd numbered
         half_point = Math.ceil( lookup_table.length / 2 );
-        
+
         // place the elements in such order that lowest / highest appear on the left side and the opposite on the right side
         for( var i = 0, first_half = 0, second_half = half_point; i < lut_len; i++ )
         {
@@ -2345,7 +2346,7 @@ ICM_ListOverviewSort.prototype.Sort = function(order, section)
 }
 
 ICM_ListOverviewSort.prototype.getConfig = function()
-{                
+{
     var out = {title: "Sort Progress Page",
                 desc: "Sort lists on progress page by completion rate",
                 config: {
@@ -2359,7 +2360,7 @@ ICM_ListOverviewSort.prototype.getConfig = function()
                         {name: "autoload",
                          desc: "Autoload",
                          type: "checkbox",
-                         value: this.config.autoload 
+                         value: this.config.autoload
                         },
                         {name: "order",
                         desc: "Ascending",
@@ -2378,22 +2379,22 @@ ICM_ListOverviewSort.prototype.getConfig = function()
                         }
                     ]}
                 };
-                
-    return out;                                
+
+    return out;
 }
 
 /**
  * Main application
- * Register and load modules 
- */ 
+ * Register and load modules
+ */
 function ICM_Enhanced(scriptConfig)
-{        
+{
     this.modules = [];
     this.configWindow = new ICM_ConfigWindow(scriptConfig);
 }
 
 ICM_Enhanced.prototype.register = function(module)
-{            
+{
     this.modules.push(module);
     this.configWindow.addModule(module.getConfig());
 }
@@ -2407,17 +2408,17 @@ ICM_Enhanced.prototype.load = function()
             this.modules[i].Attach();
         }
     }
-    
+
     this.configWindow.build();
 }
 
 $(document).ready(function()
 {
     var config = new ICM_Config();
-    
+
     var app = new ICM_Enhanced(config);
     app.register(new ICM_RandomFilmLink( config.Get( "random_film" ) ));
-    app.register(new ICM_HideTags(config.Get("hide_tags")));    
+    app.register(new ICM_HideTags(config.Get("hide_tags")));
     app.register(new ICM_UpcomingAwardsList( config.Get( "ua_list" ) ));
     app.register(new ICM_ListCustomColors( config.Get( "list_colors" ) ));
     app.register(new ICM_UpcomingAwardsOverview( config.Get( "ua" ) ));
