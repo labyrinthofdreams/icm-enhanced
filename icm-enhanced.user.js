@@ -779,17 +779,16 @@ ICM_ListCustomColors.prototype.Attach = function() {
     if ( this.config.enabled ) {
         var list_colors_css = "";
 
-        if ( this.config.colors.favorite.length ) {
-            list_colors_css += 'ol#itemListMovies li.favorite, ol#itemListMovies li.favorite ul.optionIconMenu { background-color: ' + this.config.colors.favorite + ' !important; }';
+        var buildCSS = function(className, color) {
+            if (!color.length)
+                return;
+            var sel = 'ol#itemListMovies li.' + className;
+            list_colors_css += sel + ', ' + sel + ' ul.optionIconMenu { background-color: ' + color + ' !important; }';
         }
 
-        if ( this.config.colors.watchlist.length ) {
-            list_colors_css += 'ol#itemListMovies li.watch, ol#itemListMovies li.watch ul.optionIconMenu { background-color: ' + this.config.colors.watchlist + ' !important; }';
-        }
-
-        if ( this.config.colors.disliked.length ) {
-            list_colors_css += 'ol#itemListMovies li.hated, ol#itemListMovies li.hated ul.optionIconMenu { background-color: ' + this.config.colors.disliked + ' !important; }';
-        }
+        buildCSS('favorite', this.config.colors.favorite);
+        buildCSS('watch', this.config.colors.watchlist);
+        buildCSS('hated', this.config.colors.disliked);
 
         GM_addStyle(list_colors_css);
     }
