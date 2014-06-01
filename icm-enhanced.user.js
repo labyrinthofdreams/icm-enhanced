@@ -601,13 +601,14 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     var list_table = '<table id="award_table"><thead><tr id="award_table_head"><th>Awards</th><th>Checks</th><th>List title</th><th>(Un)Hide</th></tr></head><tbody>';
 
     for ( var i = 0; i < this.lists.length; i++ ) {
-        unhide_icon = '<img title="Unhide ' + $.trim(this.lists[i].list_title) + '" alt="Unhide icon" src="' + unhide_icon_data + '">';
-        hide_icon = '<img title="Hide ' + $.trim(this.lists[i].list_title) + '" alt="Hide icon" src="' + hide_icon_data + '">';
-        var is_hidden = (this.hidden_lists.indexOf(this.lists[i].list_url) !== -1);
+        var el = this.lists[i];
+        unhide_icon = '<img title="Unhide ' + $.trim(el.list_title) + '" alt="Unhide icon" src="' + unhide_icon_data + '">';
+        hide_icon = '<img title="Hide ' + $.trim(el.list_title) + '" alt="Hide icon" src="' + hide_icon_data + '">';
+        var is_hidden = (this.hidden_lists.indexOf(el.list_url) !== -1);
 
-        list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") + '" data-award-type="' + this.lists[i].award_type + '" data-list-url="' + this.lists[i].list_url + '"><td style="width: 65px">'
-                    + this.lists[i].award_type + '</td><td style="width: 65px">' + this.lists[i].award_checks
-                    + '</td><td><div style="height: 28px; overflow: hidden"><a class="list-title" href="' + this.lists[i].list_url + '">' + this.lists[i].list_title + '</a></div></td>'
+        list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") + '" data-award-type="' + el.award_type + '" data-list-url="' + el.list_url + '"><td style="width: 65px">'
+                    + el.award_type + '</td><td style="width: 65px">' + el.award_checks
+                    + '</td><td><div style="height: 28px; overflow: hidden"><a class="list-title" href="' + el.list_url + '">' + el.list_title + '</a></div></td>'
                     + '<td style="width: 70px"><a href="#" class="icm_hide_list">' + (is_hidden ? unhide_icon : hide_icon) + '</a></td></tr>';
     }
 
@@ -713,50 +714,14 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         }).show();
     });
 
-    $("a#display_bronze").live("click", function(e) {
+    $("a#display_bronze, a#display_silver, a#display_gold, a#display_platinum").live("click", function(e) {
         e.preventDefault();
 
-        $("table#award_table tr").hide();
-        $("table#award_table tr").filter(function(index) {
+        var award_type = $(this).attr("id").split('_')[1];
+        $("table#award_table > tbody > tr").hide();
+        $("table#award_table > tbody > tr").filter(function(index) {
             if ($(this).hasClass("hidden-list")) return false;
-            if ($(this).data("award-type") === "Bronze") return true;
-            if ($(this).attr("id") === "award_table_head") return true;
-            return false;
-        }).show();
-    });
-
-    $("a#display_silver").live("click", function(e) {
-        e.preventDefault();
-
-        $("table#award_table tr").hide();
-        $("table#award_table tr").filter(function(index) {
-            if ($(this).hasClass("hidden-list")) return false;
-            if ($(this).data("award-type") === "Silver") return true;
-            if ($(this).attr("id") === "award_table_head") return true;
-            return false;
-        }).show();
-    });
-
-    $("a#display_gold").live("click", function(e) {
-        e.preventDefault();
-
-        $("table#award_table tr").hide();
-        $("table#award_table tr").filter(function(index) {
-            if ($(this).hasClass("hidden-list")) return false;
-            if ($(this).data("award-type") === "Gold") return true;
-            if ($(this).attr("id") === "award_table_head") return true;
-            return false;
-        }).show();
-    });
-
-    $("a#display_platinum").live("click", function(e) {
-        e.preventDefault();
-
-        $("table#award_table tr").hide();
-        $("table#award_table tr").filter(function(index) {
-            if ($(this).hasClass("hidden-list")) return false;
-            if ($(this).data("award-type") === "Platinum") return true;
-            if ($(this).attr("id") === "award_table_head") return true;
+            if ($(this).data("award-type").toLowerCase() === award_type) return true;
             return false;
         }).show();
     });
