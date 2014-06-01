@@ -145,9 +145,9 @@ ICM_Config.prototype.Init = function()
         },
         list_cross_ref: // list cross-referencing
         {
-        	enabled: false,
-        	match_all: true, // find a match on all selected lists
-        	match_min: 2 // limit how many top lists a film has to be found to be shown
+            enabled: false,
+            match_all: true, // find a match on all selected lists
+            match_min: 2 // limit how many top lists a film has to be found to be shown
         },
         hide_tags:
         {
@@ -1095,8 +1095,8 @@ ICM_ListCrossCheck.prototype.constructor = ICM_ListCrossCheck;
 
 function ICM_ListCrossCheck(config)
 {    
-	this.config = config;
-	
+    this.config = config;
+    
     this.includes = ["icheckmovies.com/lists/"];
     this.excludes = [];
     
@@ -1133,29 +1133,29 @@ ICM_ListCrossCheck.prototype.Attach = function()
 {                      
     if(this.config.enabled && $("#itemListToplists").length)
     {   
-	    var actions = '<div id="crActions" style="margin-bottom: 18px"><button id="cfgListCCActivate">Activate CR</button></div>';
-	    
-	    $("#itemContainer").before(actions);                
-	    
-	    var _t = this;
-	    
-	    $("div#crActions").delegate( "button#cfgListCCActivate", "click", function( e ) 
-	    { 
-	        $(this).attr("disabled", "disabled");
-	    
-	        _t.CreateTab();
-	        
-	        _t.Activate();                
-	    });                                                                                                                               
-	    
-	    var customCSS = '<style type="text/css">'
-	                  + 'ol#itemListToplists li.icme_listcc_selected, ol#itemListToplists li.icme_listcc_hover, '
-	                  + '.icme_listcc_selected .progress, .icme_listcc_hover .progress'
+        var actions = '<div id="crActions" style="margin-bottom: 18px"><button id="cfgListCCActivate">Activate CR</button></div>';
+        
+        $("#itemContainer").before(actions);                
+        
+        var _t = this;
+        
+        $("div#crActions").delegate( "button#cfgListCCActivate", "click", function( e ) 
+        { 
+            $(this).attr("disabled", "disabled");
+        
+            _t.CreateTab();
+            
+            _t.Activate();                
+        });                                                                                                                               
+        
+        var customCSS = '<style type="text/css">'
+                      + 'ol#itemListToplists li.icme_listcc_selected, ol#itemListToplists li.icme_listcc_hover, '
+                      + '.icme_listcc_selected .progress, .icme_listcc_hover .progress'
                       + ' { background-color: #cccccc !important; }'
-	                  + 'ol#itemListToplists li.icme_listcc_pending, .icme_listcc_pending .progress { background-color: #ffffb2 !important; }'
-	                  + '</style>';
-	    
-	    $("body").append(customCSS);
+                      + 'ol#itemListToplists li.icme_listcc_pending, .icme_listcc_pending .progress { background-color: #ffffb2 !important; }'
+                      + '</style>';
+        
+        $("body").append(customCSS);
     }
 }                    
 
@@ -1786,7 +1786,7 @@ ICM_HideTags.prototype.constructor = ICM_HideTags;
 function ICM_HideTags(config)
 {
     this.config = config;
-	
+    
     this.includes = ["icheckmovies.com/"];
     this.excludes = [];
 }
@@ -1830,7 +1830,7 @@ ICM_WatchlistTab.prototype = new ICM_BaseFeature();
 ICM_WatchlistTab.prototype.constructor = ICM_WatchlistTab;
 
 function ICM_WatchlistTab(config)
-{	
+{    
     this.config = config;
     this.includes = ["icheckmovies.com/lists"];
     this.excludes = [];
@@ -1902,7 +1902,7 @@ ICM_Owned.prototype = new ICM_BaseFeature();
 ICM_Owned.prototype.constructor = ICM_Owned;
 
 function ICM_Owned(config)
-{	
+{    
     this.config = config;
     this.includes = ["icheckmovies.com/"];
     this.excludes = [];
@@ -2111,7 +2111,7 @@ ICM_LargeList.prototype = new ICM_BaseFeature();
 ICM_LargeList.prototype.constructor = ICM_LargeList;
 
 function ICM_LargeList(config)
-{	
+{    
     this.config = config;
     this.includes = ["icheckmovies\.com/lists/(.+)/(.*)"];
     this.excludes = ["icheckmovies\.com/lists/favorited","icheckmovies\.com/lists/disliked","icheckmovies\.com/lists/watchlist"];
