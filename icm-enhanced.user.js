@@ -431,30 +431,20 @@ function ICM_UpcomingAwardsList( config ) {
 ICM_UpcomingAwardsList.prototype.Attach = function() {
     if ( this.config.enabled && $("#itemListMovies").length ) {
         var total_items = parseInt($("li#listFilterMovies").text().match(/([0-9]+)/)[1]);
-        var checks      = parseInt(document.getElementById("topListMoviesCheckedCount")
-                          .innerHTML.replace("(", "").replace(")", ""));
+        var checks      = parseInt($("#topListMoviesCheckedCount").text().match(/\d+/));
 
         var statistics = '<span><b>Upcoming awards:</b>';
 
-        var bronze = (Math.ceil(total_items * 0.5) - checks);
-        var silver = (Math.ceil(total_items * 0.75) - checks);
-        var gold = (Math.ceil(total_items * 0.9) - checks);
-        var platinum = (total_items - checks);
+        var abs = this.config.show_absolute;
+        var get_span = function(award, cutoff) {
+            var num = Math.ceil(total_items * cutoff) - checks;
+            if ((!abs) && (num <= 0))
+                return '';
+            return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
+        };
 
-        if (!this.config.show_absolute) {
-            bronze = (bronze > 0) ? bronze : 0;
-            silver = (silver > 0) ? silver : 0;
-            gold = (gold > 0) ? gold : 0;
-            platinum = (platinum > 0) ? platinum : 0;
-        }
-
-        statistics += '<span style="margin-left: 30px">Bronze: <b>' + bronze + '</b></span>';
-
-        statistics += '<span style="margin-left: 30px">Silver: <b>' + silver + '</b></span>';
-
-        statistics += '<span style="margin-left: 30px">Gold: <b>' + gold + '</b></span>';
-
-        statistics += '<span style="margin-left: 30px">Platinum: <b>' + platinum + '</b></span>';
+        statistics += get_span('Bronze', 0.5) + get_span('Silver', 0.75) + 
+                      get_span('Gold', 0.9) + get_span('Platinum', 1);
 
         if ( $("div#list_container").length !== 1 ) {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + statistics + '</div>';
