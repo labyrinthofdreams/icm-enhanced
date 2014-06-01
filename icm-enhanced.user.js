@@ -1078,7 +1078,6 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
 
                 $item = $(content[i]);
                 $item.find(".rank").html("0");
-                $item.remove(".tagList");
 
                 var itemid = $item.attr("id");
 
