@@ -847,8 +847,6 @@ ICM_ListCrossCheck.prototype.Init = function() {
     // array of movie objects
     this.movies = [];
 
-    this.movies_html = [];
-
     // array of top list objects
     this.toplists = [];
 
@@ -956,54 +954,27 @@ ICM_ListCrossCheck.prototype.Check = function() {
     var toplist_cnt = $("ol#itemListToplists");
 
     // make selected top lists normal under the regular tabs
-    $(toplist_cnt).children("li.icme_listcc_selected").removeClass("icme_listcc_selected").find("span.percentage").show();
+    toplist_cnt.children("li.icme_listcc_selected").removeClass("icme_listcc_selected").find("span.percentage").show();
 
     // get selected top lists
-    jq_toplists = $(toplist_cnt).children("li.icme_listcc");
+    jq_toplists = toplist_cnt.children("li.icme_listcc");
 
-    this.num_toplists = $(jq_toplists).length;
+    this.num_toplists = jq_toplists.length;
     this.in_progress = true;
 
-    var request_number = 1;
-
     // sort selected top lists in ascending order by number of unchecked films
-    for ( var i = 0; i < this.num_toplists; i++ ) {
-        var tmp = i;
-        var smallest = i;
+    var get_unchecked = function(x) {
+        var checks = $(x).find("span.info > strong:first").text().split("/");
+        return checks[1] - checks[0];
+    };
+    jq_toplists.sort(function(a,b) {
+        return get_unchecked(a) < get_unchecked(b) ? -1 : 1;
+    });
 
-        // find the next smallest number of unchecked films in a top list...
-        while ( tmp < this.num_toplists ) {
-            var tmp_checks = $(jq_toplists[tmp]).find("span.info > strong:first").text().split("/");
-            var tmp_unchecked = tmp_checks[1] - tmp_checks[0];
+    // make selected toplists highlighted under the selected tab
+    jq_toplists.addClass("icme_listcc_selected").find("span.percentage").hide();
 
-            var smallest_checks = $(jq_toplists[smallest]).find("span.info > strong:first").text().split("/");
-            var smallest_unchecked = smallest_checks[1] - smallest_checks[0];
-
-            if ( tmp_unchecked < smallest_unchecked ) {
-                smallest = tmp;
-            }
-
-            tmp++;
-        }
-
-        // and swap with current position i
-        var tmp_list = jq_toplists[i];
-        jq_toplists[i] = jq_toplists[smallest];
-        jq_toplists[smallest] = tmp_list;
-    }
-
-    // push top lists to this.toplists array
-    for (var i = 0; i < this.num_toplists; i++) {
-        // make selected toplists highlighted under the selected tab
-        $(jq_toplists[i]).addClass("icme_listcc_selected").find("span.percentage").hide();
-
-        var checks = $(jq_toplists[i]).find("span.info > strong:first").text().split("/");
-
-        this.toplists.push(jq_toplists[i]);
-    }
-
-    //var first_toplist = this.toplists.shift();
-    //this.GetUncheckedFilms(first_toplist);
+    this.toplists = jq_toplists.get();
     this.GetUncheckedFilms(this.toplists[this.sequence_number]);
 }
 
@@ -1060,7 +1031,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
             if ( movie_url === this.movies[j].u ) {
                 this.movies[j].c += 1;
 
-                this.movies_html[j].find(".rank").html(this.movies[j].c);
+                this.movies[j].jq.find(".rank").html(this.movies[j].c);
                 found = true;
 
                 global_toplist_match = true;
@@ -1074,9 +1045,6 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
             // add it to the main movies array only if the script is not checking for matches on all top lists
             // OR if the script is checking for matches on all top lists, but this is just the first top list
             if ( !show_perfect_matches || ( show_perfect_matches && this.sequence_number == 1 ) ) {
-                // t = title, c = count, u = url, y = year
-                this.movies.push( {t: movie, c: 1, u: movie_url, y: movie_year} );
-
                 $item = $(content[i]);
                 $item.find(".rank").html("0");
 
@@ -1093,7 +1061,8 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
                     }
                 }
 
-                this.movies_html.push($item);
+                // t = title, c = count, u = url, y = year
+                this.movies.push( {t: movie, c: 1, u: movie_url, y: movie_year, jq: $item} );
             }
         }
     }
@@ -1106,27 +1075,14 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
         if ( global_toplist_match ) {
             // if not first top list, extract movies that have been found on all selected top lists
             if ( this.sequence_number > 1 ) {
-                var tmp_movies = [];
-                var tmp_movies_html = [];
-
-                for ( var i = 0; i < this.movies.length; i++ ) {
-                    if ( this.movies[i].c == this.sequence_number ) {
-                        tmp_movies.push( this.movies[i] );
-                        tmp_movies_html.push(this.movies_html[i]);
-                    }
-                }
-
-                this.movies = tmp_movies;
-                this.movies_html = tmp_movies_html;
-                console.log(this.sequence_number);
-                console.log(this.movies.length);
-                console.log(tmp_movies.length);
+                var cutoff = this.sequence_number;
+                this.movies = $.grep(this.movies, function(el) {
+                    return el.c === cutoff;
+                });
             }
 
             // if there's still more top lists
             if ( has_toplists_left ) {
-                //var next_toplist = this.toplists.shift();
-                //this.GetUncheckedFilms(next_toplist);
                 this.GetUncheckedFilms(this.toplists[this.sequence_number]);
             }
             else {
@@ -1137,8 +1093,6 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
             // if finding movies on all selected top lists, but didn't find a single match,
             // continue if it was just the first top list
             if ( this.sequence_number == 1 && has_toplists_left ) {
-                //var next_toplist = this.toplists.shift();
-                //this.GetUncheckedFilms(next_toplist);
                 this.GetUncheckedFilms(this.toplists[this.sequence_number]);
             }
             else {
@@ -1150,8 +1104,6 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
     else {
         // if there's still more top lists
         if ( has_toplists_left ) {
-            //var next_toplist = this.toplists.shift();
-            //this.GetUncheckedFilms(next_toplist);
             this.GetUncheckedFilms(this.toplists[this.sequence_number]);
         }
         else {
@@ -1167,75 +1119,22 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
         var limit = this.config.match_min;
 
         if ( limit > 0 ) {
-            var temp_movies = [];
-            var temp_movies_html = [];
-
-            for ( var i = 0; i < this.movies.length; i++ ) {
-                if ( this.movies[i].c >= limit ) {
-                    temp_movies.push( this.movies[i] );
-                    temp_movies_html.push( this.movies_html[i] );
-                }
-            }
-
-            this.movies = temp_movies;
-            this.movies_html = temp_movies_html;
-        }
-
-        // Sort by number of checks
-        for ( var i = 0; i < this.movies.length; i++ ) {
-            var tmp = i;
-            var smallest = i;
-
-            // find the largest count value...
-            while ( tmp < this.movies.length ) {
-                if ( this.movies[tmp].c > this.movies[smallest].c ) {
-                    smallest = tmp;
-                }
-
-                tmp++;
-            }
-
-            // and swap with current position i
-            var tmp_list = this.movies[i];
-            this.movies[i] = this.movies[smallest];
-            this.movies[smallest] = tmp_list;
-
-            var tmp_list_html = this.movies_html[i];
-            this.movies_html[i] = this.movies_html[smallest];
-            this.movies_html[smallest] = tmp_list_html;
+            this.movies = $.grep(this.movies, function(el) {
+                return (el.c >= limit);
+            });
         }
     }
 
-    // Sort by year
-    for ( var i = 0; i < this.movies.length; i++ ) {
-        var swap = i;
-        var year_smallest = 0;
-
-        for ( var tmp = i; tmp < this.movies.length; tmp++ ) {
-            if ( this.movies[i].c === this.movies[tmp].c ) {
-                if ( this.movies[tmp].y < this.movies[i].y ) { // if current list title is "smaller" than lists[i]
-                    if ( this.movies[tmp].y < year_smallest || year_smallest === 0 ) { // if current list title is "smaller" than list_smallest
-                        year_smallest = this.movies[tmp].y;
-                        swap = tmp;
-                    }
-                }
-            }
-            else {
-                // break the loop since count field (top lists) doesn't equal anymore,
-                // no need to go through the rest of the list
-                break;
-            }
-        }
-
-        // and swap with current position i
-        var tmp_list = this.movies[i];
-        this.movies[i] = this.movies[swap];
-        this.movies[swap] = tmp_list;
-
-        var tmp_list_html = this.movies_html[i];
-        this.movies_html[i] = this.movies_html[swap];
-        this.movies_html[swap] = tmp_list_html;
-    }
+    // Sort by checks DESC, then by year ASC, then by title ASC
+    this.movies.sort(function(a,b) {
+        if (a.c > b.c) return -1;
+        if (a.c < b.c) return 1;
+        if (a.y < b.y) return -1;
+        if (a.y > b.y) return 1;
+        if (a.t < b.t) return -1;
+        if (a.t > b.t) return 1;
+        return 0;
+    });
 
     if ( this.movies.length > 0 ) {
         /*var movie_table = '<div id="icme_listcc_container" class="container" style="position: relative; width: 830px; height: 240px; overflow: scroll; margin-bottom: 10px">'
@@ -1255,7 +1154,7 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
 
         menu += '</ul><ul class="tabMenu tabMenuPush">'
                  + '<li class="topListMoviesFilter active">'
-                 + '<a href="#" title="View all movies">All (' + this.movies_html.length + ')</a></li>'
+                 + '<a href="#" title="View all movies">All (' + this.movies.length + ')</a></li>'
                  + '<li class="listFilterExportCSV">'
                  + '<a href="#" title="Export all movies in CSV format">Export CSV</a></li>'
                  /*+ '<li class="topListMoviesFilter " id="listFilterChecked">'
@@ -1269,8 +1168,8 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
 
         $("#itemContainer").after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
         $("#itemContainer").after(menu);
-        for (var i = 0; i < this.movies_html.length; ++i)
-            $("#itemListMovies").append(this.movies_html[i]);
+        for (var i = 0; i < this.movies.length; ++i)
+            $("#itemListMovies").append(this.movies[i].jq);
 
         $("#itemListMovies").children("li").show();
 
@@ -1322,8 +1221,6 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
 
     this.Deactivate();
 }
-
-
 
 ICM_ListCrossCheck.prototype.CreateTab = function() {
     if ($("#listFilterCRSelected").length) {
