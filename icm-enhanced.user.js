@@ -1019,25 +1019,12 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem) {
 
     var _t = this;
 
-    GM_xmlhttpRequest( {
-        method: "GET",
-        url: url,
-        onload: function(response) {
-            $(list_elem).removeClass("icme_listcc_selected icme_listcc_pending").find("span.percentage").show();
+    $.get(url, function(response) {
+        $(list_elem).removeClass("icme_listcc_selected icme_listcc_pending").find("span.percentage").show();
 
-            var result = response.responseText.replace(/\t/g, "").replace(/\n/g, "").replace(/\r/g, "");
+        var unchecked = $(response).find("ol#itemListMovies").children("li.unchecked");
 
-            var body_start = result.indexOf("<body");
-            var body_end = result.indexOf("</body>");
-
-            var movies_res = result.substr(body_start, body_end);
-
-            var jq_movies = $(movies_res);
-
-            var unchecked = $(jq_movies).find("ol#itemListMovies").children("li.unchecked");
-
-            _t.UpdateMovies( unchecked );
-        }
+        _t.UpdateMovies( unchecked );
     });
 }
 
