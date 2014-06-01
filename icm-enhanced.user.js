@@ -411,7 +411,7 @@ ICM_RandomFilmLink.prototype.getConfig = function() {
                         {name: "unique",
                          desc: "Unique suggestions (shows each entry only once until every entry has been shown once)",
                          type: "checkbox",
-                         value: this.config.autoload
+                         value: this.config.unique
                         }
                     ]}
                 };
