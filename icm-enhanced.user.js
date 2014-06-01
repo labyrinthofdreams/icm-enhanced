@@ -557,135 +557,41 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
             var list_url = $t.attr("href");
         }
 
-
-
-        var list_bronze = { "award_checks" : ( Math.ceil(total_items * 0.5 ) - checks ),
-                            "award_type"   : "Bronze",
-                            "list_title"   : list_title,
-                            "list_url"     : list_url
-                          };
-
-        var list_silver = { "award_checks" : ( Math.ceil( total_items * 0.75 ) - checks ),
-                            "award_type"   : "Silver",
-                            "list_title"   : list_title,
-                            "list_url"     : list_url
-                          };
-
-        var list_gold = { "award_checks" : ( Math.ceil( total_items * 0.9 ) - checks ),
-                          "award_type"   : "Gold",
-                          "list_title"   : list_title,
-                          "list_url"     : list_url
-                        };
-
-        var list_platinum = { "award_checks" : ( total_items - checks ),
-                              "award_type"   : "Platinum",
-                              "list_title"   : list_title,
-                              "list_url"     : list_url
-                            };
-
-        if ( list_platinum.award_checks > 0 ) {
-            this.lists.push( list_platinum );
-
-            if ( list_gold.award_checks > 0 ) {
-                this.lists.push( list_gold );
-
-                if ( list_silver.award_checks > 0 ) {
-                    this.lists.push( list_silver );
-
-                    if ( list_bronze.award_checks > 0 ) {
-                        this.lists.push( list_bronze );
-                    }
-                }
-            }
-        }
+        var award_types = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
+        var that = this;
+        $.each(award_types, function(i, val) {
+            var award_checks = Math.ceil(total_items * val[1]) - checks;
+            if (award_checks <= 0)
+                return false; // exit loop; the order of array is important!
+            that.lists.push({
+                'award_checks': award_checks,
+                'award_type': val[0],
+                'list_title': list_title,
+                'list_url': list_url
+            });
+        });
     } // End for loop
 }
 
 ICM_UpcomingAwardsOverview.prototype.SortLists = function() {
-    // sort lists array by least required checks (ORDER BY award_checks ASC)
-    for ( var i = 0; i < this.lists.length; i++ ) {
-        var tmp = i;
-        var smallest = i;
-
-        // find the smallest next_award value...
-        while ( tmp < this.lists.length ) {
-            if ( this.lists[tmp].award_checks < this.lists[smallest].award_checks ) {
-                smallest = tmp;
-            }
-
-            tmp++;
-        }
-
-        // and swap with current position i
-        var tmp_list = this.lists[i];
-        this.lists[i] = this.lists[smallest];
-        this.lists[smallest] = tmp_list;
-    }
-
-    // sort lists array by awards where checks are equal (ORDER BY award_checks ASC, award_type ASC)
+    // sort lists array by least required checks ASC,
+	// then by awards where checks are equal ASC, then by list title ASC
     var award_order = { "Bronze": 0, "Silver": 1, "Gold": 2, "Platinum": 3 };
-
-    for ( var i = 0; i < this.lists.length; i++ ) {
-        var swap = i;
-        var high_diff = -100;
-
-        // find if there's different awards that have the same amount of checks
-        for ( var tmp = i; tmp < this.lists.length; tmp++ ) {
-            var diff = award_order[ this.lists[i].award_type ] - award_order[ this.lists[tmp].award_type ];
-
-            if ( this.lists[i].award_checks === this.lists[tmp].award_checks ) {
-                // here we find the next position with the lowest award type in award_order,
-                // so that we first swap all bronzes, then silvers, then golds and platinum
-                if ( diff > 0 ) {
-                    if ( diff > high_diff ) {
-                        high_diff = diff;
-                        swap = tmp;
-                    }
-                }
-            }
-            else {
-                // break the loop since checks don't equal anymore,
-                // no need to go through the rest of the list
-                break;
-            }
-        }
-
-        // and swap with current position i
-        var tmp_list = this.lists[i];
-        this.lists[i] = this.lists[swap];
-        this.lists[swap] = tmp_list;
-    }
-
-    // sort lists array by list title (ORDER BY award_checks ASC, award_type ASC, list_title ASC)
-    for ( var i = 0; i < this.lists.length; i++ ) {
-        var swap = i;
-        var title_smallest = "";
-
-        // find if there's different awards that have the same amount of checks
-        for ( var tmp = i; tmp < this.lists.length; tmp++ ) {
-            if ( this.lists[i].award_checks === this.lists[tmp].award_checks
-                && this.lists[i].award_type === this.lists[tmp].award_type ) {
-                var title_diff = this.lists[tmp].list_title < this.lists[i].list_title;
-
-                if ( title_diff ) { // if current list title is "smaller" than lists[i]
-                    if ( this.lists[tmp].list_title < title_smallest || title_smallest === "" ) { // if current list title is "smaller" than list_smallest
-                        title_smallest = this.lists[tmp].list_title;
-                        swap = tmp;
-                    }
-                }
-            }
-            else {
-                // break the loop since checks and awards don't equal anymore,
-                // no need to go through the rest of the list
-                break;
-            }
-        }
-
-        // and swap with current position i
-        var tmp_list = this.lists[i];
-        this.lists[i] = this.lists[swap];
-        this.lists[swap] = tmp_list;
-    }
+    this.lists.sort(function(a, b) {
+        if (a.award_checks < b.award_checks)
+            return -1;
+        if (a.award_checks > b.award_checks)
+            return 1;
+        if (award_order[a.award_type] < award_order[b.award_type])
+            return -1;
+        if (award_order[a.award_type] > award_order[b.award_type])
+            return 1;
+        if (a.list_title < b.list_title)
+            return -1;
+        if (a.list_title > b.list_title)
+            return 1;
+        return 0;
+    });
 }
 
 ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
