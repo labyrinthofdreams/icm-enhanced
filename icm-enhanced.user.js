@@ -1048,9 +1048,10 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
 
     for (var i = 0; i < $(movie_titles).length; i++) {
         var found = false;
-        var movie = $.trim( $( movie_titles[i] ).text() );
-        var movie_url = $( movie_titles[i] ).find("a").attr("href");
-        var movie_year = $( movie_titles[i] ).next("span.info").text();
+        var cur_title = $(movie_titles[i]);
+        var movie = $.trim(cur_title.text());
+        var movie_url = cur_title.find("a").attr("href");
+        var movie_year = cur_title.next("span.info").children("a:first").text();
 
         for ( var j = 0; j < this.movies.length; j++ ) {
             // compare urls as they're guaranteed to be unique
