@@ -274,7 +274,7 @@ ICM_ConfigWindow.prototype.addModule = function(module)
 
 ICM_ConfigWindow.prototype.loadOptions = function(idx)
 {
-    $c = jQuery("#module_settings");
+    $c = $("#module_settings");
     $c.html("");
 
     var m = this.modules[idx];
@@ -366,12 +366,12 @@ ICM_ConfigWindow.prototype.build = function()
         $(this).attr("disabled", "disabled");
     });
 
-    jQuery("#modulelist").bind("change", function(e){
+    $("#modulelist").bind("change", function(e){
         var idx = document.getElementById("modulelist").selectedIndex;
         _t.loadOptions(idx);
     });
 
-    jQuery("#modulelist").trigger("change");
+    $("#modulelist").trigger("change");
 
     // initialize config window
     $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );
@@ -617,7 +617,7 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function()
 
     for( var i = 0; i < $all_lists.length; i++ )
     {
-        $el = jQuery($all_lists[i]);
+        $el = $($all_lists[i]);
         if(location.href.indexOf("progress") !== -1)
         {
             var count_arr   = $el.find("span.rank").html().split("<br>")[0];
@@ -804,8 +804,8 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
 
     for( var i = 0; i < this.lists.length; i++ )
     {
-        unhide_icon = '<img title="Unhide ' + jQuery.trim(this.lists[i].list_title) + '" alt="Unhide icon" src="' + unhide_icon_data + '">';
-        hide_icon = '<img title="Hide ' + jQuery.trim(this.lists[i].list_title) + '" alt="Hide icon" src="' + hide_icon_data + '">';
+        unhide_icon = '<img title="Unhide ' + $.trim(this.lists[i].list_title) + '" alt="Unhide icon" src="' + unhide_icon_data + '">';
+        hide_icon = '<img title="Hide ' + $.trim(this.lists[i].list_title) + '" alt="Hide icon" src="' + hide_icon_data + '">';
         var is_hidden = (this.hidden_lists.indexOf(this.lists[i].list_url) !== -1);
 
         list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") + '" data-award-type="' + this.lists[i].award_type + '" data-list-url="' + this.lists[i].list_url + '"><td style="width: 65px">'
@@ -830,28 +830,28 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
     var all_html = '<div id="icm_award_html_container" style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">'
                 + toggle_upcoming_link + links + award_container + '</div>';
 
-    jQuery("#icm_award_html_container, #ua_toggle_link_container").remove();
+    $("#icm_award_html_container, #ua_toggle_link_container").remove();
 
     if(location.href.indexOf("progress") !== -1)
-        jQuery("#listOrdering").before(all_html);
+        $("#listOrdering").before(all_html);
     else
-        jQuery("#itemContainer").before(all_html);
+        $("#itemContainer").before(all_html);
 
-    $lists = jQuery("#award_table");
+    $lists = $("#award_table");
 
     // hide hidden
     $lists.find(".hidden-list").hide();
 
     _this = this;
 
-    jQuery("a.icm_hide_list").bind("click", function(e)
+    $("a.icm_hide_list").bind("click", function(e)
     {
         e.preventDefault();
 
-        $this = jQuery(this);
+        $this = $(this);
         $parent = $this.parent().parent();
 
-        var list_title = jQuery.trim($parent.find(".list-title").text());
+        var list_title = $.trim($parent.find(".list-title").text());
 
         var ind = _this.hidden_lists.indexOf($parent.data("list-url"));
         if(ind === -1)
@@ -859,9 +859,9 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
             // hide list
             _this.hidden_lists.push($parent.data("list-url"));
 
-            jQuery("#award_table").find("tr").each(function(e)
+            $("#award_table").find("tr").each(function(e)
             {
-                $t = jQuery(this);
+                $t = $(this);
                 if($t.data("list-url") === $parent.data("list-url"))
                 {
                     $t.addClass("hidden-list").css("display", "none");
@@ -875,9 +875,9 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
             // unhide list
             _this.hidden_lists.splice(ind, 1);
 
-            jQuery("#award_table").find("tr.hidden-list").each(function(e)
+            $("#award_table").find("tr.hidden-list").each(function(e)
             {
-                $t = jQuery(this);
+                $t = $(this);
                 if($t.data("list-url") === $parent.data("list-url"))
                 {
                     $t.removeClass("hidden-list").css("display", "none");
@@ -891,7 +891,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function()
         GM_setValue("hidden_lists", uneval(_this.hidden_lists));
     });
 
-    jQuery("#toggle_hidden_list").bind("click", function(e)
+    $("#toggle_hidden_list").bind("click", function(e)
     {
         e.preventDefault();
 
@@ -1326,7 +1326,6 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem)
 
             var unchecked = $(jq_movies).find("ol#itemListMovies").children("li.unchecked");
 
-
             _t.UpdateMovies( unchecked );
         }
     });
@@ -1386,7 +1385,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content)
                 // t = title, c = count, u = url, y = year
                 this.movies.push( {t: movie, c: 1, u: movie_url, y: movie_year} );
 
-                $item = jQuery(content[i]);
+                $item = $(content[i]);
                 $item.find(".rank").html("0");
                 $item.remove(".tagList");
 
@@ -1593,7 +1592,7 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
         var menu = '<ul>';
         for(var i = 0; i < this.toplists.length; ++i)
         {
-            menu += '<li><b>' + jQuery(this.toplists[i]).find("h2").text() + '</b></li>';
+            menu += '<li><b>' + $(this.toplists[i]).find("h2").text() + '</b></li>';
         }
 
         menu += '</ul><ul class="tabMenu tabMenuPush">'
@@ -1608,21 +1607,21 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
                  + '</ul>';
 
         // hide previous movie list
-        jQuery("#itemListMovies").removeAttr("id").hide();
+        $("#itemListMovies").removeAttr("id").hide();
 
-        jQuery("#itemContainer").after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
-        jQuery("#itemContainer").after(menu);
+        $("#itemContainer").after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
+        $("#itemContainer").after(menu);
         for(var i = 0; i < this.movies_html.length; ++i)
-            jQuery("#itemListMovies").append(this.movies_html[i]);
+            $("#itemListMovies").append(this.movies_html[i]);
 
-        jQuery("#itemListMovies").children("li").show();
+        $("#itemListMovies").children("li").show();
 
-        jQuery(".topListMoviesFilter a").bind("click", function(e)
+        $(".topListMoviesFilter a").bind("click", function(e)
         {
             e.preventDefault();
             e.stopImmediatePropagation();
 
-            $this = jQuery(this);
+            $this = $(this);
             $movielist = $this.parent().parent().next();
 
             if($movielist.is(":visible"))
@@ -1636,16 +1635,16 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
                 $movielist.attr("id", "itemListMovies").show();
             }
         });
-        jQuery(".listFilterExportCSV a").bind("click", function(e)
+        $(".listFilterExportCSV a").bind("click", function(e)
         {
             e.preventDefault();
 
             var data = '"found_toplists","title","year","official_toplists","imdb"\n';
-            $items = jQuery("#itemListMovies").children("li");
+            $items = $("#itemListMovies").children("li");
 
             for(var i = 0; i < $items.length; ++i)
             {
-                $item = jQuery($items[i]);
+                $item = $($items[i]);
                 var found_toplists = $item.find(".rank").text();
                 var title = $item.find("h2").text().replace('"', '""');
                 var year = $item.find(".info a:first").text();
@@ -1665,8 +1664,8 @@ ICM_ListCrossCheck.prototype.OutputMovies = function()
     }
     else
     {
-        jQuery("#icme-crossref-notfound").remove();
-        jQuery("#itemContainer").after('<div id="icme-crossref-notfound">Found 0 movies.</div>');
+        $("#icme-crossref-notfound").remove();
+        $("#itemContainer").after('<div id="icme-crossref-notfound">Found 0 movies.</div>');
     }
 
     this.Deactivate();
@@ -1724,17 +1723,17 @@ ICM_ListCrossCheck.prototype.CreateTab = function()
                 });
 
                 // Make the current tab work if we want to return to it
-                jQuery("ul.tabMenu").children("li").each(function()
+                $("ul.tabMenu").children("li").each(function()
                 {
-                    if(!(jQuery(this).children("a").length))
+                    if(!($(this).children("a").length))
                     {
-                        $clicked = jQuery(this);
+                        $clicked = $(this);
                         $clicked.bind("click", function(e)
                         {
-                            jQuery("ol#itemListToplists").children("li").show();
-                            jQuery("ul.tabMenu").children("li").removeClass("active");
+                            $("ol#itemListToplists").children("li").show();
+                            $("ul.tabMenu").children("li").removeClass("active");
                             $clicked.addClass("active");
-                            jQuery("ol#itemListToplists").children("li.icme_listcc").remove();
+                            $("ol#itemListToplists").children("li.icme_listcc").remove();
                         });
                     }
                 });
@@ -1844,7 +1843,7 @@ ICM_WatchlistTab.prototype.Attach = function()
         return;
     }
 
-    $movies = jQuery("#itemListMovies");
+    $movies = $("#itemListMovies");
     if($movies.length === 0)
     {
         return;
@@ -1856,27 +1855,27 @@ ICM_WatchlistTab.prototype.Attach = function()
     + "<span id=\"topListMoviesWatchCount\">(" + watch_count + ")</span></a>"
     + "</li>";
 
-    jQuery("#listFilterUnchecked").after(tabHtml);
+    $("#listFilterUnchecked").after(tabHtml);
 
-    $first = jQuery("#listFilterMovies").find("a");
+    $first = $("#listFilterMovies").find("a");
     $first.text($first.text().replace(" movies", ""));
 
     // move the order by and views to filter box
-    if(jQuery("#orderByAndView").length === 0)
+    if($("#orderByAndView").length === 0)
     {
-        jQuery("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
-        jQuery("#listOrdering").detach().appendTo("#orderByAndView");
-        jQuery("#listViewswitch").detach().appendTo("#orderByAndView");
+        $("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
+        $("#listOrdering").detach().appendTo("#orderByAndView");
+        $("#listViewswitch").detach().appendTo("#orderByAndView");
     }
 
-    jQuery("#linkListFilterWatch").bind("click", function(e)
+    $("#linkListFilterWatch").bind("click", function(e)
     {
-        $movies = jQuery("#itemListMovies");
+        $movies = $("#itemListMovies");
         $movies.children("li").hide();
         $movies.children("li.watch").show();
 
-        jQuery(".tabMenu", "#itemContainer").children("li").removeClass("active");
-        jQuery(this).parent("li").addClass("active");
+        $(".tabMenu", "#itemContainer").children("li").removeClass("active");
+        $(this).parent("li").addClass("active");
 
         return false;
     });
@@ -1916,11 +1915,11 @@ ICM_Owned.prototype.Attach = function()
         return;
     }
 
-    $movielist = jQuery("#itemListMovies");
+    $movielist = $("#itemListMovies");
     if($movielist.length === 0)
     {
         // Check if movie page
-        $markOwned = jQuery(".optionMarkOwned");
+        $markOwned = $(".optionMarkOwned");
         if($markOwned.length === 0)
         {
             return;
@@ -1944,7 +1943,7 @@ ICM_Owned.prototype.Attach = function()
                 $movie.removeClass("notowned").addClass("owned");
             }
 
-            jQuery(".optionMarkOwned").bind("click", function(e)
+            $(".optionMarkOwned").bind("click", function(e)
             {
                 e.preventDefault();
                 owned = eval(GM_getValue("owned_movies"));
@@ -1955,11 +1954,11 @@ ICM_Owned.prototype.Attach = function()
                 }
 
                 // if movie is found in cached owned movies
-                $parent = jQuery(this).parent().parent().prev("a");
+                $parent = $(this).parent().parent().prev("a");
                 var movie_id = $parent.attr("id");
                 movie_id = movie_id.replace("check", "movie");
                 console.log(movie_id);
-                $movie = jQuery(this).parent().parent().parent();
+                $movie = $(this).parent().parent().parent();
                 var ind = owned.indexOf(movie_id);
 
                 // if found movie in the owned array...
@@ -1996,7 +1995,7 @@ ICM_Owned.prototype.Attach = function()
         // mark owned movies as owned
         for(var i = 0; i < $movies.length; i++)
         {
-            $el = jQuery($movies[i]);
+            $el = $($movies[i]);
             var movie_id = $el.attr("id");
             var ind = owned.indexOf(movie_id);
 
@@ -2007,10 +2006,10 @@ ICM_Owned.prototype.Attach = function()
             }
 
             // remove paid feature crap
-            jQuery($movies[i]).find(".optionIconMenu").find("li").find("a").removeClass("paidFeature");
+            $($movies[i]).find(".optionIconMenu").find("li").find("a").removeClass("paidFeature");
         }
 
-        jQuery(".optionMarkOwned").bind("click", function(e)
+        $(".optionMarkOwned").bind("click", function(e)
         {
             owned = eval(GM_getValue("owned_movies"));
 
@@ -2020,7 +2019,7 @@ ICM_Owned.prototype.Attach = function()
             }
 
             // if movie is found in cached owned movies
-            $parent = jQuery(this).parent().parent().parent();
+            $parent = $(this).parent().parent().parent();
             var movie_id = $parent.attr("id");
             var ind = owned.indexOf(movie_id);
 
@@ -2037,7 +2036,7 @@ ICM_Owned.prototype.Attach = function()
             }
 
             var owned_count = $movielist.children("li.owned").length;
-            jQuery("#topListMoviesOwnedCount").text("(" + owned_count + ")");
+            $("#topListMoviesOwnedCount").text("(" + owned_count + ")");
 
             GM_setValue("owned_movies", uneval(owned));
 
@@ -2052,35 +2051,35 @@ ICM_Owned.prototype.Attach = function()
     + "<span id=\"topListMoviesOwnedCount\">(" + owned_count + ")</span></a>"
     + "</li>";
 
-    jQuery("#listFilterNew").before(tabHtml);
+    $("#listFilterNew").before(tabHtml);
 
-    $first = jQuery("#listFilterMovies").find("a");
+    $first = $("#listFilterMovies").find("a");
     $first.text($first.text().replace(" movies", ""));
 
     // move the order by and views to filter box
-    var isWatchlist = new Boolean(jQuery("#topList").length);
-    if(jQuery("#orderByAndView").length === 0 && !isWatchlist)
+    var isWatchlist = new Boolean($("#topList").length);
+    if($("#orderByAndView").length === 0 && !isWatchlist)
     {
-        jQuery("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
-        jQuery("#listOrdering").detach().appendTo("#orderByAndView");
-        jQuery("#listViewswitch").detach().appendTo("#orderByAndView");
+        $("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
+        $("#listOrdering").detach().appendTo("#orderByAndView");
+        $("#listViewswitch").detach().appendTo("#orderByAndView");
     }
 
-    jQuery("#linkListFilterOwned, #listFilterOwned").bind("click", function(e)
+    $("#linkListFilterOwned, #listFilterOwned").bind("click", function(e)
     {
-        $movielist = jQuery("#itemListMovies");
+        $movielist = $("#itemListMovies");
         $movielist.children("li").hide();
         $movielist.children("li.owned").show();
 
-        jQuery(".tabMenu", "#itemContainer").children("li").removeClass("active");
-        jQuery(this).parent("li").addClass("active");
+        $(".tabMenu", "#itemContainer").children("li").removeClass("active");
+        $(this).parent("li").addClass("active");
 
         return false;
     });
 
-    jQuery("#listFilterWatchlist").bind("click", function(e)
+    $("#listFilterWatchlist").bind("click", function(e)
     {
-        $movielist = jQuery("#itemListMovies");
+        $movielist = $("#itemListMovies");
         $movielist.children("li").hide();
         $movielist.children("li.watch").show();
     });
@@ -2143,9 +2142,9 @@ ICM_LargeList.prototype.Attach = function()
         }
         else
         {
-            if(jQuery("#list_container").find("p").length === 1)
+            if($("#list_container").find("p").length === 1)
             {
-                jQuery("#list_container p:first").append("<span> &mdash; </span>" + link);
+                $("#list_container p:first").append("<span> &mdash; </span>" + link);
             }
             else
             {
@@ -2154,7 +2153,7 @@ ICM_LargeList.prototype.Attach = function()
         }
 
         var _t = this;
-        jQuery("#icme_large_posters").bind("click", function(e){
+        $("#icme_large_posters").bind("click", function(e){
             e.preventDefault();
 
             _t.load();
@@ -2188,7 +2187,7 @@ ICM_LargeList.prototype.load = function()
 
     GM_addStyle(style);
 
-    $c = jQuery("#itemListMovies").find("div.coverImage").hide();
+    $c = $("#itemListMovies").find("div.coverImage").hide();
     for(var i = 0; i < $c.length; i++)
     {
         var cururl = $c[i].style.backgroundImage;
@@ -2205,7 +2204,7 @@ ICM_LargeList.prototype.load = function()
         $c[i].parentNode.appendChild(img);
     }
 
-    jQuery("img.coverImage").lazyload({ threshold : 200 });
+    $("img.coverImage").lazyload({ threshold : 200 });
 }
 
 ICM_LargeList.prototype.getConfig = function()
