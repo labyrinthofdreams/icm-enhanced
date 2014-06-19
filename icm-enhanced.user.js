@@ -7,7 +7,7 @@
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js
 // @grant          GM_setValue
 // @grant          GM_getValue
 // @grant          GM_addStyle
@@ -967,7 +967,8 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem) {
     $.get(url, function(response) {
         $(list_elem).removeClass("icme_listcc_selected icme_listcc_pending").find("span.percentage").show();
 
-        var unchecked = $(response).find("ol#itemListMovies").children("li.unchecked");
+        // the site returns html with extra whitespace
+        var unchecked = $($.parseHTML(response)).find("ol#itemListMovies").children("li.unchecked");
 
         _t.UpdateMovies( unchecked );
     });
