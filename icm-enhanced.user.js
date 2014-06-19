@@ -8,6 +8,9 @@
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
+// @grant          GM_setValue
+// @grant          GM_getValue
+// @grant          GM_addStyle
 // ==/UserScript==
 
 /*
