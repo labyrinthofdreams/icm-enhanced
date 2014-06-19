@@ -294,13 +294,13 @@ ICM_ConfigWindow.prototype.build = function() {
             _t.config.Set( $(this).data("cfg-index"), $(this).val() );
         }
 
-        $("button#configSave").removeAttr("disabled");
+        $("button#configSave").prop("disabled", false);
     });
 
     $("div#cfgModal").delegate( "button#configSave", "click", function( e ) {
         _t.config.Save();
 
-        $(this).attr("disabled", "disabled");
+        $(this).prop("disabled", true);
     });
 
     $("#modulelist").bind("change", function(e) {
@@ -852,7 +852,7 @@ ICM_ListCrossCheck.prototype.Attach = function() {
         var _t = this;
 
         $("div#crActions").delegate( "button#cfgListCCActivate", "click", function( e ) {
-            $(this).attr("disabled", "disabled");
+            $(this).prop("disabled", true);
 
             _t.CreateTab();
 
@@ -882,7 +882,7 @@ ICM_ListCrossCheck.prototype.Activate = function() {
     $("div#crActions").delegate("button#cfgListCCDeactivate", "click", function(e) {
         _t.Deactivate();
 
-        $("button#cfgListCCActivate").removeAttr("disabled");
+        $("button#cfgListCCActivate").prop("disabled", false);
     });
 
     if ( !this.activated_once ) { // ff 3.6 compatibility (ff 3.6 fails to unbind the events in all possible ways)
@@ -925,7 +925,7 @@ ICM_ListCrossCheck.prototype.Deactivate = function() {
     $("ol#itemListToplists").children("li").removeClass("icme_listcc_selected").removeClass("icme_listcc_hover");
     $("button#icme_listcc_check, button#cfgListCCDeactivate").remove();
     $("li#topListCategoryCCSelected").remove();
-    $("button#cfgListCCActivate").removeAttr("disabled");
+    $("button#cfgListCCActivate").prop("disabled", false);
 
     this.Init();
 }
@@ -1244,7 +1244,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
                 $("div#crActions").append(btn);
 
                 $("button#icme_listcc_check").bind("click", function(e) {
-                    $(this).attr("disabled", "disabled");
+                    $(this).prop("disabled", true);
 
                     _t.Check();
                 });
