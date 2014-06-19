@@ -7,7 +7,7 @@
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
 // @grant          GM_setValue
 // @grant          GM_getValue
 // @grant          GM_addStyle
@@ -289,7 +289,7 @@ ICM_ConfigWindow.prototype.build = function() {
 
     var _t = this;
 
-    $("div#cfgModal").delegate( "input", "change", function( e ) {
+    $("div#cfgModal").on( "change", "input", function( e ) {
         if ( !_t.config.Toggle( $(this).data("cfg-index") ) ) {
             _t.config.Set( $(this).data("cfg-index"), $(this).val() );
         }
@@ -297,13 +297,13 @@ ICM_ConfigWindow.prototype.build = function() {
         $("button#configSave").prop("disabled", false);
     });
 
-    $("div#cfgModal").delegate( "button#configSave", "click", function( e ) {
+    $("div#cfgModal").on( "click", "button#configSave", function( e ) {
         _t.config.Save();
 
         $(this).prop("disabled", true);
     });
 
-    $("#modulelist").bind("change", function(e) {
+    $("#modulelist").on("change", function(e) {
         var idx = document.getElementById("modulelist").selectedIndex;
         _t.loadOptions(idx);
     });
@@ -343,7 +343,7 @@ ICM_RandomFilmLink.prototype.Attach = function() {
 
         var that = this;
 
-        $("div#list_container").delegate( "a#random_film", "click", function(e) {
+        $("div#list_container").on( "click", "a#random_film", function(e) {
             e.preventDefault();
 
             that.PickRandomFilm();
@@ -426,7 +426,7 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
             return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
         };
 
-        statistics += get_span('Bronze', 0.5) + get_span('Silver', 0.75) + 
+        statistics += get_span('Bronze', 0.5) + get_span('Silver', 0.75) +
                       get_span('Gold', 0.9) + get_span('Platinum', 1);
 
         if ( $("div#list_container").length !== 1 ) {
@@ -490,7 +490,7 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function() {
 
             var that = this;
 
-            $("p#lad_container").delegate("a#load_award_data", "click", function(e) {
+            $("p#lad_container").on("click", "a#load_award_data", function(e) {
                 e.preventDefault();
 
                 $elem = $( e.target );
@@ -625,7 +625,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
 
     _this = this;
 
-    $("a.icm_hide_list").bind("click", function(e) {
+    $("a.icm_hide_list").on("click", function(e) {
         e.preventDefault();
 
         $this = $(this);
@@ -665,7 +665,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         GM_setValue("hidden_lists", uneval(_this.hidden_lists));
     });
 
-    $("#toggle_hidden_list").bind("click", function(e) {
+    $("#toggle_hidden_list").on("click", function(e) {
         e.preventDefault();
 
         $lists.find("tr").hide();
@@ -673,21 +673,14 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         $lists.find("tr.hidden-list").show();
     });
 
-    $("a#toggle_upcoming_awards span._show").live("click", function(e) {
+    $("#ua_toggle_link_container").on("click", "a#toggle_upcoming_awards span", function(e) {
         e.preventDefault();
 
-        $("#award_display_links, #award_container, a#toggle_upcoming_awards span._hide").show();
-        $(this).hide();
+        $("#award_display_links, #award_container").toggle();
+        $("a#toggle_upcoming_awards span").toggle();
     });
 
-    $("a#toggle_upcoming_awards span._hide").live("click", function(e) {
-        e.preventDefault();
-
-        $("#award_display_links, #award_container, a#toggle_upcoming_awards span._hide").hide();
-        $("a#toggle_upcoming_awards span._show").show();
-    });
-
-    $("a#display_all").live("click", function(e) {
+    $("#award_display_links").on("click", "a#display_all", function(e) {
         e.preventDefault();
 
         $("table#award_table tr").hide();
@@ -697,7 +690,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         }).show();
     });
 
-    $("a#display_bronze, a#display_silver, a#display_gold, a#display_platinum").live("click", function(e) {
+    $("#award_display_links").on("click", "a#display_bronze, a#display_silver, a#display_gold, a#display_platinum", function(e) {
         e.preventDefault();
 
         var award_type = $(this).attr("id").split('_')[1];
@@ -709,19 +702,17 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         }).show();
     });
 
-    $("a#toggle_full_list span._show").live("click", function(e) {
+    $("#award_display_links").on("click", "a#toggle_full_list span._show", function(e) {
         e.preventDefault();
 
-        $("a#toggle_full_list span._hide").show();
-        $("a#toggle_full_list span._show").hide();
+        $("a#toggle_full_list span").toggle();
         $("div#award_container").css("height", "auto");
     });
 
-    $("a#toggle_full_list span._hide").live("click", function(e) {
+    $("#award_display_links").on("click", "a#toggle_full_list span._hide", function(e) {
         e.preventDefault();
 
-        $("a#toggle_full_list span._hide").hide();
-        $("a#toggle_full_list span._show").show();
+        $("a#toggle_full_list span").toggle();
         $("div#award_container").css("height", "240px");
     });
 }
@@ -851,7 +842,7 @@ ICM_ListCrossCheck.prototype.Attach = function() {
 
         var _t = this;
 
-        $("div#crActions").delegate( "button#cfgListCCActivate", "click", function( e ) {
+        $("div#crActions").on( "click", "button#cfgListCCActivate", function( e ) {
             $(this).prop("disabled", true);
 
             _t.CreateTab();
@@ -879,14 +870,14 @@ ICM_ListCrossCheck.prototype.Activate = function() {
 
     $("button#cfgListCCActivate").after(' <button id="cfgListCCDeactivate">Deactivate</button>');
 
-    $("div#crActions").delegate("button#cfgListCCDeactivate", "click", function(e) {
+    $("div#crActions").on("click", "button#cfgListCCDeactivate", function(e) {
         _t.Deactivate();
 
         $("button#cfgListCCActivate").prop("disabled", false);
     });
 
     if ( !this.activated_once ) { // ff 3.6 compatibility (ff 3.6 fails to unbind the events in all possible ways)
-        $("ol#itemListToplists li").bind("click mouseover mouseout", function(e) {
+        $("ol#itemListToplists li").on("click mouseover mouseout", function(e) {
             if ( _t.activated && !_t.in_progress ) { // ff 3.6 compatibility
                 // these event actions must not work for cloned toplists under the selected tab
                 if ( !$(this).hasClass("icme_listcc") ) {
@@ -1156,7 +1147,7 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
 
         $("#itemListMovies").children("li").show();
 
-        $(".topListMoviesFilter a").bind("click", function(e) {
+        $(".topListMoviesFilter a").on("click", function(e) {
             e.preventDefault();
             e.stopImmediatePropagation();
 
@@ -1172,7 +1163,7 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
                 $movielist.attr("id", "itemListMovies").show();
             }
         });
-        $(".listFilterExportCSV a").bind("click", function(e) {
+        $(".listFilterExportCSV a").on("click", function(e) {
             e.preventDefault();
 
             var data = '"found_toplists","title","year","official_toplists","imdb"\n';
@@ -1218,7 +1209,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
     var _t = this;
 
     // Modified from ICM source. Make the tab work.
-    $("#listFilterCRSelected a").bind("click", function () {
+    $("#listFilterCRSelected a").on("click", function () {
         var a = $(this).attr("class"),
             b = $(this).closest("li");
         $(".tabMenu").find("li").each(function () {
@@ -1243,7 +1234,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
 
                 $("div#crActions").append(btn);
 
-                $("button#icme_listcc_check").bind("click", function(e) {
+                $("button#icme_listcc_check").on("click", function(e) {
                     $(this).prop("disabled", true);
 
                     _t.Check();
@@ -1253,7 +1244,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
                 $("ul.tabMenu").children("li").each(function() {
                     if (!($(this).children("a").length)) {
                         $clicked = $(this);
-                        $clicked.bind("click", function(e) {
+                        $clicked.on("click", function(e) {
                             $("ol#itemListToplists").children("li").show();
                             $("ul.tabMenu").children("li").removeClass("active");
                             $clicked.addClass("active");
@@ -1380,7 +1371,7 @@ ICM_WatchlistTab.prototype.Attach = function() {
         $("#listViewswitch").detach().appendTo("#orderByAndView");
     }
 
-    $("#linkListFilterWatch").bind("click", function(e) {
+    $("#linkListFilterWatch").on("click", function(e) {
         $movies = $("#itemListMovies");
         $movies.children("li").hide();
         $movies.children("li.watch").show();
@@ -1445,7 +1436,7 @@ ICM_Owned.prototype.Attach = function() {
                 $movie.removeClass("notowned").addClass("owned");
             }
 
-            $(".optionMarkOwned").bind("click", function(e) {
+            $(".optionMarkOwned").on("click", function(e) {
                 e.preventDefault();
                 owned = eval(GM_getValue("owned_movies"));
 
@@ -1503,7 +1494,7 @@ ICM_Owned.prototype.Attach = function() {
             $($movies[i]).find(".optionIconMenu").find("li").find("a").removeClass("paidFeature");
         }
 
-        $(".optionMarkOwned").bind("click", function(e) {
+        $(".optionMarkOwned").on("click", function(e) {
             owned = eval(GM_getValue("owned_movies"));
 
             if (owned === undefined) {
@@ -1554,7 +1545,7 @@ ICM_Owned.prototype.Attach = function() {
         $("#listViewswitch").detach().appendTo("#orderByAndView");
     }
 
-    $("#linkListFilterOwned, #listFilterOwned").bind("click", function(e) {
+    $("#linkListFilterOwned, #listFilterOwned").on("click", function(e) {
         $movielist = $("#itemListMovies");
         $movielist.children("li").hide();
         $movielist.children("li.owned").show();
@@ -1565,7 +1556,7 @@ ICM_Owned.prototype.Attach = function() {
         return false;
     });
 
-    $("#listFilterWatchlist").bind("click", function(e) {
+    $("#listFilterWatchlist").on("click", function(e) {
         $movielist = $("#itemListMovies");
         $movielist.children("li").hide();
         $movielist.children("li.watch").show();
@@ -1630,7 +1621,7 @@ ICM_LargeList.prototype.Attach = function() {
         }
 
         var _t = this;
-        $("#icme_large_posters").bind("click", function(e) {
+        $("#icme_large_posters").on("click", function(e) {
             e.preventDefault();
 
             _t.load();
