@@ -7,7 +7,7 @@
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
 // @grant          GM_setValue
 // @grant          GM_getValue
 // @grant          GM_addStyle
