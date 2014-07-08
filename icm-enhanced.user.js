@@ -49,10 +49,13 @@ shuffle = function(v) {
     return v;
 };
 
-function ICM_BaseFeature() {
-    this.includes = [];
-    this.excludes = [];
+function ICM_BaseFeature(config) {
 }
+
+ICM_BaseFeature.prototype.settings = {
+    includes: [],
+    excludes: []
+};
 
 ICM_BaseFeature.prototype.IsEnabled = function() {
     for ( var i = 0; i < this.excludes.length; i++ ) {
@@ -315,14 +318,11 @@ ICM_ConfigWindow.prototype.build = function() {
 }
 
 // Inherit methods from BaseFeature
-ICM_RandomFilmLink.prototype = new ICM_BaseFeature();
+ICM_RandomFilmLink.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_RandomFilmLink.prototype.constructor = ICM_RandomFilmLink;
 
-function ICM_RandomFilmLink( config ) {
-    this.includes = ["icheckmovies.com/lists/(.+)"];
-    this.excludes = ["icheckmovies.com/lists/$"];
-
-    this.config = config;
+function ICM_RandomFilmLink(config) {
+    ICM_BaseFeature.call(this, config);
 
     this.random_nums = [];
 }
@@ -380,35 +380,31 @@ ICM_RandomFilmLink.prototype.PickRandomFilm = function() {
     }
 }
 
-ICM_RandomFilmLink.prototype.getConfig = function() {
-    return  {title: "Random Film Link",
-                desc: "Displays \"Help me pick a film\" link on individual lists",
-                config: {
-                    index: "random_film",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "unique",
-                         desc: "Unique suggestions (shows each entry only once until every entry has been shown once)",
-                         type: "checkbox",
-                         value: this.config.unique
-                        }
-                    ]}
-                };
-}
+ICM_RandomFilmLink.prototype.settings = {
+    title: "Random Film Link",
+    desc: "Displays \"Help me pick a film\" link on individual lists",
+    index: "random_film",
+    includes: ["icheckmovies.com/lists/(.+)"],
+    excludes: ["icheckmovies.com/lists/$"],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "unique",
+        desc: "Unique suggestions (shows each entry only once until every entry has been shown once)",
+        type: "checkbox",
+        default: true
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_UpcomingAwardsList.prototype = new ICM_BaseFeature();
+ICM_UpcomingAwardsList.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_UpcomingAwardsList.prototype.constructor = ICM_UpcomingAwardsList;
 
-function ICM_UpcomingAwardsList( config ) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/lists/(.+)"];
-    this.excludes = ["icheckmovies.com/list/$"];
+function ICM_UpcomingAwardsList(config) {
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_UpcomingAwardsList.prototype.Attach = function() {
@@ -440,41 +436,33 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
     }
 }
 
-ICM_UpcomingAwardsList.prototype.getConfig = function() {
-    return  {title: "Upcoming Awards (individual lists)",
-                desc: "Displays upcoming awards on individual lists",
-                config: {
-                    index: "ua_list",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "show_absolute",
-                         desc: "Display negative values",
-                         type: "checkbox",
-                         value: this.config.show_absolute
-                        }
-                    ]}
-                };
-}
+ICM_UpcomingAwardsList.prototype.settings = {
+    title: "Upcoming Awards (individual lists)",
+    desc: "Displays upcoming awards on individual lists",
+    index: "ua_list",
+    includes: ["icheckmovies.com/lists/(.+)"],
+    excludes: ["icheckmovies.com/list/$"],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "show_absolute",
+        desc: "Display negative values",
+        type: "checkbox",
+        default: true
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_UpcomingAwardsOverview.prototype = new ICM_BaseFeature();
+ICM_UpcomingAwardsOverview.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_UpcomingAwardsOverview.prototype.constructor = ICM_UpcomingAwardsOverview;
 
-function ICM_UpcomingAwardsOverview( config ) {
-    this.includes = ["/profiles/progress/",
-                        "/lists/favorited/",
-                        "/lists/watchlist/",
-                        "/lists/disliked/"];
-    this.excludes = [];
-
-    this.config = config;
+function ICM_UpcomingAwardsOverview(config) {
+    ICM_BaseFeature.call(this, config);
 
     this.lists = [];
-
     this.hidden_lists = [];
 }
 
@@ -717,36 +705,34 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     });
 }
 
-ICM_UpcomingAwardsOverview.prototype.getConfig = function() {
-    return  {title: "Upcoming Awards Overview",
-                desc: "Displays upcoming awards on progress page",
-                config: {
-                    index: "ua",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "autoload",
-                         desc: "Autoload",
-                         type: "checkbox",
-                         value: this.config.autoload
-                        }
-                    ]}
-                };
-}
+ICM_UpcomingAwardsOverview.prototype.settings = {
+    title: "Upcoming Awards Overview",
+    desc: "Displays upcoming awards on progress page",
+    index: "ua",
+    includes: ["/profiles/progress/",
+               "/lists/favorited/",
+               "/lists/watchlist/",
+               "/lists/disliked/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "autoload",
+        desc: "Autoload",
+        type: "checkbox",
+        default: true
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_ListCustomColors.prototype = new ICM_BaseFeature();
+ICM_ListCustomColors.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_ListCustomColors.prototype.constructor = ICM_ListCustomColors;
 
-function ICM_ListCustomColors( config ) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/"];
-
-    this.excludes = [];
+function ICM_ListCustomColors(config) {
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_ListCustomColors.prototype.Attach = function() {
@@ -768,45 +754,41 @@ ICM_ListCustomColors.prototype.Attach = function() {
     }
 }
 
-ICM_ListCustomColors.prototype.getConfig = function() {
-    return  {title: "Custom List Colors",
-                desc: "Changes entry colors on lists to visually separate entries in your favorites/watchlist/dislikes",
-                config: {
-                    index: "list_colors",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "colors.favorite",
-                         desc: "Favorites",
-                         type: "textinput",
-                         value: this.config.colors.favorite
-                        },
-                        {name: "colors.watchlist",
-                         desc: "Watchlist",
-                         type: "textinput",
-                         value: this.config.colors.watchlist
-                        },
-                        {name: "colors.disliked",
-                         desc: "Disliked",
-                         type: "textinput",
-                         value: this.config.colors.disliked
-                        }
-                    ]}
-                };
-}
+ICM_ListCustomColors.prototype.settings = {
+    title: "Custom List Colors",
+    desc: "Changes entry colors on lists to visually separate entries in your favorites/watchlist/dislikes",
+    index: "list_colors",
+    includes: ["icheckmovies.com/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "colors.favorite",
+        desc: "Favorites",
+        type: "textinput",
+        default: "#ffdda9"
+    }, {
+        name: "colors.watchlist",
+        desc: "Watchlist",
+        type: "textinput",
+        default: "#ffffd6"
+    }, {
+        name: "colors.disliked",
+        desc: "Disliked",
+        type: "textinput",
+        default: "#ffad99"
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_ListCrossCheck.prototype = new ICM_BaseFeature();
+ICM_ListCrossCheck.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_ListCrossCheck.prototype.constructor = ICM_ListCrossCheck;
 
 function ICM_ListCrossCheck(config) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/lists/"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 
     this.activated_once = false;
     this.Init();
@@ -1268,40 +1250,36 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
     });
 }
 
-ICM_ListCrossCheck.prototype.getConfig = function() {
-    return  {title: "List Cross-reference",
-                desc: "Cross-reference lists to find what films they share (note: only finds unchecked films)",
-                config: {
-                    index: "list_cross_ref",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "match_all",
-                         desc: "Find films that appear on all selected lists",
-                         type: "checkbox",
-                         value: this.config.match_all
-                        },
-                        {name: "match_min",
-                         desc: "If the above checkbox is unchecked, find films that appear on this many lists",
-                         type: "textinput",
-                         value: this.config.match_min
-                        }
-                    ]}
-                };
-}
+ICM_ListCrossCheck.prototype.settings = {
+    title: "List Cross-reference",
+    desc: "Cross-reference lists to find what films they share",
+    index: "list_cross_ref",
+    includes: ["icheckmovies.com/lists/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "match_all",
+        desc: "Find films that appear on all selected lists",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "match_min",
+        desc: "If the above checkbox is unchecked, find films that appear on this many lists",
+        type: "textinput",
+        default: 2
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_HideTags.prototype = new ICM_BaseFeature();
+ICM_HideTags.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_HideTags.prototype.constructor = ICM_HideTags;
 
 function ICM_HideTags(config) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_HideTags.prototype.Attach = function() {
@@ -1314,34 +1292,31 @@ ICM_HideTags.prototype.Attach = function() {
     }
 }
 
-ICM_HideTags.prototype.getConfig = function() {
-    return {title: "Hide tags",
-                desc: "Hides tags on individual lists",
-                config: {
-                    index: "hide_tags",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "show_hover",
-                         desc: "Show tags when moving the cursor over a movie",
-                         type: "checkbox",
-                         value: this.config.show_hover
-                        }
-                    ]}
-                };
-}
+ICM_HideTags.prototype.settings = {
+    title: "Hide tags",
+    desc: "Hides tags on individual lists",
+    index: "hide_tags",
+    includes: ["icheckmovies.com/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "show_hover",
+        desc: "Show tags when moving the cursor over a movie",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_WatchlistTab.prototype = new ICM_BaseFeature();
+ICM_WatchlistTab.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_WatchlistTab.prototype.constructor = ICM_WatchlistTab;
 
 function ICM_WatchlistTab(config) {
-    this.config = config;
-    this.includes = ["icheckmovies.com/lists"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_WatchlistTab.prototype.Attach = function() {
@@ -1384,29 +1359,26 @@ ICM_WatchlistTab.prototype.Attach = function() {
     });
 }
 
-ICM_WatchlistTab.prototype.getConfig = function() {
-    return  {title: "Watchlist tab",
-                desc: "Creates a tab on lists that shows watchlist entries.",
-                config: {
-                    index: "watchlist_tab",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        }
-                    ]}
-                };
-}
+ICM_WatchlistTab.prototype.settings = {
+    title: "Watchlist tab",
+    desc: "Creates a tab on lists that shows watchlist entries.",
+    index: "watchlist_tab",
+    includes: ["icheckmovies.com/lists"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_Owned.prototype = new ICM_BaseFeature();
+ICM_Owned.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_Owned.prototype.constructor = ICM_Owned;
 
 function ICM_Owned(config) {
-    this.config = config;
-    this.includes = ["icheckmovies.com/"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_Owned.prototype.Attach = function() {
@@ -1564,34 +1536,32 @@ ICM_Owned.prototype.Attach = function() {
     });
 }
 
-ICM_Owned.prototype.getConfig = function() {
-    return  {title: "Owned tab",
-                desc: "Creates a tab on lists that shows owned entries. Emulates the paid feature",
-                config: {
-                    index: "owned_tab",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "free_account",
-                         desc: "I have a free account (must uncheck if you have a paid account)",
-                         type: "checkbox",
-                         value: this.config.free_account
-                        }
-                    ]}
-                };
-}
+ICM_Owned.prototype.settings = {
+    title: "Owned tab",
+    desc: "Creates a tab on lists that shows owned entries. Emulates the paid feature",
+    index: "owned_tab",
+    includes: ["icheckmovies.com/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "free_account",
+        desc: "I have a free account (must uncheck if you have a paid account)",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_LargeList.prototype = new ICM_BaseFeature();
+ICM_LargeList.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_LargeList.prototype.constructor = ICM_LargeList;
 
 function ICM_LargeList(config) {
-    this.config = config;
-    this.includes = ["icheckmovies\.com/lists/(.+)/(.*)"];
-    this.excludes = ["icheckmovies\.com/lists/favorited","icheckmovies\.com/lists/disliked","icheckmovies\.com/lists/watchlist"];
+    ICM_BaseFeature.call(this, config);
+
     this.loaded = false;
 }
 
@@ -1673,37 +1643,33 @@ ICM_LargeList.prototype.load = function() {
     $("img.coverImage").lazyload({ threshold : 200 });
 }
 
-ICM_LargeList.prototype.getConfig = function() {
-    var out = {title: "Large Posters",
-                desc: "Display large posters on individual lists (large posters are lazy loaded)",
-                config: {
-                    index: "large_lists",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "autoload",
-                         desc: "Autoload",
-                         type: "checkbox",
-                         value: this.config.autoload
-                        }
-                    ]}
-                };
-
-    return out;
-}
+ICM_LargeList.prototype.settings = {
+    title: "Large Posters",
+    desc: "Display large posters on individual lists (large posters are lazy loaded)",
+    index: "large_lists",
+    includes: ["icheckmovies\.com/lists/(.+)/(.*)"],
+    excludes: ["icheckmovies\.com/lists/favorited",
+               "icheckmovies\.com/lists/disliked",
+               "icheckmovies\.com/lists/watchlist"],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "autoload",
+        desc: "Autoload",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_ListOverviewSort.prototype = new ICM_BaseFeature();
+ICM_ListOverviewSort.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_ListOverviewSort.prototype.constructor = ICM_ListOverviewSort;
 
-function ICM_ListOverviewSort( config ) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/profiles/progress"];
-    this.excludes = [];
+function ICM_ListOverviewSort(config) {
+    ICM_BaseFeature.call(this, config);
 
     this.sections = ["imdb", "country", "critics", "director",
                      "website", "institute", "misc", "all", "award"];
@@ -1790,42 +1756,39 @@ ICM_ListOverviewSort.prototype.Sort = function(order, section) {
     }
 }
 
-ICM_ListOverviewSort.prototype.getConfig = function() {
-    var out = {title: "Sort Progress Page",
-                desc: "Sort lists on progress page by completion rate",
-                config: {
-                    index: "toplists_sort",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "autoload",
-                         desc: "Autoload",
-                         type: "checkbox",
-                         value: this.config.autoload
-                        },
-                        {name: "order",
-                        desc: "Ascending",
-                        type: "checkbox",
-                        value: this.config.order
-                        },
-                        {name: "single_col",
-                        desc: "Single column",
-                        type: "checkbox",
-                        value: this.config.single_col
-                        },
-                        {name: "icebergs",
-                        desc: "Keep most completed on top in both columns (requires 'Single column' is unchecked)",
-                        type: "checkbox",
-                        value: this.config.icebergs
-                        }
-                    ]}
-                };
-
-    return out;
-}
+ICM_ListOverviewSort.prototype.settings = {
+    title: "Sort Progress Page",
+    desc: "Sort lists on progress page by completion rate",
+    index: "toplists_sort",
+    includes: ["icheckmovies.com/profiles/progress"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "autoload",
+        desc: "Autoload",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "order",
+        desc: "Ascending",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "single_col",
+        desc: "Single column",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "icebergs",
+        desc: "Keep most completed on top in both columns (requires 'Single column' is unchecked)",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 /**
  * Main application
