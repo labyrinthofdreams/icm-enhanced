@@ -49,7 +49,32 @@ shuffle = function(v) {
     return v;
 };
 
+// Get object property by a dot-separated path
+function getProperty(path, obj) {
+    return [obj].concat(path.split('.')).reduce(function(prev, curr) {
+        return prev && prev[curr];
+    });
+}
+
+// Set object property by a dot-separated path
+function setProperty(path, obj, val) {
+    var parts = path.split('.'),
+        last = parts.pop(),
+        part;
+
+    while (part = parts.shift()) {
+        // rewrite property if it exists but is not an object
+        obj = obj[part] = (obj[part] instanceof Object) ?
+                          obj[part] : {};
+    }
+
+    obj[last] = val;
+}
+
+// ----- Objects -----
+
 function ICM_BaseFeature(config) {
+    this.updateConfig(config);
 }
 
 ICM_BaseFeature.prototype.settings = {
@@ -58,153 +83,100 @@ ICM_BaseFeature.prototype.settings = {
 };
 
 ICM_BaseFeature.prototype.IsEnabled = function() {
-    for ( var i = 0; i < this.excludes.length; i++ ) {
-        var pattern = new RegExp( this.excludes[i] );
+    function testRegex(str) {
+        return (new RegExp(str)).test(window.location.href);
+    };
 
-        // if current page is on the excludes array
-        if ( pattern.test( window.location.href ) ) {
-            return false;
-        }
-    }
+    return !this.settings.excludes.some(testRegex) &&
+            this.settings.includes.some(testRegex);
+};
 
-    for ( var i = 0; i < this.includes.length; i++ ) {
-        var pattern = new RegExp( this.includes[i] );
+// Add module options to the config;
+// Keeps loaded values, excludes outdated options, adds new options
+ICM_BaseFeature.prototype.updateConfig = function(config) {
+    var module = this.settings.index,
+        cur = {};
 
-        // if current page is on the includes array
-        if ( pattern.test( window.location.href ) ) {
-            return true;
-        }
-    }
+    $.each(this.settings.options, function(i, option) {
+        var idx = option.name,
+            oldValue = config.Get(module + '.' + idx),
+            newValue = (oldValue !== undefined) ? oldValue : option.default;
 
-    return false;
-}
+        setProperty(idx, cur, newValue);
+    });
+
+    // save references to the global and module configs in a module
+    this.config = config.cfg[module] = cur;
+    this.globalConfig = config; // allows modules to use Save/Set/Get
+};
 
 // Config object constructor
 function ICM_Config() {
-    this.cfgOptions = {};
+    this.cfg = {
+        script_config: { // script config
+            version: "1.6.1",
+            revision: 1610 // numerical representation of version number
+        }
+    };
 
     this.Init();
 }
 
 // Initialize stuff
 ICM_Config.prototype.Init = function() {
-    // defaults
-    this.cfgOptions = {
-        script_config: { // script config
-            version: "1.6.0",
-            revision: 1600 // numerical representation of version number
-        },
-        ua: { // upcoming awards list
-            enabled: true,
-            autoload: true
-        },
-        ua_list: { // upcoming awards on individual list pages
-            enabled: true,
-            show_absolute: true
-        },
-        random_film: { // help me pick a film link on individual list pages
-            enabled: true,
-            unique: true
-        },
-        list_colors: { // custom colors for things like favorites and watchlists on lists
-            enabled: true,
-            colors: {
-                favorite: "#ffdda9",
-                watchlist: "#ffffd6",
-                disliked: "#ffad99"
-            }
-        },
-        list_cross_ref: { // list cross-referencing
-            enabled: false,
-            match_all: true, // find a match on all selected lists
-            match_min: 2 // limit how many top lists a film has to be found to be shown
-        },
-        hide_tags: {
-            enabled: false,
-            show_hover: false
-        },
-        watchlist_tab: {
-            enabled: false
-        },
-        owned_tab: {
-            enabled: false,
-            free_account: false
-        },
-        large_lists: {
-            enabled: true,
-            autoload: false
-        },
-        toplists_sort: {
-            enabled: false,
-            autoload: true,
-            order: true,
-            single_col: false,
-            icebergs: false
-        }
-    };
+    var oldcfg = GM_getValue("icm_enhanced_cfg");
+    if (!oldcfg)
+        return;
 
-    if ( GM_getValue( "icm_enhanced_cfg" ) !== undefined ) {
-        var old_config = eval( GM_getValue( "icm_enhanced_cfg" ) );
+    // Compatibility fix for pre-1.6.1 versions
+    if (oldcfg.charAt(0) + oldcfg.charAt(oldcfg.length-1) === "()") {
+        console.log('Converting from old storage mode with spooky eval');
+        oldcfg = eval(oldcfg);
+    } else {
+        oldcfg = JSON.parse(oldcfg);
+    }
 
-        // If new version of the script
-        if ( this.cfgOptions.script_config.revision > old_config.script_config.revision
-            || old_config.script_config.revision === undefined ) {
-            // Copy old settings and save new config
-            // jQuery helper function extend() copies and overwrites elements from conf (old settings)
-            // to this.cfgOptions leaving any new elements in this.cfgOptions untouched
-            var tmp_script_cfg = {};
-            $.extend( tmp_script_cfg, this.cfgOptions.script_config );
+    var o = oldcfg.script_config,
+        n = this.cfg.script_config,
+        isUpdated = o.revision !== n.revision;
+    // Rewrite script_config (no need to keep outdated values)
+    oldcfg.script_config = n;
+    this.cfg = oldcfg;
 
-            $.extend( true, this.cfgOptions, old_config );
-            $.extend( this.cfgOptions.script_config, tmp_script_cfg );
-
-            this.Save();
-        }
-        else {
-            $.extend( true, this.cfgOptions, old_config );
-        }
+    if (isUpdated) {
+        this.Save();
     }
 }
 
 // Save config
 ICM_Config.prototype.Save = function() {
-    GM_setValue( "icm_enhanced_cfg", uneval( this.cfgOptions ) );
+    GM_setValue( "icm_enhanced_cfg", JSON.stringify(this.cfg));
 }
 
 // Get config value
 ICM_Config.prototype.Get = function( index ) {
-    return eval( "this.cfgOptions." + index );
+    return getProperty(index, this.cfg);
 }
 
 // Set config value
 ICM_Config.prototype.Set = function( index, value ) {
-    if ( typeof value == "boolean" || typeof value == "number" ) {
-        eval( "this.cfgOptions." + index + " = " + value );
-    }
-    else if ( typeof value == "string" ) {
-        eval( "this.cfgOptions." + index + " = \"" + value + "\"" );
-    }
+    setProperty(index, this.cfg, value);
 }
 
 // Sets false to true and vice versa
 ICM_Config.prototype.Toggle = function( index ) {
-    var val = this.Get( index );
+    var val = this.Get(index),
+        changeVal;
 
     if ( val === true || val === false ) {
-        this.Set( index, !val );
-
-        return true;
+        changeVal = !val;
+    } else if ( val === "asc" || val === "desc" ) {
+        changeVal = (val === "asc" ? "desc" : "asc");
+    } else {
+        return false; // Couldn't toggle a value
     }
-    else if ( val === "asc" || val === "desc" ) {
-        var change_val = (val === "asc" ? "desc" : "asc");
-        this.Set( index, change_val );
-
-        return true;
-    }
-    else {
-         // Couldn't toggle a value
-        return false;
-    }
+    this.Set(index, changeVal);
+    return true; // Value toggled
 }
 
 function ICM_ConfigWindow(Config) {
