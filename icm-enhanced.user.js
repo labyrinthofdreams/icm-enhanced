@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.6.0
+// @version        1.6.1
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -20,7 +20,7 @@
  * Dual licensed under the MIT and GPL licenses:
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
- * 
+ *
  * $Version: 1.0.2 (2014.04.10 +r19)
  * Requires: jQuery 1.2.3+
  */
@@ -185,13 +185,11 @@ function ICM_ConfigWindow(Config) {
 }
 
 ICM_ConfigWindow.prototype.addModule = function(module) {
-    for (var i = 0; i < this.modules.length; ++i) {
-        if (this.modules[i].title === module.title) {
-            return;
-        }
+    if (!this.modules.some(function(m) {
+        return m.title === module.title;
+    })) {
+        this.modules.push(module);
     }
-
-    this.modules.push(module);
 }
 
 ICM_ConfigWindow.prototype.loadOptions = function(idx) {
@@ -202,18 +200,17 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
 
     var str = '<p>' + m.desc + '</p>';
 
-    if (m.config.options.length > 0) {
-        for (var i = 0; i < m.config.options.length; ++i) {
-            var opt = m.config.options[i];
-            if (opt.type === "checkbox") {
-                str += '<p><input type="checkbox" data-cfg-index="' + m.config.index + '.'
-                    + opt.name + '"' + (opt.value ? ' checked="checked"' : '') + '>'
-                    + opt.desc + '</p>';
-            }
-            else if (opt.type === "textinput") {
-                str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + m.config.index + '.'
-                    + opt.name + '" value="' + opt.value + '"></p>';
-            }
+    for (var i = 0; i < m.options.length; i++) {
+        var opt = m.options[i],
+            index = m.index + '.' + opt.name,
+            optValue = this.config.Get(index); // always up to date
+
+        if (opt.type === "checkbox") {
+            str += '<p><input type="checkbox" data-cfg-index="' + index +
+                   '"' + (optValue ? ' checked="checked"' : '') + '>' + opt.desc + '</p>';
+        } else if (opt.type === "textinput") {
+            str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + index +
+                   '" value="' + optValue + '"></p>';
         }
     }
 
@@ -253,7 +250,7 @@ ICM_ConfigWindow.prototype.build = function() {
 
     // HTML for the main jqmodal window
     var cfgMainHtml = '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">'
-                    + '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.Get("script_config").version + ' configuration</h3>'
+                    + '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.cfg["script_config"].version + ' configuration</h3>'
                     + module_list
                     + '<hr><div id="module_settings"></div>'
                     + '<button id="configSave">Save settings</button>'
@@ -265,8 +262,9 @@ ICM_ConfigWindow.prototype.build = function() {
     var _t = this;
 
     $("div#cfgModal").on( "change", "input", function( e ) {
-        if ( !_t.config.Toggle( $(this).data("cfg-index") ) ) {
-            _t.config.Set( $(this).data("cfg-index"), $(this).val() );
+        var index = $(this).data("cfg-index");
+        if ( !_t.config.Toggle(index) ) {
+            _t.config.Set( index, $(this).val() );
         }
 
         $("button#configSave").prop("disabled", false);
@@ -464,7 +462,7 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function() {
 
 ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function() {
     this.lists = [];
-    this.hidden_lists = eval(GM_getValue("hidden_lists", "[]"));
+    this.hidden_lists = JSON.parse(GM_getValue("hidden_lists", "[]"));
 
     this.PopulateLists();
     this.SortLists();
@@ -622,7 +620,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         }
 
         // save hidden lists
-        GM_setValue("hidden_lists", uneval(_this.hidden_lists));
+        GM_setValue("hidden_lists", JSON.stringify(_this.hidden_lists));
     });
 
     $("#toggle_hidden_list").on("click", function(e) {
@@ -980,14 +978,9 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
                 var itemid = $item.attr("id");
 
                 // check if owned
-                var owned = eval(GM_getValue("owned_movies"));
-                if (owned === undefined) {
-                    owned = [];
-                }
-                else {
-                    if (owned.indexOf(itemid) !== -1) {
-                        $item.removeClass("notowned").addClass("owned");
-                    }
+                var owned = JSON.parse(GM_getValue("owned_movies", "[]"));
+                if (owned.indexOf(itemid) !== -1) {
+                    $item.removeClass("notowned").addClass("owned");
                 }
 
                 // t = title, c = count, u = url, y = year
@@ -1367,12 +1360,8 @@ ICM_Owned.prototype.Attach = function() {
         }
 
         if (this.config.free_account) {
-            var owned = eval(GM_getValue("owned_movies"));
+            var owned = JSON.parse(GM_getValue("owned_movies", "[]"));
             $movielink = $markOwned.parent().parent().prev("a");
-
-            if (owned === undefined) {
-                owned = [];
-            }
 
             var movie_id = $movielink.attr("id");
             movie_id = movie_id.replace("check", "movie");
@@ -1383,11 +1372,7 @@ ICM_Owned.prototype.Attach = function() {
 
             $(".optionMarkOwned").on("click", function(e) {
                 e.preventDefault();
-                owned = eval(GM_getValue("owned_movies"));
-
-                if (owned === undefined) {
-                    owned = [];
-                }
+                owned = JSON.parse(GM_getValue("owned_movies", "[]"));
 
                 // if movie is found in cached owned movies
                 $parent = $(this).parent().parent().prev("a");
@@ -1409,18 +1394,14 @@ ICM_Owned.prototype.Attach = function() {
                     owned.push(movie_id);
                 }
 
-                GM_setValue("owned_movies", uneval(owned));
+                GM_setValue("owned_movies", JSON.stringify(owned));
             });
         }
 
     }
     else {
     if (this.config.free_account) {
-        var owned = eval(GM_getValue("owned_movies"));
-
-        if (owned === undefined) {
-            owned = [];
-        }
+        var owned = JSON.parse(GM_getValue("owned_movies", "[]"));
 
         $movies = $movielist.children("li");
 
@@ -1440,11 +1421,7 @@ ICM_Owned.prototype.Attach = function() {
         }
 
         $(".optionMarkOwned").on("click", function(e) {
-            owned = eval(GM_getValue("owned_movies"));
-
-            if (owned === undefined) {
-                owned = [];
-            }
+            owned = JSON.parse(GM_getValue("owned_movies", "[]"));
 
             // if movie is found in cached owned movies
             $parent = $(this).parent().parent().parent();
@@ -1464,7 +1441,7 @@ ICM_Owned.prototype.Attach = function() {
             var owned_count = $movielist.children("li.owned").length;
             $("#topListMoviesOwnedCount").text("(" + owned_count + ")");
 
-            GM_setValue("owned_movies", uneval(owned));
+            GM_setValue("owned_movies", JSON.stringify(owned));
 
             return false;
         });
@@ -1773,32 +1750,37 @@ function ICM_Enhanced(scriptConfig) {
 
 ICM_Enhanced.prototype.register = function(module) {
     this.modules.push(module);
-    this.configWindow.addModule(module.getConfig());
+    this.configWindow.addModule(module.settings);
 }
 
 ICM_Enhanced.prototype.load = function() {
-    for (var i = 0; i < this.modules.length; i++) {
-        if (this.modules[i].IsEnabled()) {
-            this.modules[i].Attach();
+    $.each(this.modules, function(i, m) {
+        if (m.IsEnabled()) {
+            console.log('Attaching ' + m.constructor.name);
+            m.Attach();
         }
-    }
+    });
 
     this.configWindow.build();
 }
 
-$(document).ready(function() {
-    var config = new ICM_Config();
+var config = new ICM_Config();
 
-    var app = new ICM_Enhanced(config);
-    app.register(new ICM_RandomFilmLink( config.Get( "random_film" ) ));
-    app.register(new ICM_HideTags(config.Get("hide_tags")));
-    app.register(new ICM_UpcomingAwardsList( config.Get( "ua_list" ) ));
-    app.register(new ICM_ListCustomColors( config.Get( "list_colors" ) ));
-    app.register(new ICM_UpcomingAwardsOverview( config.Get( "ua" ) ));
-    app.register(new ICM_ListCrossCheck(config.Get("list_cross_ref")));
-    app.register(new ICM_WatchlistTab(config.Get("watchlist_tab")));
-    app.register(new ICM_Owned(config.Get("owned_tab")));
-    app.register(new ICM_LargeList(config.Get("large_lists")));
-    app.register(new ICM_ListOverviewSort(config.Get("toplists_sort")));
-    app.load();
+var useModules = [
+    ICM_RandomFilmLink,
+    ICM_HideTags,
+    ICM_UpcomingAwardsList,
+    ICM_ListCustomColors,
+    ICM_UpcomingAwardsOverview,
+    ICM_ListCrossCheck,
+    ICM_WatchlistTab,
+    ICM_Owned,
+    ICM_LargeList,
+    ICM_ListOverviewSort
+];
+
+var app = new ICM_Enhanced(config);
+$.each(useModules, function(i, Obj) {
+    app.register(new Obj(config));
 });
+app.load();
