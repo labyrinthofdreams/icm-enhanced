@@ -71,6 +71,19 @@ function setProperty(path, obj, val) {
     obj[last] = val;
 }
 
+// Compatibility fix for pre-1.6.1 versions
+// ff+gm: uneval for obj: ({a:5})
+// gc+tm: uneval for obj: $1 = {"a":5};
+function evalOrParse(str) {
+    var bounds = str.charAt(0) + str.charAt(str.length-1);
+    if (bounds !== "{}" && bounds !== "[]") {
+        console.log('Converting from old storage mode with spooky eval');
+        return eval(str);
+    } else {
+        return JSON.parse(str);
+    }
+}
+
 // ----- Objects -----
 
 function ICM_BaseFeature(config) {
@@ -124,17 +137,9 @@ function ICM_Config() {
 
 // Initialize stuff
 ICM_Config.prototype.Init = function() {
-    var oldcfg = GM_getValue("icm_enhanced_cfg");
+    var oldcfg = evalOrParse(GM_getValue("icm_enhanced_cfg"));
     if (!oldcfg)
         return;
-
-    // Compatibility fix for pre-1.6.1 versions
-    if (oldcfg.charAt(0) + oldcfg.charAt(oldcfg.length-1) === "()") {
-        console.log('Converting from old storage mode with spooky eval');
-        oldcfg = eval(oldcfg);
-    } else {
-        oldcfg = JSON.parse(oldcfg);
-    }
 
     var o = oldcfg.script_config,
         n = this.cfg.script_config,
@@ -462,7 +467,7 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function() {
 
 ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function() {
     this.lists = [];
-    this.hidden_lists = JSON.parse(GM_getValue("hidden_lists", "[]"));
+    this.hidden_lists = evalOrParse(GM_getValue("hidden_lists", "[]"));
 
     this.PopulateLists();
     this.SortLists();
@@ -978,7 +983,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
                 var itemid = $item.attr("id");
 
                 // check if owned
-                var owned = JSON.parse(GM_getValue("owned_movies", "[]"));
+                var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
                 if (owned.indexOf(itemid) !== -1) {
                     $item.removeClass("notowned").addClass("owned");
                 }
@@ -1360,7 +1365,7 @@ ICM_Owned.prototype.Attach = function() {
         }
 
         if (this.config.free_account) {
-            var owned = JSON.parse(GM_getValue("owned_movies", "[]"));
+            var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
             $movielink = $markOwned.parent().parent().prev("a");
 
             var movie_id = $movielink.attr("id");
@@ -1372,7 +1377,7 @@ ICM_Owned.prototype.Attach = function() {
 
             $(".optionMarkOwned").on("click", function(e) {
                 e.preventDefault();
-                owned = JSON.parse(GM_getValue("owned_movies", "[]"));
+                owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
                 // if movie is found in cached owned movies
                 $parent = $(this).parent().parent().prev("a");
@@ -1401,7 +1406,7 @@ ICM_Owned.prototype.Attach = function() {
     }
     else {
     if (this.config.free_account) {
-        var owned = JSON.parse(GM_getValue("owned_movies", "[]"));
+        var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
         $movies = $movielist.children("li");
 
@@ -1421,7 +1426,7 @@ ICM_Owned.prototype.Attach = function() {
         }
 
         $(".optionMarkOwned").on("click", function(e) {
-            owned = JSON.parse(GM_getValue("owned_movies", "[]"));
+            owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
             // if movie is found in cached owned movies
             $parent = $(this).parent().parent().parent();
