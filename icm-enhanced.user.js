@@ -75,12 +75,11 @@ function setProperty(path, obj, val) {
 // ff+gm: uneval for obj: ({a:5})
 // gc+tm: uneval for obj: $1 = {"a":5};
 function evalOrParse(str) {
-    var bounds = str.charAt(0) + str.charAt(str.length-1);
-    if (bounds !== "{}" && bounds !== "[]") {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
         console.log('Converting from old storage mode with spooky eval');
         return eval(str);
-    } else {
-        return JSON.parse(str);
     }
 }
 
