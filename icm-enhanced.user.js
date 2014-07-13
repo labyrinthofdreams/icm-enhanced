@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.6.0
+// @version        1.6.1
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -20,7 +20,7 @@
  * Dual licensed under the MIT and GPL licenses:
  *   http://www.opensource.org/licenses/mit-license.php
  *   http://www.gnu.org/licenses/gpl.html
- * 
+ *
  * $Version: 1.0.2 (2014.04.10 +r19)
  * Requires: jQuery 1.2.3+
  */
@@ -49,159 +49,138 @@ shuffle = function(v) {
     return v;
 };
 
-function ICM_BaseFeature() {
-    this.includes = [];
-    this.excludes = [];
+// Get object property by a dot-separated path
+function getProperty(path, obj) {
+    return [obj].concat(path.split('.')).reduce(function(prev, curr) {
+        return prev && prev[curr];
+    });
 }
+
+// Set object property by a dot-separated path
+function setProperty(path, obj, val) {
+    var parts = path.split('.'),
+        last = parts.pop(),
+        part;
+
+    while (part = parts.shift()) {
+        // rewrite property if it exists but is not an object
+        obj = obj[part] = (obj[part] instanceof Object) ?
+                          obj[part] : {};
+    }
+
+    obj[last] = val;
+}
+
+// Compatibility fix for pre-1.6.1 versions
+// ff+gm: uneval for obj: ({a:5})
+// gc+tm: uneval for obj: $1 = {"a":5};
+function evalOrParse(str) {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        console.log('Converting from old storage mode with spooky eval');
+        return eval(str);
+    }
+}
+
+// ----- Objects -----
+
+function ICM_BaseFeature(config) {
+    this.updateConfig(config);
+}
+
+ICM_BaseFeature.prototype.settings = {
+    includes: [],
+    excludes: []
+};
 
 ICM_BaseFeature.prototype.IsEnabled = function() {
-    for ( var i = 0; i < this.excludes.length; i++ ) {
-        var pattern = new RegExp( this.excludes[i] );
+    function testRegex(str) {
+        return (new RegExp(str)).test(window.location.href);
+    };
 
-        // if current page is on the excludes array
-        if ( pattern.test( window.location.href ) ) {
-            return false;
-        }
-    }
+    return !this.settings.excludes.some(testRegex) &&
+            this.settings.includes.some(testRegex);
+};
 
-    for ( var i = 0; i < this.includes.length; i++ ) {
-        var pattern = new RegExp( this.includes[i] );
+// Add module options to the config;
+// Keeps loaded values, excludes outdated options, adds new options
+ICM_BaseFeature.prototype.updateConfig = function(config) {
+    var module = this.settings.index,
+        cur = {};
 
-        // if current page is on the includes array
-        if ( pattern.test( window.location.href ) ) {
-            return true;
-        }
-    }
+    $.each(this.settings.options, function(i, option) {
+        var idx = option.name,
+            oldValue = config.Get(module + '.' + idx),
+            newValue = (oldValue !== undefined) ? oldValue : option.default;
 
-    return false;
-}
+        setProperty(idx, cur, newValue);
+    });
+
+    // save references to the global and module configs in a module
+    this.config = config.cfg[module] = cur;
+    this.globalConfig = config; // allows modules to use Save/Set/Get
+};
 
 // Config object constructor
 function ICM_Config() {
-    this.cfgOptions = {};
+    this.cfg = {
+        script_config: { // script config
+            version: "1.6.1",
+            revision: 1610 // numerical representation of version number
+        }
+    };
 
     this.Init();
 }
 
 // Initialize stuff
 ICM_Config.prototype.Init = function() {
-    // defaults
-    this.cfgOptions = {
-        script_config: { // script config
-            version: "1.6.0",
-            revision: 1600 // numerical representation of version number
-        },
-        ua: { // upcoming awards list
-            enabled: true,
-            autoload: true
-        },
-        ua_list: { // upcoming awards on individual list pages
-            enabled: true,
-            show_absolute: true
-        },
-        random_film: { // help me pick a film link on individual list pages
-            enabled: true,
-            unique: true
-        },
-        list_colors: { // custom colors for things like favorites and watchlists on lists
-            enabled: true,
-            colors: {
-                favorite: "#ffdda9",
-                watchlist: "#ffffd6",
-                disliked: "#ffad99"
-            }
-        },
-        list_cross_ref: { // list cross-referencing
-            enabled: false,
-            match_all: true, // find a match on all selected lists
-            match_min: 2 // limit how many top lists a film has to be found to be shown
-        },
-        hide_tags: {
-            enabled: false,
-            show_hover: false
-        },
-        watchlist_tab: {
-            enabled: false
-        },
-        owned_tab: {
-            enabled: false,
-            free_account: false
-        },
-        large_lists: {
-            enabled: true,
-            autoload: false
-        },
-        toplists_sort: {
-            enabled: false,
-            autoload: true,
-            order: true,
-            single_col: false,
-            icebergs: false
-        }
-    };
+    var oldcfg = evalOrParse(GM_getValue("icm_enhanced_cfg"));
+    if (!oldcfg)
+        return;
 
-    if ( GM_getValue( "icm_enhanced_cfg" ) !== undefined ) {
-        var old_config = eval( GM_getValue( "icm_enhanced_cfg" ) );
+    var o = oldcfg.script_config,
+        n = this.cfg.script_config,
+        isUpdated = o.revision !== n.revision;
+    // Rewrite script_config (no need to keep outdated values)
+    oldcfg.script_config = n;
+    this.cfg = oldcfg;
 
-        // If new version of the script
-        if ( this.cfgOptions.script_config.revision > old_config.script_config.revision
-            || old_config.script_config.revision === undefined ) {
-            // Copy old settings and save new config
-            // jQuery helper function extend() copies and overwrites elements from conf (old settings)
-            // to this.cfgOptions leaving any new elements in this.cfgOptions untouched
-            var tmp_script_cfg = {};
-            $.extend( tmp_script_cfg, this.cfgOptions.script_config );
-
-            $.extend( true, this.cfgOptions, old_config );
-            $.extend( this.cfgOptions.script_config, tmp_script_cfg );
-
-            this.Save();
-        }
-        else {
-            $.extend( true, this.cfgOptions, old_config );
-        }
+    if (isUpdated) {
+        this.Save();
     }
 }
 
 // Save config
 ICM_Config.prototype.Save = function() {
-    GM_setValue( "icm_enhanced_cfg", uneval( this.cfgOptions ) );
+    GM_setValue( "icm_enhanced_cfg", JSON.stringify(this.cfg));
 }
 
 // Get config value
 ICM_Config.prototype.Get = function( index ) {
-    return eval( "this.cfgOptions." + index );
+    return getProperty(index, this.cfg);
 }
 
 // Set config value
 ICM_Config.prototype.Set = function( index, value ) {
-    if ( typeof value == "boolean" || typeof value == "number" ) {
-        eval( "this.cfgOptions." + index + " = " + value );
-    }
-    else if ( typeof value == "string" ) {
-        eval( "this.cfgOptions." + index + " = \"" + value + "\"" );
-    }
+    setProperty(index, this.cfg, value);
 }
 
 // Sets false to true and vice versa
 ICM_Config.prototype.Toggle = function( index ) {
-    var val = this.Get( index );
+    var val = this.Get(index),
+        changeVal;
 
     if ( val === true || val === false ) {
-        this.Set( index, !val );
-
-        return true;
+        changeVal = !val;
+    } else if ( val === "asc" || val === "desc" ) {
+        changeVal = (val === "asc" ? "desc" : "asc");
+    } else {
+        return false; // Couldn't toggle a value
     }
-    else if ( val === "asc" || val === "desc" ) {
-        var change_val = (val === "asc" ? "desc" : "asc");
-        this.Set( index, change_val );
-
-        return true;
-    }
-    else {
-         // Couldn't toggle a value
-        return false;
-    }
+    this.Set(index, changeVal);
+    return true; // Value toggled
 }
 
 function ICM_ConfigWindow(Config) {
@@ -210,13 +189,11 @@ function ICM_ConfigWindow(Config) {
 }
 
 ICM_ConfigWindow.prototype.addModule = function(module) {
-    for (var i = 0; i < this.modules.length; ++i) {
-        if (this.modules[i].title === module.title) {
-            return;
-        }
+    if (!this.modules.some(function(m) {
+        return m.title === module.title;
+    })) {
+        this.modules.push(module);
     }
-
-    this.modules.push(module);
 }
 
 ICM_ConfigWindow.prototype.loadOptions = function(idx) {
@@ -227,18 +204,17 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
 
     var str = '<p>' + m.desc + '</p>';
 
-    if (m.config.options.length > 0) {
-        for (var i = 0; i < m.config.options.length; ++i) {
-            var opt = m.config.options[i];
-            if (opt.type === "checkbox") {
-                str += '<p><input type="checkbox" data-cfg-index="' + m.config.index + '.'
-                    + opt.name + '"' + (opt.value ? ' checked="checked"' : '') + '>'
-                    + opt.desc + '</p>';
-            }
-            else if (opt.type === "textinput") {
-                str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + m.config.index + '.'
-                    + opt.name + '" value="' + opt.value + '"></p>';
-            }
+    for (var i = 0; i < m.options.length; i++) {
+        var opt = m.options[i],
+            index = m.index + '.' + opt.name,
+            optValue = this.config.Get(index); // always up to date
+
+        if (opt.type === "checkbox") {
+            str += '<p><input type="checkbox" data-cfg-index="' + index +
+                   '"' + (optValue ? ' checked="checked"' : '') + '>' + opt.desc + '</p>';
+        } else if (opt.type === "textinput") {
+            str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + index +
+                   '" value="' + optValue + '"></p>';
         }
     }
 
@@ -278,7 +254,7 @@ ICM_ConfigWindow.prototype.build = function() {
 
     // HTML for the main jqmodal window
     var cfgMainHtml = '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">'
-                    + '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.Get("script_config").version + ' configuration</h3>'
+                    + '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.cfg["script_config"].version + ' configuration</h3>'
                     + module_list
                     + '<hr><div id="module_settings"></div>'
                     + '<button id="configSave">Save settings</button>'
@@ -290,8 +266,9 @@ ICM_ConfigWindow.prototype.build = function() {
     var _t = this;
 
     $("div#cfgModal").on( "change", "input", function( e ) {
-        if ( !_t.config.Toggle( $(this).data("cfg-index") ) ) {
-            _t.config.Set( $(this).data("cfg-index"), $(this).val() );
+        var index = $(this).data("cfg-index");
+        if ( !_t.config.Toggle(index) ) {
+            _t.config.Set( index, $(this).val() );
         }
 
         $("button#configSave").prop("disabled", false);
@@ -315,14 +292,11 @@ ICM_ConfigWindow.prototype.build = function() {
 }
 
 // Inherit methods from BaseFeature
-ICM_RandomFilmLink.prototype = new ICM_BaseFeature();
+ICM_RandomFilmLink.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_RandomFilmLink.prototype.constructor = ICM_RandomFilmLink;
 
-function ICM_RandomFilmLink( config ) {
-    this.includes = ["icheckmovies.com/lists/(.+)"];
-    this.excludes = ["icheckmovies.com/lists/$"];
-
-    this.config = config;
+function ICM_RandomFilmLink(config) {
+    ICM_BaseFeature.call(this, config);
 
     this.random_nums = [];
 }
@@ -380,35 +354,31 @@ ICM_RandomFilmLink.prototype.PickRandomFilm = function() {
     }
 }
 
-ICM_RandomFilmLink.prototype.getConfig = function() {
-    return  {title: "Random Film Link",
-                desc: "Displays \"Help me pick a film\" link on individual lists",
-                config: {
-                    index: "random_film",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "unique",
-                         desc: "Unique suggestions (shows each entry only once until every entry has been shown once)",
-                         type: "checkbox",
-                         value: this.config.unique
-                        }
-                    ]}
-                };
-}
+ICM_RandomFilmLink.prototype.settings = {
+    title: "Random Film Link",
+    desc: "Displays \"Help me pick a film\" link on individual lists",
+    index: "random_film",
+    includes: ["icheckmovies.com/lists/(.+)"],
+    excludes: ["icheckmovies.com/lists/$"],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "unique",
+        desc: "Unique suggestions (shows each entry only once until every entry has been shown once)",
+        type: "checkbox",
+        default: true
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_UpcomingAwardsList.prototype = new ICM_BaseFeature();
+ICM_UpcomingAwardsList.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_UpcomingAwardsList.prototype.constructor = ICM_UpcomingAwardsList;
 
-function ICM_UpcomingAwardsList( config ) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/lists/(.+)"];
-    this.excludes = ["icheckmovies.com/list/$"];
+function ICM_UpcomingAwardsList(config) {
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_UpcomingAwardsList.prototype.Attach = function() {
@@ -440,41 +410,33 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
     }
 }
 
-ICM_UpcomingAwardsList.prototype.getConfig = function() {
-    return  {title: "Upcoming Awards (individual lists)",
-                desc: "Displays upcoming awards on individual lists",
-                config: {
-                    index: "ua_list",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "show_absolute",
-                         desc: "Display negative values",
-                         type: "checkbox",
-                         value: this.config.show_absolute
-                        }
-                    ]}
-                };
-}
+ICM_UpcomingAwardsList.prototype.settings = {
+    title: "Upcoming Awards (individual lists)",
+    desc: "Displays upcoming awards on individual lists",
+    index: "ua_list",
+    includes: ["icheckmovies.com/lists/(.+)"],
+    excludes: ["icheckmovies.com/list/$"],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "show_absolute",
+        desc: "Display negative values",
+        type: "checkbox",
+        default: true
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_UpcomingAwardsOverview.prototype = new ICM_BaseFeature();
+ICM_UpcomingAwardsOverview.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_UpcomingAwardsOverview.prototype.constructor = ICM_UpcomingAwardsOverview;
 
-function ICM_UpcomingAwardsOverview( config ) {
-    this.includes = ["/profiles/progress/",
-                        "/lists/favorited/",
-                        "/lists/watchlist/",
-                        "/lists/disliked/"];
-    this.excludes = [];
-
-    this.config = config;
+function ICM_UpcomingAwardsOverview(config) {
+    ICM_BaseFeature.call(this, config);
 
     this.lists = [];
-
     this.hidden_lists = [];
 }
 
@@ -504,7 +466,7 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function() {
 
 ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function() {
     this.lists = [];
-    this.hidden_lists = eval(GM_getValue("hidden_lists", "[]"));
+    this.hidden_lists = evalOrParse(GM_getValue("hidden_lists", "[]"));
 
     this.PopulateLists();
     this.SortLists();
@@ -662,7 +624,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         }
 
         // save hidden lists
-        GM_setValue("hidden_lists", uneval(_this.hidden_lists));
+        GM_setValue("hidden_lists", JSON.stringify(_this.hidden_lists));
     });
 
     $("#toggle_hidden_list").on("click", function(e) {
@@ -717,36 +679,34 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     });
 }
 
-ICM_UpcomingAwardsOverview.prototype.getConfig = function() {
-    return  {title: "Upcoming Awards Overview",
-                desc: "Displays upcoming awards on progress page",
-                config: {
-                    index: "ua",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "autoload",
-                         desc: "Autoload",
-                         type: "checkbox",
-                         value: this.config.autoload
-                        }
-                    ]}
-                };
-}
+ICM_UpcomingAwardsOverview.prototype.settings = {
+    title: "Upcoming Awards Overview",
+    desc: "Displays upcoming awards on progress page",
+    index: "ua",
+    includes: ["/profiles/progress/",
+               "/lists/favorited/",
+               "/lists/watchlist/",
+               "/lists/disliked/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "autoload",
+        desc: "Autoload",
+        type: "checkbox",
+        default: true
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_ListCustomColors.prototype = new ICM_BaseFeature();
+ICM_ListCustomColors.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_ListCustomColors.prototype.constructor = ICM_ListCustomColors;
 
-function ICM_ListCustomColors( config ) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/"];
-
-    this.excludes = [];
+function ICM_ListCustomColors(config) {
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_ListCustomColors.prototype.Attach = function() {
@@ -768,45 +728,41 @@ ICM_ListCustomColors.prototype.Attach = function() {
     }
 }
 
-ICM_ListCustomColors.prototype.getConfig = function() {
-    return  {title: "Custom List Colors",
-                desc: "Changes entry colors on lists to visually separate entries in your favorites/watchlist/dislikes",
-                config: {
-                    index: "list_colors",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "colors.favorite",
-                         desc: "Favorites",
-                         type: "textinput",
-                         value: this.config.colors.favorite
-                        },
-                        {name: "colors.watchlist",
-                         desc: "Watchlist",
-                         type: "textinput",
-                         value: this.config.colors.watchlist
-                        },
-                        {name: "colors.disliked",
-                         desc: "Disliked",
-                         type: "textinput",
-                         value: this.config.colors.disliked
-                        }
-                    ]}
-                };
-}
+ICM_ListCustomColors.prototype.settings = {
+    title: "Custom List Colors",
+    desc: "Changes entry colors on lists to visually separate entries in your favorites/watchlist/dislikes",
+    index: "list_colors",
+    includes: ["icheckmovies.com/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "colors.favorite",
+        desc: "Favorites",
+        type: "textinput",
+        default: "#ffdda9"
+    }, {
+        name: "colors.watchlist",
+        desc: "Watchlist",
+        type: "textinput",
+        default: "#ffffd6"
+    }, {
+        name: "colors.disliked",
+        desc: "Disliked",
+        type: "textinput",
+        default: "#ffad99"
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_ListCrossCheck.prototype = new ICM_BaseFeature();
+ICM_ListCrossCheck.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_ListCrossCheck.prototype.constructor = ICM_ListCrossCheck;
 
 function ICM_ListCrossCheck(config) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/lists/"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 
     this.activated_once = false;
     this.Init();
@@ -1026,14 +982,9 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
                 var itemid = $item.attr("id");
 
                 // check if owned
-                var owned = eval(GM_getValue("owned_movies"));
-                if (owned === undefined) {
-                    owned = [];
-                }
-                else {
-                    if (owned.indexOf(itemid) !== -1) {
-                        $item.removeClass("notowned").addClass("owned");
-                    }
+                var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
+                if (owned.indexOf(itemid) !== -1) {
+                    $item.removeClass("notowned").addClass("owned");
                 }
 
                 // t = title, c = count, u = url, y = year
@@ -1268,40 +1219,36 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
     });
 }
 
-ICM_ListCrossCheck.prototype.getConfig = function() {
-    return  {title: "List Cross-reference",
-                desc: "Cross-reference lists to find what films they share (note: only finds unchecked films)",
-                config: {
-                    index: "list_cross_ref",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "match_all",
-                         desc: "Find films that appear on all selected lists",
-                         type: "checkbox",
-                         value: this.config.match_all
-                        },
-                        {name: "match_min",
-                         desc: "If the above checkbox is unchecked, find films that appear on this many lists",
-                         type: "textinput",
-                         value: this.config.match_min
-                        }
-                    ]}
-                };
-}
+ICM_ListCrossCheck.prototype.settings = {
+    title: "List Cross-reference",
+    desc: "Cross-reference lists to find what films they share",
+    index: "list_cross_ref",
+    includes: ["icheckmovies.com/lists/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "match_all",
+        desc: "Find films that appear on all selected lists",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "match_min",
+        desc: "If the above checkbox is unchecked, find films that appear on this many lists",
+        type: "textinput",
+        default: 2
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_HideTags.prototype = new ICM_BaseFeature();
+ICM_HideTags.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_HideTags.prototype.constructor = ICM_HideTags;
 
 function ICM_HideTags(config) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_HideTags.prototype.Attach = function() {
@@ -1314,34 +1261,31 @@ ICM_HideTags.prototype.Attach = function() {
     }
 }
 
-ICM_HideTags.prototype.getConfig = function() {
-    return {title: "Hide tags",
-                desc: "Hides tags on individual lists",
-                config: {
-                    index: "hide_tags",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "show_hover",
-                         desc: "Show tags when moving the cursor over a movie",
-                         type: "checkbox",
-                         value: this.config.show_hover
-                        }
-                    ]}
-                };
-}
+ICM_HideTags.prototype.settings = {
+    title: "Hide tags",
+    desc: "Hides tags on individual lists",
+    index: "hide_tags",
+    includes: ["icheckmovies.com/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "show_hover",
+        desc: "Show tags when moving the cursor over a movie",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_WatchlistTab.prototype = new ICM_BaseFeature();
+ICM_WatchlistTab.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_WatchlistTab.prototype.constructor = ICM_WatchlistTab;
 
 function ICM_WatchlistTab(config) {
-    this.config = config;
-    this.includes = ["icheckmovies.com/lists"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_WatchlistTab.prototype.Attach = function() {
@@ -1384,29 +1328,26 @@ ICM_WatchlistTab.prototype.Attach = function() {
     });
 }
 
-ICM_WatchlistTab.prototype.getConfig = function() {
-    return  {title: "Watchlist tab",
-                desc: "Creates a tab on lists that shows watchlist entries.",
-                config: {
-                    index: "watchlist_tab",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        }
-                    ]}
-                };
-}
+ICM_WatchlistTab.prototype.settings = {
+    title: "Watchlist tab",
+    desc: "Creates a tab on lists that shows watchlist entries.",
+    index: "watchlist_tab",
+    includes: ["icheckmovies.com/lists"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_Owned.prototype = new ICM_BaseFeature();
+ICM_Owned.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_Owned.prototype.constructor = ICM_Owned;
 
 function ICM_Owned(config) {
-    this.config = config;
-    this.includes = ["icheckmovies.com/"];
-    this.excludes = [];
+    ICM_BaseFeature.call(this, config);
 }
 
 ICM_Owned.prototype.Attach = function() {
@@ -1423,12 +1364,8 @@ ICM_Owned.prototype.Attach = function() {
         }
 
         if (this.config.free_account) {
-            var owned = eval(GM_getValue("owned_movies"));
+            var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
             $movielink = $markOwned.parent().parent().prev("a");
-
-            if (owned === undefined) {
-                owned = [];
-            }
 
             var movie_id = $movielink.attr("id");
             movie_id = movie_id.replace("check", "movie");
@@ -1439,11 +1376,7 @@ ICM_Owned.prototype.Attach = function() {
 
             $(".optionMarkOwned").on("click", function(e) {
                 e.preventDefault();
-                owned = eval(GM_getValue("owned_movies"));
-
-                if (owned === undefined) {
-                    owned = [];
-                }
+                owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
                 // if movie is found in cached owned movies
                 $parent = $(this).parent().parent().prev("a");
@@ -1465,18 +1398,14 @@ ICM_Owned.prototype.Attach = function() {
                     owned.push(movie_id);
                 }
 
-                GM_setValue("owned_movies", uneval(owned));
+                GM_setValue("owned_movies", JSON.stringify(owned));
             });
         }
 
     }
     else {
     if (this.config.free_account) {
-        var owned = eval(GM_getValue("owned_movies"));
-
-        if (owned === undefined) {
-            owned = [];
-        }
+        var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
         $movies = $movielist.children("li");
 
@@ -1496,11 +1425,7 @@ ICM_Owned.prototype.Attach = function() {
         }
 
         $(".optionMarkOwned").on("click", function(e) {
-            owned = eval(GM_getValue("owned_movies"));
-
-            if (owned === undefined) {
-                owned = [];
-            }
+            owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
             // if movie is found in cached owned movies
             $parent = $(this).parent().parent().parent();
@@ -1520,7 +1445,7 @@ ICM_Owned.prototype.Attach = function() {
             var owned_count = $movielist.children("li.owned").length;
             $("#topListMoviesOwnedCount").text("(" + owned_count + ")");
 
-            GM_setValue("owned_movies", uneval(owned));
+            GM_setValue("owned_movies", JSON.stringify(owned));
 
             return false;
         });
@@ -1564,34 +1489,32 @@ ICM_Owned.prototype.Attach = function() {
     });
 }
 
-ICM_Owned.prototype.getConfig = function() {
-    return  {title: "Owned tab",
-                desc: "Creates a tab on lists that shows owned entries. Emulates the paid feature",
-                config: {
-                    index: "owned_tab",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "free_account",
-                         desc: "I have a free account (must uncheck if you have a paid account)",
-                         type: "checkbox",
-                         value: this.config.free_account
-                        }
-                    ]}
-                };
-}
+ICM_Owned.prototype.settings = {
+    title: "Owned tab",
+    desc: "Creates a tab on lists that shows owned entries. Emulates the paid feature",
+    index: "owned_tab",
+    includes: ["icheckmovies.com/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "free_account",
+        desc: "I have a free account (must uncheck if you have a paid account)",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_LargeList.prototype = new ICM_BaseFeature();
+ICM_LargeList.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_LargeList.prototype.constructor = ICM_LargeList;
 
 function ICM_LargeList(config) {
-    this.config = config;
-    this.includes = ["icheckmovies\.com/lists/(.+)/(.*)"];
-    this.excludes = ["icheckmovies\.com/lists/favorited","icheckmovies\.com/lists/disliked","icheckmovies\.com/lists/watchlist"];
+    ICM_BaseFeature.call(this, config);
+
     this.loaded = false;
 }
 
@@ -1673,37 +1596,33 @@ ICM_LargeList.prototype.load = function() {
     $("img.coverImage").lazyload({ threshold : 200 });
 }
 
-ICM_LargeList.prototype.getConfig = function() {
-    var out = {title: "Large Posters",
-                desc: "Display large posters on individual lists (large posters are lazy loaded)",
-                config: {
-                    index: "large_lists",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "autoload",
-                         desc: "Autoload",
-                         type: "checkbox",
-                         value: this.config.autoload
-                        }
-                    ]}
-                };
-
-    return out;
-}
+ICM_LargeList.prototype.settings = {
+    title: "Large Posters",
+    desc: "Display large posters on individual lists (large posters are lazy loaded)",
+    index: "large_lists",
+    includes: ["icheckmovies\.com/lists/(.+)/(.*)"],
+    excludes: ["icheckmovies\.com/lists/favorited",
+               "icheckmovies\.com/lists/disliked",
+               "icheckmovies\.com/lists/watchlist"],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "autoload",
+        desc: "Autoload",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 // Inherit methods from BaseFeature
-ICM_ListOverviewSort.prototype = new ICM_BaseFeature();
+ICM_ListOverviewSort.prototype = Object.create(ICM_BaseFeature.prototype);
 ICM_ListOverviewSort.prototype.constructor = ICM_ListOverviewSort;
 
-function ICM_ListOverviewSort( config ) {
-    this.config = config;
-
-    this.includes = ["icheckmovies.com/profiles/progress"];
-    this.excludes = [];
+function ICM_ListOverviewSort(config) {
+    ICM_BaseFeature.call(this, config);
 
     this.sections = ["imdb", "country", "critics", "director",
                      "website", "institute", "misc", "all", "award"];
@@ -1790,42 +1709,39 @@ ICM_ListOverviewSort.prototype.Sort = function(order, section) {
     }
 }
 
-ICM_ListOverviewSort.prototype.getConfig = function() {
-    var out = {title: "Sort Progress Page",
-                desc: "Sort lists on progress page by completion rate",
-                config: {
-                    index: "toplists_sort",
-                    options: [
-                        {name: "enabled",
-                         desc: "Enabled",
-                         type: "checkbox",
-                         value: this.config.enabled
-                        },
-                        {name: "autoload",
-                         desc: "Autoload",
-                         type: "checkbox",
-                         value: this.config.autoload
-                        },
-                        {name: "order",
-                        desc: "Ascending",
-                        type: "checkbox",
-                        value: this.config.order
-                        },
-                        {name: "single_col",
-                        desc: "Single column",
-                        type: "checkbox",
-                        value: this.config.single_col
-                        },
-                        {name: "icebergs",
-                        desc: "Keep most completed on top in both columns (requires 'Single column' is unchecked)",
-                        type: "checkbox",
-                        value: this.config.icebergs
-                        }
-                    ]}
-                };
-
-    return out;
-}
+ICM_ListOverviewSort.prototype.settings = {
+    title: "Sort Progress Page",
+    desc: "Sort lists on progress page by completion rate",
+    index: "toplists_sort",
+    includes: ["icheckmovies.com/profiles/progress"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "autoload",
+        desc: "Autoload",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "order",
+        desc: "Ascending",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "single_col",
+        desc: "Single column",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "icebergs",
+        desc: "Keep most completed on top in both columns (requires 'Single column' is unchecked)",
+        type: "checkbox",
+        default: false
+    }]
+};
 
 /**
  * Main application
@@ -1838,32 +1754,37 @@ function ICM_Enhanced(scriptConfig) {
 
 ICM_Enhanced.prototype.register = function(module) {
     this.modules.push(module);
-    this.configWindow.addModule(module.getConfig());
+    this.configWindow.addModule(module.settings);
 }
 
 ICM_Enhanced.prototype.load = function() {
-    for (var i = 0; i < this.modules.length; i++) {
-        if (this.modules[i].IsEnabled()) {
-            this.modules[i].Attach();
+    $.each(this.modules, function(i, m) {
+        if (m.IsEnabled()) {
+            console.log('Attaching ' + m.constructor.name);
+            m.Attach();
         }
-    }
+    });
 
     this.configWindow.build();
 }
 
-$(document).ready(function() {
-    var config = new ICM_Config();
+var config = new ICM_Config();
 
-    var app = new ICM_Enhanced(config);
-    app.register(new ICM_RandomFilmLink( config.Get( "random_film" ) ));
-    app.register(new ICM_HideTags(config.Get("hide_tags")));
-    app.register(new ICM_UpcomingAwardsList( config.Get( "ua_list" ) ));
-    app.register(new ICM_ListCustomColors( config.Get( "list_colors" ) ));
-    app.register(new ICM_UpcomingAwardsOverview( config.Get( "ua" ) ));
-    app.register(new ICM_ListCrossCheck(config.Get("list_cross_ref")));
-    app.register(new ICM_WatchlistTab(config.Get("watchlist_tab")));
-    app.register(new ICM_Owned(config.Get("owned_tab")));
-    app.register(new ICM_LargeList(config.Get("large_lists")));
-    app.register(new ICM_ListOverviewSort(config.Get("toplists_sort")));
-    app.load();
+var useModules = [
+    ICM_RandomFilmLink,
+    ICM_HideTags,
+    ICM_UpcomingAwardsList,
+    ICM_ListCustomColors,
+    ICM_UpcomingAwardsOverview,
+    ICM_ListCrossCheck,
+    ICM_WatchlistTab,
+    ICM_Owned,
+    ICM_LargeList,
+    ICM_ListOverviewSort
+];
+
+var app = new ICM_Enhanced(config);
+$.each(useModules, function(i, Obj) {
+    app.register(new Obj(config));
 });
+app.load();
