@@ -1355,124 +1355,80 @@ ICM_Owned.prototype.Attach = function() {
         return;
     }
 
-    $movielist = $("#itemListMovies");
-    if ($movielist.length === 0) {
-        // Check if movie page
+    var $movielist = $("#itemListMovies"),
         $markOwned = $(".optionMarkOwned");
-        if ($markOwned.length === 0) {
-            return;
-        }
-
-        if (this.config.free_account) {
-            var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
-            $movielink = $markOwned.parent().parent().prev("a");
-
-            var movie_id = $movielink.attr("id");
-            movie_id = movie_id.replace("check", "movie");
-            if (owned.indexOf(movie_id) !== -1) {
-                $movie = $movielink.parent();
-                $movie.removeClass("notowned").addClass("owned");
-            }
-
-            $(".optionMarkOwned").on("click", function(e) {
-                e.preventDefault();
-                owned = evalOrParse(GM_getValue("owned_movies", "[]"));
-
-                // if movie is found in cached owned movies
-                $parent = $(this).parent().parent().prev("a");
-                var movie_id = $parent.attr("id");
-                movie_id = movie_id.replace("check", "movie");
-                console.log(movie_id);
-                $movie = $(this).parent().parent().parent();
-                var ind = owned.indexOf(movie_id);
-
-                // if found movie in the owned array...
-                if (ind !== -1) {
-                    console.log("found");
-                    $movie.removeClass("owned").addClass("notowned");
-                    owned.splice(ind, 1);
-                }
-                else {
-                    console.log("not found");
-                    $movie.removeClass("notowned").addClass("owned");
-                    owned.push(movie_id);
-                }
-
-                GM_setValue("owned_movies", JSON.stringify(owned));
-            });
-        }
-
+    // Check if 'owned' button exists
+    if (!$markOwned.length) {
+        return;
     }
-    else {
-    if (this.config.free_account) {
-        var owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
-        $movies = $movielist.children("li");
+    if (this.config.free_account) {
+        var owned = evalOrParse(GM_getValue("owned_movies", "[]")),
+            onListPage = $movielist.length !== 0;
 
         // mark owned movies as owned
-        for (var i = 0; i < $movies.length; i++) {
-            $el = $($movies[i]);
-            var movie_id = $el.attr("id");
-            var ind = owned.indexOf(movie_id);
+        $markOwned.each(function() {
+            var $checkbox = $(this).closest(".optionIconMenu").prev(".checkbox"),
+                $movie = $checkbox.parent(),
+                movie_id = $checkbox.attr("id").replace("check", "movie"),
+                ind = owned.indexOf(movie_id);
 
             // if movie id is found in cached owned movies
             if (ind !== -1) {
-                $el.removeClass("notowned").addClass("owned");
+                $movie.toggleClass("notowned owned");
             }
 
             // remove paid feature crap
-            $($movies[i]).find(".optionIconMenu").find("li").find("a").removeClass("paidFeature");
-        }
+            $(this).removeClass("paidFeature");
+        });
 
-        $(".optionMarkOwned").on("click", function(e) {
+        $(".optionMarkOwned").on("click", function() {
             owned = evalOrParse(GM_getValue("owned_movies", "[]"));
 
-            // if movie is found in cached owned movies
-            $parent = $(this).parent().parent().parent();
-            var movie_id = $parent.attr("id");
-            var ind = owned.indexOf(movie_id);
+            var $checkbox = $(this).closest(".optionIconMenu").prev(".checkbox"),
+                $movie = $checkbox.parent(),
+                movie_id = $checkbox.attr("id").replace("check", "movie"),
+                ind = owned.indexOf(movie_id);
 
-            // if found movie in the owned array...
+            // if movie id is found in cached owned movies
+            console.log((ind !== -1 ? "removing" : "storing") + " " + movie_id);
             if (ind !== -1) {
-                $parent.removeClass("owned").addClass("notowned");
                 owned.splice(ind, 1);
-            }
-            else {
-                $parent.removeClass("notowned").addClass("owned");
+            } else {
                 owned.push(movie_id);
             }
+            $movie.toggleClass("notowned owned");
 
-            var owned_count = $movielist.children("li.owned").length;
-            $("#topListMoviesOwnedCount").text("(" + owned_count + ")");
+            if (onListPage) {
+                var owned_count = $movielist.children("li.owned").length;
+                $("#topListMoviesOwnedCount").text("(" + owned_count + ")");
+            }
 
             GM_setValue("owned_movies", JSON.stringify(owned));
 
             return false;
         });
     }
-    }
 
     var owned_count = $movielist.children("li.owned").length;
-    var tabHtml = "<li id=\"listFilterOwned\" class=\"topListMoviesFilter\">"
-    + "<a id=\"linkListFilterOwned\" href=\"#\" title=\"View all your owned movies\">Owned "
-    + "<span id=\"topListMoviesOwnedCount\">(" + owned_count + ")</span></a>"
-    + "</li>";
+    var tabHtml = '<li id="listFilterOwned" class="topListMoviesFilter">' +
+        '<a id="linkListFilterOwned" href="#" title="View all your owned movies">Owned ' +
+        '<span id="topListMoviesOwnedCount">(' + owned_count + ')</span></a>' + '</li>';
 
     $("#listFilterNew").before(tabHtml);
 
-    $first = $("#listFilterMovies").find("a");
+    var $first = $("#listFilterMovies").find("a");
     $first.text($first.text().replace(" movies", ""));
 
     // move the order by and views to filter box
-    var isWatchlist = new Boolean($("#topList").length);
-    if ($("#orderByAndView").length === 0 && !isWatchlist) {
+    if (!$("#orderByAndView").length && $("#topList").length) {
         $("#topList").append('<div id="orderByAndView" style="z-index:200;position:absolute;top:30px;right:0;width:300px;height:20px"> </div>');
         $("#listOrdering").detach().appendTo("#orderByAndView");
         $("#listViewswitch").detach().appendTo("#orderByAndView");
     }
 
-    $("#linkListFilterOwned, #listFilterOwned").on("click", function(e) {
-        $movielist = $("#itemListMovies");
+    $("#linkListFilterOwned, #listFilterOwned").on("click", function() {
+        var $movielist = $("#itemListMovies");
         $movielist.children("li").hide();
         $movielist.children("li.owned").show();
 
@@ -1480,12 +1436,6 @@ ICM_Owned.prototype.Attach = function() {
         $(this).parent("li").addClass("active");
 
         return false;
-    });
-
-    $("#listFilterWatchlist").on("click", function(e) {
-        $movielist = $("#itemListMovies");
-        $movielist.children("li").hide();
-        $movielist.children("li.watch").show();
     });
 }
 
