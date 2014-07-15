@@ -923,8 +923,9 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem) {
     $.get(url, function(response) {
         $(list_elem).removeClass("icme_listcc_selected icme_listcc_pending").find("span.percentage").show();
 
+        var filter = (_t.config.checks) ? "" : "li.unchecked";
         // the site returns html with extra whitespace
-        var unchecked = $($.parseHTML(response)).find("ol#itemListMovies").children("li.unchecked");
+        var unchecked = $($.parseHTML(response)).find("ol#itemListMovies").children(filter);
 
         _t.UpdateMovies( unchecked );
     });
@@ -1240,6 +1241,11 @@ ICM_ListCrossCheck.prototype.settings = {
         desc: "If the above checkbox is unchecked, find films that appear on this many lists",
         type: "textinput",
         default: 2
+    }, {
+        name: "checks",
+        desc: "Include your checks in results (full intersection)",
+        type: "checkbox",
+        default: false
     }]
 };
 
