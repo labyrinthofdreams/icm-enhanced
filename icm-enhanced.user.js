@@ -1573,9 +1573,6 @@ ICM_ListOverviewSort.prototype.constructor = ICM_ListOverviewSort;
 
 function ICM_ListOverviewSort(config) {
     ICM_BaseFeature.call(this, config);
-
-    this.sections = ["imdb", "country", "critics", "director",
-                     "website", "institute", "misc", "all", "award"];
 }
 
 ICM_ListOverviewSort.prototype.Attach = function() {
@@ -1587,81 +1584,100 @@ ICM_ListOverviewSort.prototype.Attach = function() {
         GM_addStyle('.itemList .listItem.listItemProgress { float: none !important; }');
     }
 
-    if ( this.config.autoload ) {
-        for ( var i = 0; i < this.sections.length; i++ ) {
-            var order = this.config.order === true ? "desc" : "asc";
-            this.Sort( order, this.sections[i] );
-        }
-    }
+    var order = this.config.order === true ? "desc" : "asc";
+    this.Rearrange(order, "all");
+
+    var _t = this;
+    $('#progressFilter a').not('#progressFilter-all').one('click', function() {
+        var section = $(this).attr('id').split('-')[1];
+        _t.Rearrange(order, section);
+    });
 }
 
-ICM_ListOverviewSort.prototype.Sort = function(order, section) {
-    $toplist_list = $("#progress" + section);
-    $toplist_items = $toplist_list.children("li").get();
+ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
+    var $toplist_list = $("#progress" + section),
+        $toplist_items = $toplist_list.children("li").detach(),
+        isInterweaved = true;
 
-    var lookup_table = [];
-
-    // construct a lookup table for percentages
-    for ( var i = 0; i < $toplist_items.length; i++ ) {
-        var tmp = $( $toplist_items[i] ).find("span.progress").css("width").replace("px", "");
-
-        lookup_table.push( parseInt( tmp ) );
-    }
-
-    var lut_len = lookup_table.length;
-
-    for ( var i = 0; i < lut_len; i++ ) {
-        var tmp = i;
-        var smallest = i;
-
-        // find the smallest value...
-        while ( tmp < lut_len ) {
-            if ( order === "asc" && lookup_table[ tmp ] < lookup_table[ smallest ] ) {
-                smallest = tmp;
-            }
-            else if ( order === "desc" && lookup_table[ tmp ] > lookup_table[ smallest ] ) {
-                smallest = tmp;
-            }
-
-            tmp++;
-        }
-
-        // and swap with current position i
-        var tmp_list = $toplist_items[i];
-        $toplist_items[i] = $toplist_items[smallest];
-        $toplist_items[smallest] = tmp_list;
-
-        var tmp_val = lookup_table[i];
-        lookup_table[i] = lookup_table[smallest];
-        lookup_table[smallest] = tmp_val;
-    }
-
-    if ( this.config.single_col || this.config.icebergs ) {
-        for ( var i = 0; i < lut_len; i++ ) {
-            $toplist_list.append( $toplist_items[i] );
+    if ( this.config.hide_imdb && section === "all") {
+        if (this.config.autosort) {
+            $toplist_items = $toplist_items.not(".imdb");
+            // list would be sorted anyway, but until then the order is incorrect
+        } else {
+            // preserve original order
+            $toplist_items = $(this.Straighten($toplist_items.toArray())).not(".imdb");
+            isInterweaved = false;
         }
     }
-    else {
-        // exclude last entry if odd numbered
-        half_point = Math.ceil( lookup_table.length / 2 );
 
-        // place the elements in such order that lowest / highest appear on the left side and the opposite on the right side
-        for ( var i = 0, first_half = 0, second_half = half_point; i < lut_len; i++ ) {
-            if ( i % 2 === 0 ) {
-                $toplist_list.append( $( $toplist_items[first_half] ).removeClass("right").addClass("left") );
-                first_half++;
-            }
-            else {
-                $toplist_list.append( $( $toplist_items[second_half] ).removeClass("left").addClass("right") );
-                second_half++;
-            }
-        }
+    var toplist_arr = $toplist_items.toArray();
+
+    if (this.config.autosort) {
+        var lookup_map = toplist_arr.map(function(item, i) {
+            var width = $(item).find("span.progress").css("width").replace("px", "");
+            return {index: i, value: parseInt(width, 10)};
+        });
+
+        lookup_map.sort(function(a, b) {
+            return (order === "asc" ? 1 : -1) *
+                (a.value > b.value ? 1 : -1);
+        });
+
+        toplist_arr = lookup_map.map(function(e) {
+            return toplist_arr[e.index];
+        });
+
+        isInterweaved = false;
     }
+
+    // check corner cases to avoid excessive sorting
+    var verticalOrder = this.config.icebergs || this.config.single_col;
+    if (!isInterweaved && !verticalOrder) {
+        // restore default two-column view after sorting/hiding
+        toplist_arr = this.Interweave(toplist_arr);
+    }
+    if (isInterweaved && verticalOrder) {
+        // no sorting/hiding happened; rearrange the list with original order
+        toplist_arr = this.Straighten(toplist_arr);
+    }
+    $toplist_list.append(toplist_arr);
 }
+
+// [1, 'a', 2, 'b', 3, 'c']    -> [1, 2, 3, 'a', 'b', 'c']
+// [1, 'a', 2, 'b', 3, 'c', 4] -> [1, 2, 3, 4, 'a', 'b', 'c']
+ICM_ListOverviewSort.prototype.Straighten = function(list) {
+    var even_i = [], odd_i = [];
+    for (var i = 0; i < list.length; i++)
+        if ((i % 2) === 0)
+            even_i.push(list[i]);
+        else odd_i.push(list[i]);
+    return $.merge(even_i, odd_i);
+}
+
+// [1, 2, 3, 'a', 'b', 'c']    -> [1, 'a', 2, 'b', 3, 'c']
+// [1, 2, 3, 4, 'a', 'b', 'c'] -> [1, 'a', 2, 'b', 3, 'c', 4]
+ICM_ListOverviewSort.prototype.Interweave = function(list) {
+    var res = [],
+        half_len = Math.ceil(list.length / 2);
+    for (var i = 0; i< half_len; i++) {
+        res.push(list[i]);
+        if (i+half_len < list.length)
+            res.push(list[i+half_len]);
+    }
+    return res;
+}
+
+// tests
+// a = [1, 'a', 2, 'b', 3, 'c', 4, 'd'];
+// b = [1, 'a', 2, 'b', 3, 'c', 4];
+// function test(arr) {
+    // return JSON.stringify(arr) === JSON.stringify(interweave(straighten(arr)));
+// }
+// test(a) && test(b)
 
 ICM_ListOverviewSort.prototype.settings = {
-    title: "Sort Progress Page",
-    desc: "Sort lists on progress page by completion rate",
+    title: "Progress Page",
+    desc: "Change the order of lists on the progress page",
     index: "toplists_sort",
     includes: ["icheckmovies.com/profiles/progress"],
     excludes: [],
@@ -1671,13 +1687,13 @@ ICM_ListOverviewSort.prototype.settings = {
         type: "checkbox",
         default: false
     }, {
-        name: "autoload",
-        desc: "Autoload",
+        name: "autosort",
+        desc: "Sort lists by completion rate",
         type: "checkbox",
         default: true
     }, {
         name: "order",
-        desc: "Ascending",
+        desc: "Descending",
         type: "checkbox",
         default: true
     }, {
@@ -1687,7 +1703,12 @@ ICM_ListOverviewSort.prototype.settings = {
         default: false
     }, {
         name: "icebergs",
-        desc: "Keep most completed on top in both columns (requires 'Single column' is unchecked)",
+        desc: "Fill columns from left to right",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "hide_imdb",
+        desc: "Hide IMDb lists from \"All\" tab",
         type: "checkbox",
         default: false
     }]
