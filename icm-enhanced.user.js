@@ -1473,8 +1473,7 @@ ICM_LargeList.prototype.Attach = function() {
 
     if (this.config.autoload) {
         this.load();
-    }
-    else {
+    } else {
         // create link
         var link = '<span style="float: right; margin-left: 15px"><a id="icme_large_posters" href="#">Large posters</a></span>';
 
@@ -1482,12 +1481,10 @@ ICM_LargeList.prototype.Attach = function() {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + link + '</div>';
 
             $("div#topList").next("div").after( container );
-        }
-        else {
+        } else {
             if ($("#list_container").find("p").length === 1) {
                 $("#list_container p:first").append("<span> &mdash; </span>" + link);
-            }
-            else {
+            } else {
                 $("div#list_container").append( link );
             }
         }
@@ -1499,7 +1496,7 @@ ICM_LargeList.prototype.Attach = function() {
             _t.load();
         });
     }
-}
+};
 
 ICM_LargeList.prototype.load = function() {
     if (this.loaded) {
@@ -1508,30 +1505,29 @@ ICM_LargeList.prototype.load = function() {
 
     this.loaded = true;
 
-    var style = "#itemListMovies > .listItem { float:left !important; height: 330px !important; width: 255px !important; }"
-        + ".listItem .listImage { float:none !important; width: 230px !important; height: 305px !important; left:-18px !important; top:-18px !important; margin:0!important }"
-        + ".listImage a {width:100% !important; height:100% !important; background: url(\"/images/dvdCover.png\") no-repeat scroll center center transparent !important;}"
-        + ".listImage .coverImage { width:190px !important; height:258px !important; top:21px !important; left: 19px !important; right:auto !important; }"
-        + ".listItem .rank { top: 15px !important; position:absolute !important; height:auto !important; width:65px !important; right:0 !important; margin:0 !important; font-size:30px !important }"
-        + ".listItem .rank .positiondifference span { font-size: 12px !important }"
-        + ".listItem h2 { z-index:11 !important; font-size:14px !important; width:100% !important; margin:-30px 0 0 0 !important; }"
-        + ".listItem .info { font-size:12px !important; width:100% !important; height:auto !important; line-height:16px !important; margin-top:4px !important }"
-        + ".checkbox { top:85px !important; right:12px !important }"
-        //+ ".checkbox { display:none !important }"
-        + "#itemListMovies .optionIconMenu { top:120px !important; right:20px !important }"
-        + "#itemListMovies .optionIconMenu li { display: block !important }"
-        + "#itemListMovies .optionIconMenuCheckbox { right:20px !important }";
-        //+ ".optionIconMenu { display:none !important }";
+    var style = "#itemListMovies > .listItem { float:left !important; height: 330px !important; width: 255px !important; }" +
+        ".listItem .listImage { float:none !important; width: 230px !important; height: 305px !important; left:-18px !important; top:-18px !important; margin:0!important }" +
+        ".listImage a {width:100% !important; height:100% !important; background: url(\"/images/dvdCover.png\") no-repeat scroll center center transparent !important;}" +
+        ".listImage .coverImage { width:190px !important; height:258px !important; top:21px !important; left: 19px !important; right:auto !important; }" +
+        ".listItem .rank { top: 15px !important; position:absolute !important; height:auto !important; width:65px !important; right:0 !important; margin:0 !important; font-size:30px !important }" +
+        ".listItem .rank .positiondifference span { font-size: 12px !important }" +
+        ".listItem h2 { z-index:11 !important; font-size:14px !important; width:100% !important; margin:-30px 0 0 0 !important; }" +
+        ".listItem .info { font-size:12px !important; width:100% !important; height:auto !important; line-height:16px !important; margin-top:4px !important }" +
+        ".checkbox { top:85px !important; right:12px !important }" +
+        //".checkbox { display:none !important }" +
+        "#itemListMovies .optionIconMenu { top:120px !important; right:20px !important }" +
+        "#itemListMovies .optionIconMenu li { display: block !important }" +
+        "#itemListMovies .optionIconMenuCheckbox { right:20px !important }";
+        //".optionIconMenu { display:none !important }";
 
     GM_addStyle(style);
 
-    $c = $("#itemListMovies").find("div.coverImage").hide();
+    var $c = $("#itemListMovies").find("div.coverImage").hide();
     for (var i = 0; i < $c.length; i++) {
         var cururl = $c[i].style.backgroundImage;
         if (cururl.substr(4,1) !== "h") {
             cururl = cururl.slice(5,-2).replace("small", "medium").replace("Small", "Medium");
-        }
-        else { // chrome handles urls differently
+        } else { // chrome handles urls differently
             cururl = cururl.slice(4,-1).replace("small", "medium").replace("Small", "Medium");
         }
         var img = document.createElement("img");
@@ -1542,16 +1538,16 @@ ICM_LargeList.prototype.load = function() {
     }
 
     $("img.coverImage").lazyload({ threshold : 200 });
-}
+};
 
 ICM_LargeList.prototype.settings = {
     title: "Large Posters",
     desc: "Display large posters on individual lists (large posters are lazy loaded)",
     index: "large_lists",
-    includes: ["icheckmovies\.com/lists/(.+)/(.*)"],
-    excludes: ["icheckmovies\.com/lists/favorited",
-               "icheckmovies\.com/lists/disliked",
-               "icheckmovies\.com/lists/watchlist"],
+    includes: ["icheckmovies\\.com/lists/(.+)/(.*)"],
+    excludes: ["icheckmovies\\.com/lists/favorited",
+               "icheckmovies\\.com/lists/disliked",
+               "icheckmovies\\.com/lists/watchlist"],
     options: [{
         name: "enabled",
         desc: "Enabled",
@@ -1590,7 +1586,7 @@ ICM_ListOverviewSort.prototype.Attach = function() {
         var section = $(this).attr('id').split('-')[1];
         _t.Rearrange(order, section);
     });
-}
+};
 
 ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
     var $toplist_list = $("#progress" + section),
@@ -1639,7 +1635,7 @@ ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
         toplist_arr = this.Straighten(toplist_arr);
     }
     $toplist_list.append(toplist_arr);
-}
+};
 
 // [1, 'a', 2, 'b', 3, 'c']    -> [1, 2, 3, 'a', 'b', 'c']
 // [1, 'a', 2, 'b', 3, 'c', 4] -> [1, 2, 3, 4, 'a', 'b', 'c']
@@ -1650,7 +1646,7 @@ ICM_ListOverviewSort.prototype.Straighten = function(list) {
             even_i.push(list[i]);
         else odd_i.push(list[i]);
     return $.merge(even_i, odd_i);
-}
+};
 
 // [1, 2, 3, 'a', 'b', 'c']    -> [1, 'a', 2, 'b', 3, 'c']
 // [1, 2, 3, 4, 'a', 'b', 'c'] -> [1, 'a', 2, 'b', 3, 'c', 4]
@@ -1663,7 +1659,7 @@ ICM_ListOverviewSort.prototype.Interweave = function(list) {
             res.push(list[i+half_len]);
     }
     return res;
-}
+};
 
 // tests
 // a = [1, 'a', 2, 'b', 3, 'c', 4, 'd'];
@@ -1762,8 +1758,7 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
 
         // visual fix for edge cases when all lists are moved
         _b.children().last().filter('.groupSeparator').hide();
-    }
-    else if (_c.redirect) { // = if on a list page
+    } else if (_c.redirect) { // = if on a list page
         var linksTolists = $('.listItemMovie > .info > a:last-of-type');
 
         linksTolists.each(function () {
@@ -1772,7 +1767,7 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
             link.attr('href', url);
         });
     }
-}
+};
 
 ICM_ListsTabDisplay.prototype.move = function(lists) {
     if (lists.length) {
@@ -1782,7 +1777,7 @@ ICM_ListsTabDisplay.prototype.move = function(lists) {
         else
             this.block.prepend(lists, this.sep);
     }
-}
+};
 
 ICM_ListsTabDisplay.prototype.getLists = function(listIDs) {
     if (listIDs.length) {
@@ -1793,7 +1788,7 @@ ICM_ListsTabDisplay.prototype.getLists = function(listIDs) {
         return selected;
     }
     return [];
-}
+};
 
 ICM_ListsTabDisplay.prototype.settings = {
     title: "| iCME++: Lists tab display",
@@ -1883,7 +1878,7 @@ ICM_ExportLists.prototype.Attach = function() {
             // https://code.google.com/p/chromium/issues/detail?id=373182
         });
     }
-}
+};
 
 ICM_ExportLists.prototype.settings = {
     title: "| iCME++: Export lists",
@@ -1927,7 +1922,7 @@ ICM_ProgressTopX.prototype.Attach = function() {
 
         $('#listOrderingWrapper').prepend(loadLink, spanElem);
     }
-}
+};
 
 ICM_ProgressTopX.prototype.addStats = function(event) {
     var targetPage = parseInt(event.data.cfg.target_page, 10), // * 25 = target rank
@@ -1956,7 +1951,7 @@ ICM_ProgressTopX.prototype.addStats = function(event) {
     });
 
     return false; // prevents auto-scrolling to the top
-}
+};
 
 ICM_ProgressTopX.prototype.settings = {
     title: "| iCME++: Progress top X",
@@ -1989,7 +1984,7 @@ function ICM_Enhanced(scriptConfig) {
 ICM_Enhanced.prototype.register = function(module) {
     this.modules.push(module);
     this.configWindow.addModule(module.settings);
-}
+};
 
 ICM_Enhanced.prototype.load = function() {
     $.each(this.modules, function(i, m) {
@@ -2000,7 +1995,7 @@ ICM_Enhanced.prototype.load = function() {
     });
 
     this.configWindow.build();
-}
+};
 
 var config = new ICM_Config();
 // console.log("Loaded config", config); // debug
