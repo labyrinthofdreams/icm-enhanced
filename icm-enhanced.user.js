@@ -197,12 +197,11 @@ ICM_ConfigWindow.prototype.addModule = function(module) {
 }
 
 ICM_ConfigWindow.prototype.loadOptions = function(idx) {
-    $c = $("#module_settings");
+    var $c = $("#module_settings"),
+        m = this.modules[idx],
+        str = '<p>' + m.desc + '</p>';
+
     $c.html("");
-
-    var m = this.modules[idx];
-
-    var str = '<p>' + m.desc + '</p>';
 
     for (var i = 0; i < m.options.length; i++) {
         var opt = m.options[i],
@@ -216,6 +215,13 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
         } else if (opt.type === "textinput") {
             str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + index +
                    '" value="' + optValue + '" title="default: ' + opt.default + '"></p>';
+        } else if (opt.type === "textarea") {
+            // optValue can be a string (until a module parses it) or an array (after)
+            if ($.isArray(optValue)) {
+                optValue = optValue.join('\n');
+            }
+            str += '<p>'+ opt.desc + ': <textarea rows="3" cols="70" data-cfg-index="' + index +
+                   '">' + optValue + '</textarea></p>';
         }
     }
 
@@ -266,7 +272,7 @@ ICM_ConfigWindow.prototype.build = function() {
 
     var _t = this;
 
-    $("div#cfgModal").on( "change", "input", function( e ) {
+    $("div#cfgModal").on( "change", "input, textarea", function( e ) {
         var index = $(this).data("cfg-index");
         if ( !_t.config.Toggle(index) ) {
             _t.config.Set( index, $(this).val() );
