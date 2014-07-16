@@ -247,6 +247,7 @@ ICM_ConfigWindow.prototype.build = function() {
                   + 'span.icme_feature_title { font-weight: bold; }'
                   + 'input[type=text] { font-family: monospace }'
                   + '#module_settings { margin:10px 0; }'
+                  + '#module_settings > p { margin-bottom: 0.5em; }'
                   + '#configSave { position: absolute; bottom:15px; left: 30px }'
                   + 'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
 
