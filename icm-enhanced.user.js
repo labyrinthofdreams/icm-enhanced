@@ -154,6 +154,7 @@ ICM_Config.prototype.Init = function() {
 
 // Save config
 ICM_Config.prototype.Save = function() {
+    // console.log("Saving config", this.cfg); // debug
     GM_setValue( "icm_enhanced_cfg", JSON.stringify(this.cfg));
 }
 
@@ -2019,6 +2020,7 @@ ICM_Enhanced.prototype.load = function() {
 }
 
 var config = new ICM_Config();
+// console.log("Loaded config", config); // debug
 
 var useModules = [
     ICM_RandomFilmLink,
@@ -2041,3 +2043,4 @@ $.each(useModules, function(i, Obj) {
     app.register(new Obj(config));
 });
 app.load();
+console.log('window built');
