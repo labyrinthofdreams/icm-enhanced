@@ -1727,6 +1727,271 @@ ICM_ListOverviewSort.prototype.settings = {
     }]
 };
 
+// Inherit methods from BaseFeature
+ICM_ListsTabDisplay.prototype = Object.create(ICM_BaseFeature.prototype);
+ICM_ListsTabDisplay.prototype.constructor = ICM_ListsTabDisplay;
+
+function ICM_ListsTabDisplay(config) {
+    ICM_BaseFeature.call(this, config);
+
+    this.block = $("#itemListToplists");
+    this.sep = '<li class="groupSeparator"><br><hr><br></li>';
+    // multiline regex that leaves only list name, excl. a common beginning and parameters
+    this.reURL = /^[ \t]*(?:https?:\/\/)?(?:www\.)?(?:icheckmovies.com)?\/?(?:lists)?\/?([^\s\?]+\/)(?:\?.+)?[ \t]*$/gm;
+}
+
+ICM_ListsTabDisplay.prototype.Attach = function() {
+    var isOnMoviePage = (new RegExp( this.settings.includes[2] )).test(window.location.href),
+        _c = this.config;
+
+    if (isOnMoviePage) {
+        var _b = this.block;
+
+        if (_c.sort_official) {
+            var officialLists = _b.children().has("ul.tagList a[href$='user%3Aicheckmovies']");
+            this.move(officialLists);
+        }
+
+        if (_c.sort_groups) {
+            var _t = this;
+            ["group1", "group2"].forEach(function(group) {
+                var stored = _c[group];
+                if (typeof stored === 'string') {
+                        // Parse textarea content
+                        console.log('Parsing ICM_ListsTabDisplay group', group);
+                        stored = stored.trim().replace(_t.reURL, '$1').split('\n');
+                        _c[group] = stored;
+                        _t.globalConfig.Save();
+                }
+                var personal = _t.getLists(stored);
+                _t.move(personal);
+            });
+        }
+
+        if (_c.sort_filmos) {
+            var filmos = _b.children().filter(function() {
+                return $(this).text().toLowerCase().indexOf('filmography') >= 0;
+            });
+            this.move(filmos);
+        }
+
+        // visual fix for edge cases when all lists are moved
+        _b.children().last().filter('.groupSeparator').hide();
+    }
+    else if (_c.redirect) { // = if on a list page
+        var linksTolists = $('.listItemMovie > .info > a:last-of-type');
+
+        linksTolists.each(function () {
+            var link = $(this),
+                url = link.attr('href').replace('?tags=user:icheckmovies', '');
+            link.attr('href', url);
+        });
+    }
+}
+
+ICM_ListsTabDisplay.prototype.move = function(lists) {
+    if (lists.length) {
+        var target = this.block.find("li.groupSeparator").last();
+        if (target.length)
+            target.after(lists, this.sep);
+        else
+            this.block.prepend(lists, this.sep);
+    }
+}
+
+ICM_ListsTabDisplay.prototype.getLists = function(listIDs) {
+    if (listIDs.length) {
+        var selected = this.block.children().filter(function() {
+            var href = $(this).find("a.title").attr("href");
+            return (href && ($.inArray(href.substring(7), listIDs) !== -1)); // sep matches too
+        });
+        return selected;
+    }
+    return [];
+}
+
+ICM_ListsTabDisplay.prototype.settings = {
+    title: "| iCME++: Lists tab display",
+    desc: "Makes a tab with all lists a movie is on (\/movies\/*\/rankings\/) more organized",
+    index: "lists_tab_display",
+    includes: ["icheckmovies.com/lists/(.+)",
+               "icheckmovies.com/search/movies/(.+)",
+               "icheckmovies.com/movies/.+/rankings/(.*)"],
+    excludes: [],
+    options: [{
+        name: "redirect",
+        desc: "Redirect \"in # lists\" movie links to \"All\" lists tab",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "sort_official",
+        desc: "Auto-sort official lists",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "sort_filmos",
+        desc: "Auto-sort filmographies",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "sort_groups",
+        desc: "Auto-sort lists from user defined groups",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "group1",
+        desc: "Group 1",
+        type: "textarea",
+        default: []
+    }, {
+        name: "group2",
+        desc: "Group 2",
+        type: "textarea",
+        default: []
+    }]
+};
+
+// Inherit methods from BaseFeature
+ICM_ExportLists.prototype = Object.create(ICM_BaseFeature.prototype);
+ICM_ExportLists.prototype.constructor = ICM_ExportLists;
+
+function ICM_ExportLists(config) {
+    ICM_BaseFeature.call(this, config);
+}
+
+ICM_ExportLists.prototype.Attach = function() {
+    var _c = this.config;
+    if (_c.enabled) {
+        var sep = _c.delimiter;
+
+        $(".optionExport").one("click", function() {
+            if (sep !== ',' && sep !== ';')
+                sep = '\t';
+
+            var data =  ["rank", "title", "year",
+                "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
+
+            $("#itemListMovies > li").each(function() {
+                var item = $(this),
+                    rank = item.find(".rank").text().trim().replace(/ .+/, ''),
+                    title = item.find("h2>a").text().replace('"', '""'),
+                    year = item.find(".info a:first").text(),
+                    toplists = parseInt(item.find(".info a:last").text(), 10),
+                    checked = item.hasClass("checked") ? 'yes' : 'no',
+                    imdburl = item.find(".optionIMDB").attr("href"),
+                    line = [rank, title, year, toplists, checked, imdburl].join(sep) + sep + '\n';
+                data += line;
+            });
+
+            // BOM with ; or , as separator and without sep= - for Excel
+            var bom = (_c.bom) ? '\uFEFF' : '',
+                dataURI = "data:text/csv;charset=utf-8," + bom + encodeURIComponent(data);
+            // link swapping with a correct filename - http://caniuse.com/download
+            $(this).attr("href", dataURI).attr("download", $("#topList>h1").text() + ".csv");
+
+            // after changing URL jQuery fires a default click event
+            // on the link user clicked on, and loads dataURI as URL (!)
+            // I could've used preventDefault + change window.location.href,
+            // but that way the file wouldn't have a correct filename
+
+            // note: download attribute is ignored - fresh chrome bug
+            // https://code.google.com/p/chromium/issues/detail?id=373182
+        });
+    }
+}
+
+ICM_ExportLists.prototype.settings = {
+    title: "| iCME++: Export lists",
+    desc: "Download any list as .csv (doesn't support search results). Emulates the paid feature, so don't enable it if you have a paid account",
+    index: "export_lists",
+    includes: ["icheckmovies.com/lists/(.+)"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: false
+    }, {
+        name: "delimiter",
+        desc: "Use as delimiter (\\t by default; accepts ';' or ',')",
+        type: "textinput",
+        default: ';'
+    }, {
+        name: "bom",
+        desc: "Include BOM (required for Excel)",
+        type: "checkbox",
+        default: true
+    }]
+};
+
+// Inherit methods from BaseFeature
+ICM_ProgressTopX.prototype = Object.create(ICM_BaseFeature.prototype);
+ICM_ProgressTopX.prototype.constructor = ICM_ProgressTopX;
+
+function ICM_ProgressTopX(config) {
+    ICM_BaseFeature.call(this, config);
+}
+
+ICM_ProgressTopX.prototype.Attach = function() {
+    if (this.config.enabled) {
+        var css = 'float: left; margin-right: 0.5em',
+            attr = {text: 'Load stats', id: 'icme_req_for_top', href: '#', style: css},
+            // can't pass the value directly in case of user changing it and not reloading
+            loadLink = $('<a>', attr).click({cfg: this.config}, this.addStats),
+            spanElem = $('<span>', {text: ' | ', style: css});
+
+        $('#listOrderingWrapper').prepend(loadLink, spanElem);
+    }
+}
+
+ICM_ProgressTopX.prototype.addStats = function(event) {
+    var targetPage = parseInt(event.data.cfg.target_page, 10), // * 25 = target rank
+        lists = $(".itemListCompact[id^='progress']:visible span.rank a");
+
+    lists.each(function() {
+        var list = $(this),
+            oldText = list.text(),
+            curRank = oldText.match(/\d+/);
+
+        if (curRank < targetPage * 25)
+           return;
+
+        var url = "http://www.icheckmovies.com" + list.attr("href").replace(/=.*$/, "=" + targetPage),
+            progress = parseInt(list.parent().text().match(/\d+/), 10);
+
+        $.get(url, function(data) {
+            data = data.match(/\d+<\/strong> checks in this list,/g).pop().match(/\d+/);
+            if (data) {
+                var minchecks = parseInt(data[0], 10),
+                    dif = minchecks - progress;
+                list.text(oldText + " - " + minchecks + " req - " + dif + " dif");
+                list.attr("href", url);
+            }
+        });
+    });
+
+    return false; // prevents auto-scrolling to the top
+}
+
+ICM_ProgressTopX.prototype.settings = {
+    title: "| iCME++: Progress top X",
+    desc: "Find out how many checks you need to get into Top 25/50/100/1000/...",
+    index: "progress_top_x",
+    includes: ["icheckmovies.com/profiles/progress/"],
+    excludes: [],
+    options: [{
+        name: "enabled",
+        desc: "Enabled",
+        type: "checkbox",
+        default: true
+    }, {
+        name: "target_page",
+        desc: "Ranking page you want to be on (page x 25 = rank)",
+        type: "textinput",
+        default: '40'
+    }]
+};
+
 /**
  * Main application
  * Register and load modules
@@ -1764,7 +2029,10 @@ var useModules = [
     ICM_WatchlistTab,
     ICM_Owned,
     ICM_LargeList,
-    ICM_ListOverviewSort
+    ICM_ListOverviewSort,
+    ICM_ListsTabDisplay,
+    ICM_ExportLists,
+    ICM_ProgressTopX
 ];
 
 var app = new ICM_Enhanced(config);
