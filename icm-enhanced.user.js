@@ -210,11 +210,12 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
             optValue = this.config.Get(index); // always up to date
 
         if (opt.type === "checkbox") {
-            str += '<p><input type="checkbox" data-cfg-index="' + index +
-                   '"' + (optValue ? ' checked="checked"' : '') + '>' + opt.desc + '</p>';
+            str += '<p><input type="checkbox" data-cfg-index="' + index + '"' +
+                   (optValue ? ' checked="checked"' : '') + ' title="default: ' +
+                   (opt.default ? 'yes' : 'no') + '">' + opt.desc + '</p>';
         } else if (opt.type === "textinput") {
             str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + index +
-                   '" value="' + optValue + '"></p>';
+                   '" value="' + optValue + '" title="default: ' + opt.default + '"></p>';
         }
     }
 
