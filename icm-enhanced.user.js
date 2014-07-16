@@ -44,7 +44,7 @@
 
 //+ Jonas Raoni Soares Silva
 //@ http://jsfromhell.com/array/shuffle [rev. #1]
-shuffle = function(v) {
+var shuffle = function(v) {
     for (var j, x, i = v.length; i; j = parseInt(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x);
     return v;
 };
@@ -62,7 +62,7 @@ function setProperty(path, obj, val) {
         last = parts.pop(),
         part;
 
-    while (part = parts.shift()) {
+    while ((part = parts.shift())) { // assignment
         // rewrite property if it exists but is not an object
         obj = obj[part] = (obj[part] instanceof Object) ?
                           obj[part] : {};
@@ -97,7 +97,7 @@ ICM_BaseFeature.prototype.settings = {
 ICM_BaseFeature.prototype.IsEnabled = function() {
     function testRegex(str) {
         return (new RegExp(str)).test(window.location.href);
-    };
+    }
 
     return !this.settings.excludes.some(testRegex) &&
             this.settings.includes.some(testRegex);
@@ -150,23 +150,23 @@ ICM_Config.prototype.Init = function() {
     if (isUpdated) {
         this.Save();
     }
-}
+};
 
 // Save config
 ICM_Config.prototype.Save = function() {
     // console.log("Saving config", this.cfg); // debug
     GM_setValue( "icm_enhanced_cfg", JSON.stringify(this.cfg));
-}
+};
 
 // Get config value
 ICM_Config.prototype.Get = function( index ) {
     return getProperty(index, this.cfg);
-}
+};
 
 // Set config value
 ICM_Config.prototype.Set = function( index, value ) {
     setProperty(index, this.cfg, value);
-}
+};
 
 // Sets false to true and vice versa
 ICM_Config.prototype.Toggle = function( index ) {
@@ -182,7 +182,7 @@ ICM_Config.prototype.Toggle = function( index ) {
     }
     this.Set(index, changeVal);
     return true; // Value toggled
-}
+};
 
 function ICM_ConfigWindow(Config) {
     this.config = Config;
@@ -195,7 +195,7 @@ ICM_ConfigWindow.prototype.addModule = function(module) {
     })) {
         this.modules.push(module);
     }
-}
+};
 
 ICM_ConfigWindow.prototype.loadOptions = function(idx) {
     var $c = $("#module_settings"),
@@ -227,7 +227,7 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
     }
 
     $c.append(str);
-}
+};
 
 ICM_ConfigWindow.prototype.build = function() {
     // Sort module list by title
@@ -239,18 +239,19 @@ ICM_ConfigWindow.prototype.build = function() {
     $("ul#profileOptions").append( cfgLink );
 
     // Custom CSS for jqmodal
-    var customCSS = '.jqmWindow { display: none; position: absolute; font-family: verdana, arial, sans-serif; '
-                  + 'background-color:#fff; color:#000; padding: 12px 30px;}'
-                  + '.jqmOverlay { background-color:#000 }'
-                  + 'div.icme_cfg_feature { margin-bottom: 15px; }'
-                  + 'span.has_settings:hover { text-decoration: underline; }'
-                  + 'div.icme_cfg_feature > div.icme_cfg_settings { display: none; margin-left: 22px; margin-top: 10px; }'
-                  + 'span.icme_feature_title { font-weight: bold; }'
-                  + 'input[type=text] { font-family: monospace }'
-                  + '#module_settings { margin:10px 0; }'
-                  + '#module_settings > p { margin-bottom: 0.5em; }'
-                  + '#configSave { position: absolute; bottom:15px; left: 30px }'
-                  + 'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
+    var customCSS =
+        '.jqmWindow { display: none; position: absolute; font-family: verdana, arial, sans-serif; ' +
+        'background-color:#fff; color:#000; padding: 12px 30px;}' +
+        '.jqmOverlay { background-color:#000 }' +
+        'div.icme_cfg_feature { margin-bottom: 15px; }' +
+        'span.has_settings:hover { text-decoration: underline; }' +
+        'div.icme_cfg_feature > div.icme_cfg_settings { display: none; margin-left: 22px; margin-top: 10px; }' +
+        'span.icme_feature_title { font-weight: bold; }' +
+        'input[type=text] { font-family: monospace }' +
+        '#module_settings { margin:10px 0; }' +
+        '#module_settings > p { margin-bottom: 0.5em; }' +
+        '#configSave { position: absolute; bottom:15px; left: 30px }' +
+        'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
 
     GM_addStyle(customCSS);
 
@@ -262,19 +263,20 @@ ICM_ConfigWindow.prototype.build = function() {
     module_list += '</select>';
 
     // HTML for the main jqmodal window
-    var cfgMainHtml = '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">'
-                    + '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.cfg["script_config"].version + ' configuration</h3>'
-                    + module_list
-                    + '<hr><div id="module_settings"></div>'
-                    + '<button id="configSave">Save settings</button>'
-                    + '</div>';
+    var cfgMainHtml =
+        '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">' +
+        '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.cfg.script_config.version + ' configuration</h3>' +
+        module_list +
+        '<hr><div id="module_settings"></div>' +
+        '<button id="configSave">Save settings</button>' +
+        '</div>';
 
     // append config window
     $("body").append( cfgMainHtml );
 
     var _t = this;
 
-    $("div#cfgModal").on( "change", "input, textarea", function( e ) {
+    $("div#cfgModal").on( "change", "input, textarea", function() {
         var index = $(this).data("cfg-index");
         if ( !_t.config.Toggle(index) ) {
             _t.config.Set( index, $(this).val() );
@@ -283,13 +285,13 @@ ICM_ConfigWindow.prototype.build = function() {
         $("button#configSave").prop("disabled", false);
     });
 
-    $("div#cfgModal").on( "click", "button#configSave", function( e ) {
+    $("div#cfgModal").on( "click", "button#configSave", function() {
         _t.config.Save();
 
         $(this).prop("disabled", true);
     });
 
-    $("#modulelist").on("change", function(e) {
+    $("#modulelist").on("change", function() {
         var idx = document.getElementById("modulelist").selectedIndex;
         _t.loadOptions(idx);
     });
@@ -298,7 +300,7 @@ ICM_ConfigWindow.prototype.build = function() {
 
     // initialize config window
     $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );
-}
+};
 
 // Inherit methods from BaseFeature
 ICM_RandomFilmLink.prototype = Object.create(ICM_BaseFeature.prototype);
@@ -319,8 +321,7 @@ ICM_RandomFilmLink.prototype.Attach = function() {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + random_film + '</div>';
 
             $("div#topList").next("div").after( container );
-        }
-        else {
+        } else {
             $("div#list_container").append( random_film );
         }
 
@@ -332,11 +333,12 @@ ICM_RandomFilmLink.prototype.Attach = function() {
             that.PickRandomFilm();
         });
     }
-}
+};
 
 // Displays a random film on a list
 ICM_RandomFilmLink.prototype.PickRandomFilm = function() {
-    $unchecked = $("ol#itemListMovies > li.unchecked");
+    var $unchecked = $("ol#itemListMovies > li.unchecked"),
+        rand_num;
 
     if ( $unchecked.length > 0 ) {
         if ( this.config.unique ) {
@@ -351,17 +353,16 @@ ICM_RandomFilmLink.prototype.PickRandomFilm = function() {
                 this.random_nums = shuffle( this.random_nums );
             }
 
-            var rand_num = this.random_nums.pop();
-        }
-        else {
-            var rand_num = Math.floor( Math.random() * $unchecked.length );
+            rand_num = this.random_nums.pop();
+        } else {
+            rand_num = Math.floor( Math.random() * $unchecked.length );
         }
 
         $("ol#itemListMovies > li").hide();
 
         $( $unchecked[ rand_num ] ).show();
     }
-}
+};
 
 ICM_RandomFilmLink.prototype.settings = {
     title: "Random Film Link",
@@ -412,12 +413,11 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + statistics + '</div>';
 
             $("div#topList").next("div").after( container );
-        }
-        else {
+        } else {
             $("div#list_container").append( statistics );
         }
     }
-}
+};
 
 ICM_UpcomingAwardsList.prototype.settings = {
     title: "Upcoming Awards (individual lists)",
@@ -453,8 +453,7 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function() {
     if ( this.config.enabled ) {
         if ( this.config.autoload ) {
             this.LoadAwardData();
-        }
-        else {
+        } else {
             var load_link = '<p id="lad_container"><a id="load_award_data" href="#">Load upcoming awards for this user</a></p>';
 
             $("#listOrdering").before(load_link);
@@ -464,14 +463,13 @@ ICM_UpcomingAwardsOverview.prototype.Attach = function() {
             $("p#lad_container").on("click", "a#load_award_data", function(e) {
                 e.preventDefault();
 
-                $elem = $( e.target );
-                $elem.remove();
+                $( e.target ).remove();
 
                 that.LoadAwardData();
             });
         }
     }
-}
+};
 
 ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function() {
     this.lists = [];
@@ -480,39 +478,40 @@ ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function() {
     this.PopulateLists();
     this.SortLists();
     this.HTMLOut();
-}
+};
 
 ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
-    $all_lists = $("ol#progressall, ol#itemListToplists").children("li");
+    var $all_lists = $("ol#progressall, ol#itemListToplists").children("li");
 
     for ( var i = 0; i < $all_lists.length; i++ ) {
-        $el = $($all_lists[i]);
+        var $el = $($all_lists[i]),
+            count_arr, checks, total_items, list_title, list_url, $t;
+
         if (location.href.indexOf("progress") !== -1) {
-            var count_arr   = $el.find("span.rank").html().split("<br>")[0];
+            count_arr   = $el.find("span.rank").html().split("<br>")[0];
             count_arr = count_arr.split(" / ");
 
-            var checks      = parseInt( count_arr[0] );
-            var total_items = parseInt( count_arr[1].split("#")[0] );
+            checks      = parseInt( count_arr[0] );
+            total_items = parseInt( count_arr[1].split("#")[0] );
 
             $t = $el.find("h3 > a");
 
-            var list_title  = $t.find("span").text();
-            var list_url    = $t.attr("href");
-        }
-        else {
-            var count_arr = $el.find("span.info > strong:first").text().split("/");
+            list_title  = $t.find("span").text().trim();
+            list_url    = $t.attr("href");
+        } else {
+            count_arr = $el.find("span.info > strong:first").text().split("/");
 
-            var checks = parseInt(count_arr[0]);
-            var total_items = parseInt(count_arr[1]);
+            checks = parseInt(count_arr[0]);
+            total_items = parseInt(count_arr[1]);
 
             $t = $el.find("h2 > a.title");
 
-            var list_title = $t.text();
-            var list_url = $t.attr("href");
+            list_title = $t.text().trim();
+            list_url = $t.attr("href");
         }
 
-        var award_types = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
-        var that = this;
+        var award_types = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]],
+            that = this;
         $.each(award_types, function(i, val) {
             var award_checks = Math.ceil(total_items * val[1]) - checks;
             if (award_checks <= 0)
@@ -525,7 +524,7 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
             });
         });
     } // End for loop
-}
+};
 
 ICM_UpcomingAwardsOverview.prototype.SortLists = function() {
     // sort lists array by least required checks ASC,
@@ -546,7 +545,7 @@ ICM_UpcomingAwardsOverview.prototype.SortLists = function() {
             return 1;
         return 0;
     });
-}
+};
 
 ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     var unhide_icon_data = "data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjRuqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/26gXmviW5bqnb8yUK028qZjPfoPWEj4Ku5HBspgAz941IXZeze8N1bottSo8BTZviVWrEh546EO03EXpuJOdG63otJbjBKHkEp/Ml6yNYYzpuezWL4s5VMtT8acCMQcb5XL3eJE8VgBlR7BeMGW9Z4yT9y1CeyucuhdTGDxfftaBO7G4L+zg91UocxVmCiy51NpiP3n2treUPujL8xhOjYOzZYsQWANyRYlU4Y9Br6oHd5bDh0bCpSOixJiWx71YY09J5pM/WEbzFcDmHvwwBu2wnikg+lEj4mwBe5bC5h1OUqcwpdC60dxegRmR06TyjCF9G9z+qM2uCJmuMJmaNZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzSCwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTkSuQmCC";
@@ -555,32 +554,33 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     var list_table = '<table id="award_table"><thead><tr id="award_table_head"><th>Awards</th><th>Checks</th><th>List title</th><th>(Un)Hide</th></tr></head><tbody>';
 
     for ( var i = 0; i < this.lists.length; i++ ) {
-        var el = this.lists[i];
-        unhide_icon = '<img title="Unhide ' + $.trim(el.list_title) + '" alt="Unhide icon" src="' + unhide_icon_data + '">';
-        hide_icon = '<img title="Hide ' + $.trim(el.list_title) + '" alt="Hide icon" src="' + hide_icon_data + '">';
-        var is_hidden = (this.hidden_lists.indexOf(el.list_url) !== -1);
+        var el = this.lists[i],
+            unhide_icon = '<img title="Unhide ' + el.list_title + '" alt="Unhide icon" src="' + unhide_icon_data + '">',
+            hide_icon = '<img title="Hide ' + el.list_title + '" alt="Hide icon" src="' + hide_icon_data + '">',
+            is_hidden = (this.hidden_lists.indexOf(el.list_url) !== -1);
 
-        list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") + '" data-award-type="' + el.award_type + '" data-list-url="' + el.list_url + '"><td style="width: 65px">'
-                    + el.award_type + '</td><td style="width: 65px">' + el.award_checks
-                    + '</td><td><div style="height: 28px; overflow: hidden"><a class="list-title" href="' + el.list_url + '">' + el.list_title + '</a></div></td>'
-                    + '<td style="width: 70px"><a href="#" class="icm_hide_list">' + (is_hidden ? unhide_icon : hide_icon) + '</a></td></tr>';
+        list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") +
+            '" data-award-type="' + el.award_type + '" data-list-url="' + el.list_url + '">' +
+            '<td style="width: 65px">' + el.award_type + '</td>' +
+            '<td style="width: 65px">' + el.award_checks + '</td>' +
+            '<td><div style="height: 28px; overflow: hidden"><a class="list-title" href="' + el.list_url + '">' + el.list_title + '</a></div></td>' +
+            '<td style="width: 70px"><a href="#" class="icm_hide_list">' + (is_hidden ? unhide_icon : hide_icon) + '</a></td></tr>';
     }
 
     list_table += '</tbody></table>';
 
     // build the html...
-    var toggle_upcoming_link    = '<p id="ua_toggle_link_container" style="position: relative; left:0; top:0; width: 200px"><a id="toggle_upcoming_awards" href="#"><span class="_show" style="display: none">Show upcoming awards</span><span class="_hide">Hide upcoming awards</span></a></p>';
-    var toggle_full_link        = '<a id="toggle_full_list" href="#"><span class="_show">Show full list</span><span class="_hide" style="display: none">Minimize full list</span></a>';
-    var toggle_hidden_link      = '<a id="toggle_hidden_list" href="#">Show hidden</a>';
+    var toggle_upcoming_link = '<p id="ua_toggle_link_container" style="position: relative; left:0; top:0; width: 200px"><a id="toggle_upcoming_awards" href="#"><span class="_show" style="display: none">Show upcoming awards</span><span class="_hide">Hide upcoming awards</span></a></p>';
+    var toggle_full_link     = '<a id="toggle_full_list" href="#"><span class="_show">Show full list</span><span class="_hide" style="display: none">Minimize full list</span></a>';
+    var toggle_hidden_link   = '<a id="toggle_hidden_list" href="#">Show hidden</a>';
 
-    var links   = '<p id="award_display_links" style="position: absolute; right: 0; top: 0; font-weight: bold">Display: <a id="display_all" href="#">All</a>, '
-                + '<a id="display_bronze" href="#">Bronze</a>, <a id="display_silver" href="#">Silver</a>, <a id="display_gold" href="#">Gold</a>, '
-                + '<a id="display_platinum" href="#">Platinum</a>, ' + toggle_full_link + ', ' + toggle_hidden_link + '</p>';
+    var links = '<p id="award_display_links" style="position: absolute; right: 0; top: 0; font-weight: bold">Display: <a id="display_all" href="#">All</a>, ' +
+        '<a id="display_bronze" href="#">Bronze</a>, <a id="display_silver" href="#">Silver</a>, <a id="display_gold" href="#">Gold</a>, ' +
+        '<a id="display_platinum" href="#">Platinum</a>, ' + toggle_full_link + ', ' + toggle_hidden_link + '</p>';
 
     var award_container = '<div id="award_container" class="container" style="position: relative; top: 0; width: 830px; height: 240px; overflow: scroll">' + list_table + '</div>';
 
-    var all_html = '<div id="icm_award_html_container" style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">'
-                + toggle_upcoming_link + links + award_container + '</div>';
+    var all_html = '<div id="icm_award_html_container" style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">' + toggle_upcoming_link + links + award_container + '</div>';
 
     $("#icm_award_html_container, #ua_toggle_link_container").remove();
 
@@ -589,41 +589,38 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     else
         $("#itemContainer").before(all_html);
 
-    $lists = $("#award_table");
+    var $lists = $("#award_table");
 
     // hide hidden
     $lists.find(".hidden-list").hide();
 
-    _this = this;
+    var _this = this;
 
     $("a.icm_hide_list").on("click", function(e) {
         e.preventDefault();
 
-        $this = $(this);
-        $parent = $this.parent().parent();
+        var $parent = $(this).parent().parent(),
+            list_title = $.trim($parent.find(".list-title").text()),
+            ind = _this.hidden_lists.indexOf($parent.data("list-url"));
 
-        var list_title = $.trim($parent.find(".list-title").text());
-
-        var ind = _this.hidden_lists.indexOf($parent.data("list-url"));
         if (ind === -1) {
             // hide list
             _this.hidden_lists.push($parent.data("list-url"));
 
-            $("#award_table").find("tr").each(function(e) {
-                $t = $(this);
+            $("#award_table").find("tr").each(function() {
+                var $t = $(this);
                 if ($t.data("list-url") === $parent.data("list-url")) {
                     $t.addClass("hidden-list").css("display", "none");
                     $t.find(".icm_hide_list").find("img").attr("src", unhide_icon_data).attr("alt", "Unhide Icon")
                     .attr("title", "Unhide " + list_title);
                 }
             });
-        }
-        else {
+        } else {
             // unhide list
             _this.hidden_lists.splice(ind, 1);
 
-            $("#award_table").find("tr.hidden-list").each(function(e) {
-                $t = $(this);
+            $("#award_table").find("tr.hidden-list").each(function() {
+                var $t = $(this);
                 if ($t.data("list-url") === $parent.data("list-url")) {
                     $t.removeClass("hidden-list").css("display", "none");
                     $t.find(".icm_hide_list").find("img").attr("src", hide_icon_data).attr("alt", "Hide Icon")
@@ -655,10 +652,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         e.preventDefault();
 
         $("table#award_table tr").hide();
-        $("table#award_table tr").filter(function(index) {
-            if ($(this).hasClass("hidden-list")) return false;
-            return true;
-        }).show();
+        $("table#award_table tr").not(".hidden-list").show();
     });
 
     $("#award_display_links").on("click", "a#display_bronze, a#display_silver, a#display_gold, a#display_platinum", function(e) {
@@ -686,7 +680,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         $("a#toggle_full_list span").toggle();
         $("div#award_container").css("height", "240px");
     });
-}
+};
 
 ICM_UpcomingAwardsOverview.prototype.settings = {
     title: "Upcoming Awards Overview",
