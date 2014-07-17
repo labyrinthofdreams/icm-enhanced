@@ -255,18 +255,18 @@ ICM_ConfigWindow.prototype.build = function() {
 
     GM_addStyle(customCSS);
 
-    var module_list = '<select id="modulelist" name="modulelist">';
+    var moduleList = '<select id="modulelist" name="modulelist">';
     for (var i = 0; i < this.modules.length; ++i) {
         var m = this.modules[i];
-        module_list += '<option value="' + i + '">' + m.title + '</option>';
+        moduleList += '<option value="' + i + '">' + m.title + '</option>';
     }
-    module_list += '</select>';
+    moduleList += '</select>';
 
     // HTML for the main jqmodal window
     var cfgMainHtml =
         '<div class="jqmWindow" id="cfgModal" style="top: 17%; left: 50%; margin-left: -400px; width: 800px; height:450px">' +
         '<h3 style="color:#bbb">iCheckMovies Enhanced ' + this.config.cfg.script_config.version + ' configuration</h3>' +
-        module_list +
+        moduleList +
         '<hr><div id="module_settings"></div>' +
         '<button id="configSave">Save settings</button>' +
         '</div>';
@@ -393,7 +393,7 @@ function ICM_UpcomingAwardsList(config) {
 
 ICM_UpcomingAwardsList.prototype.Attach = function() {
     if ( this.config.enabled && $("#itemListMovies").length ) {
-        var total_items = parseInt($("li#listFilterMovies").text().match(/([0-9]+)/)[1]);
+        var total_items = parseInt($("li#listFilterMovies").text().match(/\d+/));
         var checks      = parseInt($("#topListMoviesCheckedCount").text().match(/\d+/));
 
         var statistics = '<span><b>Upcoming awards:</b>';
@@ -584,10 +584,11 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
 
     $("#icm_award_html_container, #ua_toggle_link_container").remove();
 
-    if (location.href.indexOf("progress") !== -1)
+    if (location.href.indexOf("progress") !== -1) {
         $("#listOrdering").before(all_html);
-    else
+    } else {
         $("#itemContainer").before(all_html);
+    }
 
     var $lists = $("#award_table");
 
@@ -660,7 +661,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
 
         var award_type = $(this).attr("id").split('_')[1];
         $("table#award_table > tbody > tr").hide();
-        $("table#award_table > tbody > tr").filter(function(index) {
+        $("table#award_table > tbody > tr").filter(function() {
             if ($(this).hasClass("hidden-list")) return false;
             if ($(this).data("award-type").toLowerCase() === award_type) return true;
             return false;
@@ -840,11 +841,11 @@ ICM_ListCrossCheck.prototype.Activate = function() {
             if ( _t.activated && !_t.in_progress ) { // ff 3.6 compatibility
                 // these event actions must not work for cloned toplists under the selected tab
                 if ( !$(this).hasClass("icme_listcc") ) {
-                    if ( e.type == "mouseover" && !$(this).hasClass("icme_listcc_selected") ) {
+                    if ( e.type === "mouseover" && !$(this).hasClass("icme_listcc_selected") ) {
                         $(this).addClass("icme_listcc_hover").find("span.percentage").hide();
-                    } else if ( e.type == "mouseout" && !$(this).hasClass("icme_listcc_selected") ) {
+                    } else if ( e.type === "mouseout" && !$(this).hasClass("icme_listcc_selected") ) {
                         $(this).removeClass("icme_listcc_hover").find("span.percentage").show();
-                    } else if ( e.type == "click" ) {
+                    } else if ( e.type === "click" ) {
                         $(this).removeClass("icme_listcc_hover");
 
                         if ( $(this).hasClass("icme_listcc_selected") ) {
@@ -976,7 +977,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
         if ( !found ) {
             // add it to the main movies array only if the script is not checking for matches on all top lists
             // OR if the script is checking for matches on all top lists, but this is just the first top list
-            if ( !show_perfect_matches || ( show_perfect_matches && this.sequence_number == 1 ) ) {
+            if ( !show_perfect_matches || ( show_perfect_matches && this.sequence_number === 1 ) ) {
                 var $item = $(content[i]);
                 $item.find(".rank").html("0");
 
@@ -1017,7 +1018,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
         } else {
             // if finding movies on all selected top lists, but didn't find a single match,
             // continue if it was just the first top list
-            if ( this.sequence_number == 1 && has_toplists_left ) {
+            if ( this.sequence_number === 1 && has_toplists_left ) {
                 this.GetUncheckedFilms(this.toplists[this.sequence_number]);
             } else {
                 this.movies = [];
@@ -1090,8 +1091,9 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
 
         $("#itemContainer").after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
         $("#itemContainer").after(menu);
-        for (var i = 0; i < this.movies.length; ++i)
+        for (i = 0; i < this.movies.length; ++i) {
             $("#itemListMovies").append(this.movies[i].jq);
+        }
 
         $("#itemListMovies").children("li").show();
 
@@ -1163,7 +1165,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
         });
         b.addClass("active");
 
-        if ( a == "icme_listcc" && !_t.in_progress ) {
+        if ( a === "icme_listcc" && !_t.in_progress ) {
             var $top_list_ul = $("ol#itemListToplists");
             $top_list_ul.children("li.icme_listcc").remove();
 
@@ -1206,7 +1208,6 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
         b = $("ol#itemListToplists");
         b.find("li").hide();
         b.find("li." + a).show();
-        a == "imdb" ? b.addClass("doubleList") : b.removeClass("doubleList");
 
         return false;
     });
@@ -1641,10 +1642,13 @@ ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
 // [1, 'a', 2, 'b', 3, 'c', 4] -> [1, 2, 3, 4, 'a', 'b', 'c']
 ICM_ListOverviewSort.prototype.Straighten = function(list) {
     var even_i = [], odd_i = [];
-    for (var i = 0; i < list.length; i++)
-        if ((i % 2) === 0)
+    for (var i = 0; i < list.length; i++) {
+        if ((i % 2) === 0) {
             even_i.push(list[i]);
-        else odd_i.push(list[i]);
+        } else {
+            odd_i.push(list[i]);
+        }
+    }
     return $.merge(even_i, odd_i);
 };
 
@@ -1655,8 +1659,9 @@ ICM_ListOverviewSort.prototype.Interweave = function(list) {
         half_len = Math.ceil(list.length / 2);
     for (var i = 0; i< half_len; i++) {
         res.push(list[i]);
-        if (i+half_len < list.length)
+        if (i+half_len < list.length) {
             res.push(list[i+half_len]);
+        }
     }
     return res;
 };
@@ -1772,10 +1777,11 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
 ICM_ListsTabDisplay.prototype.move = function(lists) {
     if (lists.length) {
         var target = this.block.find("li.groupSeparator").last();
-        if (target.length)
+        if (target.length) {
             target.after(lists, this.sep);
-        else
+        } else {
             this.block.prepend(lists, this.sep);
+        }
     }
 };
 
@@ -1845,8 +1851,9 @@ ICM_ExportLists.prototype.Attach = function() {
         var sep = _c.delimiter;
 
         $(".optionExport").one("click", function() {
-            if (sep !== ',' && sep !== ';')
+            if (sep !== ',' && sep !== ';') {
                 sep = '\t';
+            }
 
             var data =  ["rank", "title", "year",
                 "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
