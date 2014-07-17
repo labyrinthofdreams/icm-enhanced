@@ -1943,7 +1943,7 @@ ICM_ProgressTopX.prototype.addStats = function(event) {
         if (curRank < targetPage * 25)
            return;
 
-        var url = "http://www.icheckmovies.com" + list.attr("href").replace(/=.*$/, "=" + targetPage),
+        var url = list.attr("href").replace(/=.*$/, "=" + targetPage),
             progress = parseInt(list.parent().text().match(/\d+/), 10);
 
         $.get(url, function(data) {
