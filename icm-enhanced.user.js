@@ -481,49 +481,41 @@ ICM_UpcomingAwardsOverview.prototype.LoadAwardData = function() {
 };
 
 ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
-    var $all_lists = $("ol#progressall, ol#itemListToplists").children("li");
+    var that = this,
+        $all_lists = $("ol#progressall, ol#itemListToplists").children("li"),
+        sel = {progress: {rank: "span.rank", title: "h3 > a"},
+               lists: {rank: "span.info > strong:first", title: "h2 > a.title"}},
+        // use different selectors depending on page
+        curSel = (location.href.indexOf("progress") !== -1) ?
+                 sel.progress : sel.lists,
+        award_types = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
-    for ( var i = 0; i < $all_lists.length; i++ ) {
-        var $el = $($all_lists[i]),
-            count_arr, checks, total_items, list_title, list_url, $t;
+    $all_lists.each(function() {
+        var $el = $(this),
+            count_arr = $el.find(curSel.rank).text().match(/\d+/g);
 
-        if (location.href.indexOf("progress") !== -1) {
-            count_arr   = $el.find("span.rank").html().split("<br>")[0];
-            count_arr = count_arr.split(" / ");
+        if (!count_arr)
+            return;
 
-            checks      = parseInt( count_arr[0] );
-            total_items = parseInt( count_arr[1].split("#")[0] );
-
-            $t = $el.find("h3 > a");
-
-            list_title  = $t.find("span").text().trim();
+        var checks      = parseInt( count_arr[0], 10 ),
+            total_items = parseInt( count_arr[1], 10 ),
+            $t          = $el.find(curSel.title),
+            list_title  = $t.attr("title").replace(/^View the | top list$/g, ""),
             list_url    = $t.attr("href");
-        } else {
-            count_arr = $el.find("span.info > strong:first").text().split("/");
 
-            checks = parseInt(count_arr[0]);
-            total_items = parseInt(count_arr[1]);
-
-            $t = $el.find("h2 > a.title");
-
-            list_title = $t.text().trim();
-            list_url = $t.attr("href");
-        }
-
-        var award_types = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]],
-            that = this;
-        $.each(award_types, function(i, val) {
-            var award_checks = Math.ceil(total_items * val[1]) - checks;
+        award_types.forEach(function(award) {
+            var award_checks = Math.ceil(total_items * award[1]) - checks;
             if (award_checks <= 0)
                 return false; // exit loop; the order of array is important!
+
             that.lists.push({
                 'award_checks': award_checks,
-                'award_type': val[0],
+                'award_type': award[0],
                 'list_title': list_title,
                 'list_url': list_url
             });
         });
-    } // End for loop
+    });
 };
 
 ICM_UpcomingAwardsOverview.prototype.SortLists = function() {
@@ -590,10 +582,10 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         $("#itemContainer").before(all_html);
     }
 
-    var $lists = $("#award_table");
+    var $lists = $("#award_table > tbody > tr");
 
     // hide hidden
-    $lists.find(".hidden-list").hide();
+    $lists.filter(".hidden-list").hide();
 
     var _this = this;
 
@@ -602,33 +594,26 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
 
         var $parent = $(this).parent().parent(),
             list_title = $.trim($parent.find(".list-title").text()),
-            ind = _this.hidden_lists.indexOf($parent.data("list-url"));
+            list_url = $parent.data("list-url"),
+            ind = _this.hidden_lists.indexOf(list_url),
+            hide = ind === -1;
 
-        if (ind === -1) {
-            // hide list
-            _this.hidden_lists.push($parent.data("list-url"));
-
-            $("#award_table").find("tr").each(function() {
-                var $t = $(this);
-                if ($t.data("list-url") === $parent.data("list-url")) {
-                    $t.addClass("hidden-list").css("display", "none");
-                    $t.find(".icm_hide_list").find("img").attr("src", unhide_icon_data).attr("alt", "Unhide Icon")
-                    .attr("title", "Unhide " + list_title);
-                }
-            });
-        } else {
-            // unhide list
+        if (hide) { // hide list
+            _this.hidden_lists.push(list_url);
+        } else { // unhide list
             _this.hidden_lists.splice(ind, 1);
-
-            $("#award_table").find("tr.hidden-list").each(function() {
-                var $t = $(this);
-                if ($t.data("list-url") === $parent.data("list-url")) {
-                    $t.removeClass("hidden-list").css("display", "none");
-                    $t.find(".icm_hide_list").find("img").attr("src", hide_icon_data).attr("alt", "Hide Icon")
-                    .attr("title", "Hide " + list_title);
-                }
-            });
         }
+
+        $lists.filter(hide ? "tr" : "tr.hidden-list")
+            .filter(function() { // get all awards with the same url
+                return $(this).data("list-url") === list_url;
+            })
+            .toggleClass("hidden-list", hide).hide()
+            .find(".icm_hide_list > img").attr({
+                src: hide ? unhide_icon_data : hide_icon_data,
+                alt: (hide ? "Unhide " : "Hide ") + "Icon",
+                title: (hide ? "Unhide " : "Hide ") + list_title
+            });
 
         // save hidden lists
         GM_setValue("hidden_lists", JSON.stringify(_this.hidden_lists));
@@ -637,9 +622,8 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     $("#toggle_hidden_list").on("click", function(e) {
         e.preventDefault();
 
-        $lists.find("tr").hide();
-        $lists.find("#award_table_head").show();
-        $lists.find("tr.hidden-list").show();
+        $lists.hide();
+        $lists.filter(".hidden-list").show();
     });
 
     $("#ua_toggle_link_container").on("click", "a#toggle_upcoming_awards span", function(e) {
@@ -652,19 +636,17 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
     $("#award_display_links").on("click", "a#display_all", function(e) {
         e.preventDefault();
 
-        $("table#award_table tr").hide();
-        $("table#award_table tr").not(".hidden-list").show();
+        $lists.hide();
+        $lists.not(".hidden-list").show();
     });
 
     $("#award_display_links").on("click", "a#display_bronze, a#display_silver, a#display_gold, a#display_platinum", function(e) {
         e.preventDefault();
 
         var award_type = $(this).attr("id").split('_')[1];
-        $("table#award_table > tbody > tr").hide();
-        $("table#award_table > tbody > tr").filter(function() {
-            if ($(this).hasClass("hidden-list")) return false;
-            if ($(this).data("award-type").toLowerCase() === award_type) return true;
-            return false;
+        $lists.hide().filter(function() {
+            return !$(this).hasClass("hidden-list") &&
+                    $(this).data("award-type").toLowerCase() === award_type;
         }).show();
     });
 
