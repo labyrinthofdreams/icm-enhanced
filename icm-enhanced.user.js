@@ -914,7 +914,7 @@ ICM_ListCrossCheck.prototype.Check = function() {
  * @param list_elem jQuery object of the top list element
  */
 ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem) {
-    var url = "http://www.icheckmovies.com" + $(list_elem).find("a").attr("href");
+    var url = $(list_elem).find("a").attr("href");
 
     $(list_elem).addClass("icme_listcc_pending");
 
