@@ -221,7 +221,8 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
             if ($.isArray(optValue)) {
                 optValue = optValue.join('\n');
             }
-            str += '<p>'+ opt.desc + ': <textarea rows="3" cols="70" data-cfg-index="' + index +
+            str += '<p><span style="vertical-align: top; margin-right: 5px">' + opt.desc +
+                   ':</span><textarea rows="4" cols="70" data-cfg-index="' + index +
                    '">' + optValue + '</textarea></p>';
         }
     }
@@ -365,7 +366,7 @@ ICM_RandomFilmLink.prototype.PickRandomFilm = function() {
 };
 
 ICM_RandomFilmLink.prototype.settings = {
-    title: "Random Film Link",
+    title: "Random film link",
     desc: "Displays \"Help me pick a film\" link on individual lists",
     index: "random_film",
     includes: ["icheckmovies.com/lists/(.+)"],
@@ -420,7 +421,7 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
 };
 
 ICM_UpcomingAwardsList.prototype.settings = {
-    title: "Upcoming Awards (individual lists)",
+    title: "Upcoming awards (individual lists)",
     desc: "Displays upcoming awards on individual lists",
     index: "ua_list",
     includes: ["icheckmovies.com/lists/(.+)"],
@@ -666,7 +667,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
 };
 
 ICM_UpcomingAwardsOverview.prototype.settings = {
-    title: "Upcoming Awards Overview",
+    title: "Upcoming awards overview",
     desc: "Displays upcoming awards on progress page",
     index: "ua",
     includes: ["/profiles/progress/",
@@ -715,7 +716,7 @@ ICM_ListCustomColors.prototype.Attach = function() {
 };
 
 ICM_ListCustomColors.prototype.settings = {
-    title: "Custom List Colors",
+    title: "Custom list colors",
     desc: "Changes entry colors on lists to visually separate entries in your favorites/watchlist/dislikes",
     index: "list_colors",
     includes: ["icheckmovies.com/"],
@@ -1184,7 +1185,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
 };
 
 ICM_ListCrossCheck.prototype.settings = {
-    title: "List Cross-reference",
+    title: "List cross-reference",
     desc: "Cross-reference lists to find what films they share",
     index: "list_cross_ref",
     includes: ["icheckmovies.com/lists/"],
@@ -1512,7 +1513,7 @@ ICM_LargeList.prototype.load = function() {
 };
 
 ICM_LargeList.prototype.settings = {
-    title: "Large Posters",
+    title: "Large posters",
     desc: "Display large posters on individual lists (large posters are lazy loaded)",
     index: "large_lists",
     includes: ["icheckmovies\\.com/lists/(.+)/(.*)"],
@@ -1645,7 +1646,7 @@ ICM_ListOverviewSort.prototype.Interweave = function(list) {
 // test(a) && test(b)
 
 ICM_ListOverviewSort.prototype.settings = {
-    title: "Progress Page",
+    title: "Progress page",
     desc: "Change the order of lists on the progress page",
     index: "toplists_sort",
     includes: ["icheckmovies.com/profiles/progress"],
@@ -1767,8 +1768,8 @@ ICM_ListsTabDisplay.prototype.getLists = function(listIDs) {
 };
 
 ICM_ListsTabDisplay.prototype.settings = {
-    title: "| iCME++: Lists tab display",
-    desc: "Makes a tab with all lists a movie is on (\/movies\/*\/rankings\/) more organized",
+    title: "Lists tab display",
+    desc: "Organize movie info tab with all lists (\/movies\/*\/rankings\/, <a href=\"/movies/pulp+fiction/rankings/\">example</a>)",
     index: "lists_tab_display",
     includes: ["icheckmovies.com/lists/(.+)",
                "icheckmovies.com/search/movies/(.+)",
@@ -1858,7 +1859,7 @@ ICM_ExportLists.prototype.Attach = function() {
 };
 
 ICM_ExportLists.prototype.settings = {
-    title: "| iCME++: Export lists",
+    title: "Export lists",
     desc: "Download any list as .csv (doesn't support search results). Emulates the paid feature, so don't enable it if you have a paid account",
     index: "export_lists",
     includes: ["icheckmovies.com/lists/(.+)"],
@@ -1931,7 +1932,7 @@ ICM_ProgressTopX.prototype.addStats = function(event) {
 };
 
 ICM_ProgressTopX.prototype.settings = {
-    title: "| iCME++: Progress top X",
+    title: "Progress top X",
     desc: "Find out how many checks you need to get into Top 25/50/100/1000/...",
     index: "progress_top_x",
     includes: ["icheckmovies.com/profiles/progress/"],
