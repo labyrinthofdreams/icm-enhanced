@@ -232,7 +232,7 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
 
 ICM_ConfigWindow.prototype.build = function() {
     // Sort module list by title
-    this.modules.sort(function(a,b) { return a.title > b.title; });
+    this.modules.sort(function(a,b) { return a.title > b.title ? 1 : -1; });
 
     // Create and append a new item in the drop down menu under your username
     var cfgLink = '<li><a id="icm_enhanced_cfg" href="#" title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a></li>';
