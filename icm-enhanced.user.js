@@ -990,30 +990,18 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
                     return el.c === cutoff;
                 });
             }
+        // if didn't find a single match, abort if it's the last or not the first top list
+        } else if ( this.sequence_number > 1 || !has_toplists_left ) {
+            this.movies = [];
+            has_toplists_left = false; // force output
+        }
+    }
 
-            // if there's still more top lists
-            if ( has_toplists_left ) {
-                this.GetUncheckedFilms(this.toplists[this.sequence_number]);
-            } else {
-                this.OutputMovies();
-            }
-        } else {
-            // if finding movies on all selected top lists, but didn't find a single match,
-            // continue if it was just the first top list
-            if ( this.sequence_number === 1 && has_toplists_left ) {
-                this.GetUncheckedFilms(this.toplists[this.sequence_number]);
-            } else {
-                this.movies = [];
-                this.OutputMovies();
-            }
-        }
+    // if there's still more top lists
+    if ( has_toplists_left ) {
+        this.GetUncheckedFilms(this.toplists[this.sequence_number]);
     } else {
-        // if there's still more top lists
-        if ( has_toplists_left ) {
-            this.GetUncheckedFilms(this.toplists[this.sequence_number]);
-        } else {
-            this.OutputMovies();
-        }
+        this.OutputMovies();
     }
 };
 
