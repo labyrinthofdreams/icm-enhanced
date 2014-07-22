@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.6.1.1
+// @version        1.7
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -126,8 +126,8 @@ ICM_BaseFeature.prototype.updateConfig = function(config) {
 function ICM_Config() {
     this.cfg = {
         script_config: { // script config
-            version: "1.6.1.1",
-            revision: 1611 // numerical representation of version number
+            version: "1.7",
+            revision: 1700 // numerical representation of version number
         }
     };
 
