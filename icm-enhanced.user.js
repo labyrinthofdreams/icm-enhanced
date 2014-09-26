@@ -1830,7 +1830,7 @@ ICM_ExportLists.prototype.Attach = function() {
                 "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
                 
             var encode_field = function(field) {
-                return field.indexOf('"') !== -1 
+                return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 
                        ? '"' + field.replace('"', '""', 'g') + '"'
                        : field;
             };
