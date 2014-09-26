@@ -1828,11 +1828,17 @@ ICM_ExportLists.prototype.Attach = function() {
 
             var data =  ["rank", "title", "year",
                 "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
+                
+            var encode_field = function(field) {
+                return field.indexOf('"') !== -1 
+                       ? '"' + field.replace('"', '""', 'g') + '"'
+                       : field;
+            };
 
             $("#itemListMovies > li").each(function() {
                 var item = $(this),
                     rank = item.find(".rank").text().trim().replace(/ .+/, ''),
-                    title = item.find("h2>a").text().replace('"', '""'),
+                    title = encode_field(item.find("h2>a").text()),
                     year = item.find(".info a:first").text(),
                     toplists = parseInt(item.find(".info a:last").text(), 10),
                     checked = item.hasClass("checked") ? 'yes' : 'no',
