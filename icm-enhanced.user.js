@@ -1714,11 +1714,11 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
             ["group1", "group2"].forEach(function(group) {
                 var stored = _c[group];
                 if (typeof stored === 'string') {
-                        // Parse textarea content
-                        console.log('Parsing ICM_ListsTabDisplay group', group);
-                        stored = stored.trim().replace(_t.reURL, '$1').split('\n');
-                        _c[group] = stored;
-                        _t.globalConfig.Save();
+                    // Parse textarea content
+                    console.log('Parsing ICM_ListsTabDisplay group', group);
+                    stored = stored.trim().replace(_t.reURL, '$1').split('\n');
+                    _c[group] = stored;
+                    _t.globalConfig.Save();
                 }
                 var personal = _t.getLists(stored);
                 _t.move(personal);
@@ -1828,9 +1828,9 @@ ICM_ExportLists.prototype.Attach = function() {
 
             var data =  ["rank", "title", "year",
                 "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
-                
+
             var encode_field = function(field) {
-                return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 
+                return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1
                        ? '"' + field.replace('"', '""', 'g') + '"'
                        : field;
             };
