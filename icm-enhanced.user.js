@@ -1828,7 +1828,7 @@ ICM_ExportLists.prototype.Attach = function() {
                 sep = '\t';
             }
 
-            var data =  ["rank", "title", "year",
+            var data =  ["rank", "title", "aka", "year",
                 "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
 
             var encode_field = function(field) {
@@ -1841,11 +1841,12 @@ ICM_ExportLists.prototype.Attach = function() {
                 var item = $(this),
                     rank = item.find(".rank").text().trim().replace(/ .+/, ''),
                     title = encode_field(item.find("h2>a").text()),
+                    aka = encode_field(item.find(".info > em").text()),
                     year = item.find(".info a:first").text(),
                     toplists = parseInt(item.find(".info a:last").text(), 10),
                     checked = item.hasClass("checked") ? 'yes' : 'no',
                     imdburl = item.find(".optionIMDB").attr("href"),
-                    line = [rank, title, year, toplists, checked, imdburl].join(sep) + sep + '\n';
+                    line = [rank, title, aka, year, toplists, checked, imdburl].join(sep) + sep + '\n';
                 data += line;
             });
 
