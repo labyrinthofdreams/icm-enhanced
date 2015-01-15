@@ -1581,7 +1581,7 @@ ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
     if (this.config.autosort) {
         var lookup_map = toplist_arr.map(function(item, i) {
             var width = $(item).find("span.progress").css("width").replace("px", "");
-            return {index: i, value: parseInt(width, 10)};
+            return {index: i, value: parseFloat(width)};
         });
 
         lookup_map.sort(function(a, b) {
