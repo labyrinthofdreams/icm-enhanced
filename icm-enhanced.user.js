@@ -1773,7 +1773,9 @@ ICM_ListsTabDisplay.prototype.settings = {
     index: "lists_tab_display",
     includes: ["icheckmovies.com/lists/(.+)",
                "icheckmovies.com/search/movies/(.+)",
-               "icheckmovies.com/movies/.+/rankings/(.*)"],
+               "icheckmovies.com/movies/.+/rankings/(.*)",
+               "icheckmovies.com/movies/[^/]*$", // list of all movies
+               "icheckmovies.com/movies/((un)?checked|favorited|disliked|owned|watchlist|recommended)/"],
     excludes: [],
     options: [{
         name: "redirect",
