@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.7.1
+// @version        1.7.2
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -126,8 +126,8 @@ ICM_BaseFeature.prototype.updateConfig = function(config) {
 function ICM_Config() {
     this.cfg = {
         script_config: { // script config
-            version: "1.7.1",
-            revision: 1710 // numerical representation of version number
+            version: "1.7.2",
+            revision: 1720 // numerical representation of version number
         }
     };
 
@@ -1581,7 +1581,7 @@ ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
     if (this.config.autosort) {
         var lookup_map = toplist_arr.map(function(item, i) {
             var width = $(item).find("span.progress").css("width").replace("px", "");
-            return {index: i, value: parseInt(width, 10)};
+            return {index: i, value: parseFloat(width)};
         });
 
         lookup_map.sort(function(a, b) {
@@ -1714,11 +1714,11 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
             ["group1", "group2"].forEach(function(group) {
                 var stored = _c[group];
                 if (typeof stored === 'string') {
-                        // Parse textarea content
-                        console.log('Parsing ICM_ListsTabDisplay group', group);
-                        stored = stored.trim().replace(_t.reURL, '$1').split('\n');
-                        _c[group] = stored;
-                        _t.globalConfig.Save();
+                    // Parse textarea content
+                    console.log('Parsing ICM_ListsTabDisplay group', group);
+                    stored = stored.trim().replace(_t.reURL, '$1').split('\n');
+                    _c[group] = stored;
+                    _t.globalConfig.Save();
                 }
                 var personal = _t.getLists(stored);
                 _t.move(personal);
@@ -1773,7 +1773,9 @@ ICM_ListsTabDisplay.prototype.settings = {
     index: "lists_tab_display",
     includes: ["icheckmovies.com/lists/(.+)",
                "icheckmovies.com/search/movies/(.+)",
-               "icheckmovies.com/movies/.+/rankings/(.*)"],
+               "icheckmovies.com/movies/.+/rankings/(.*)",
+               "icheckmovies.com/movies/[^/]*$", // list of all movies
+               "icheckmovies.com/movies/((un)?checked|favorited|disliked|owned|watchlist|recommended)/"],
     excludes: [],
     options: [{
         name: "redirect",
@@ -1826,11 +1828,11 @@ ICM_ExportLists.prototype.Attach = function() {
                 sep = '\t';
             }
 
-            var data =  ["rank", "title", "year",
+            var data =  ["rank", "title", "aka", "year",
                 "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
-                
+
             var encode_field = function(field) {
-                return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 
+                return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1
                        ? '"' + field.replace('"', '""', 'g') + '"'
                        : field;
             };
@@ -1839,11 +1841,12 @@ ICM_ExportLists.prototype.Attach = function() {
                 var item = $(this),
                     rank = item.find(".rank").text().trim().replace(/ .+/, ''),
                     title = encode_field(item.find("h2>a").text()),
+                    aka = encode_field(item.find(".info > em").text()),
                     year = item.find(".info a:first").text(),
                     toplists = parseInt(item.find(".info a:last").text(), 10),
                     checked = item.hasClass("checked") ? 'yes' : 'no',
                     imdburl = item.find(".optionIMDB").attr("href"),
-                    line = [rank, title, year, toplists, checked, imdburl].join(sep) + sep + '\n';
+                    line = [rank, title, aka, year, toplists, checked, imdburl].join(sep) + sep + '\n';
                 data += line;
             });
 
