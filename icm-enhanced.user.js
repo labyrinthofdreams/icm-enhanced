@@ -1820,51 +1820,50 @@ function ICM_ExportLists(config) {
 
 ICM_ExportLists.prototype.Attach = function() {
     var _c = this.config;
-    if (_c.enabled) {
-        var sep = _c.delimiter;
-
-        $(".optionExport").one("click", function() {
-            if (sep !== ',' && sep !== ';') {
-                sep = '\t';
-            }
-
-            var data =  ["rank", "title", "aka", "year",
-                "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
-
-            var encode_field = function(field) {
-                return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1
-                       ? '"' + field.replace('"', '""', 'g') + '"'
-                       : field;
-            };
-
-            $("#itemListMovies > li").each(function() {
-                var item = $(this),
-                    rank = item.find(".rank").text().trim().replace(/ .+/, ''),
-                    title = encode_field(item.find("h2>a").text()),
-                    aka = encode_field(item.find(".info > em").text()),
-                    year = item.find(".info a:first").text(),
-                    toplists = parseInt(item.find(".info a:last").text(), 10),
-                    checked = item.hasClass("checked") ? 'yes' : 'no',
-                    imdburl = item.find(".optionIMDB").attr("href"),
-                    line = [rank, title, aka, year, toplists, checked, imdburl].join(sep) + sep + '\n';
-                data += line;
-            });
-
-            // BOM with ; or , as separator and without sep= - for Excel
-            var bom = (_c.bom) ? '\uFEFF' : '',
-                dataURI = "data:text/csv;charset=utf-8," + bom + encodeURIComponent(data);
-            // link swapping with a correct filename - http://caniuse.com/download
-            $(this).attr("href", dataURI).attr("download", $("#topList>h1").text() + ".csv");
-
-            // after changing URL jQuery fires a default click event
-            // on the link user clicked on, and loads dataURI as URL (!)
-            // I could've used preventDefault + change window.location.href,
-            // but that way the file wouldn't have a correct filename
-
-            // note: download attribute is ignored - fresh chrome bug
-            // https://code.google.com/p/chromium/issues/detail?id=373182
-        });
+    if (!_c.enabled) {
+        return;
     }
+
+    var sep = _c.delimiter;
+
+    $(".optionExport").one("click", function() {
+        if (sep !== ',' && sep !== ';') {
+            sep = '\t';
+        }
+
+        var data =  ["rank", "title", "aka", "year",
+            "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
+
+        var encode_field = function(field) {
+            return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1
+                   ? '"' + field.replace('"', '""', 'g') + '"'
+                   : field;
+        };
+
+        $("#itemListMovies > li").each(function() {
+            var item = $(this),
+                rank = item.find(".rank").text().trim().replace(/ .+/, ''),
+                title = encode_field(item.find("h2>a").text()),
+                aka = encode_field(item.find(".info > em").text()),
+                year = item.find(".info a:first").text(),
+                toplists = parseInt(item.find(".info a:last").text(), 10),
+                checked = item.hasClass("checked") ? 'yes' : 'no',
+                imdburl = item.find(".optionIMDB").attr("href"),
+                line = [rank, title, aka, year, toplists, checked, imdburl].join(sep) + sep + '\n';
+            data += line;
+        });
+
+        // BOM with ; or , as separator and without sep= - for Excel
+        var bom = (_c.bom) ? '\uFEFF' : '',
+            dataURI = "data:text/csv;charset=utf-8," + bom + encodeURIComponent(data);
+        // link swapping with a correct filename - http://caniuse.com/download
+        $(this).attr("href", dataURI).attr("download", $("#topList>h1").text() + ".csv");
+
+        // after changing URL jQuery fires a default click event
+        // on the link user clicked on, and loads dataURI as URL (!)
+        // I could've used preventDefault + change window.location.href,
+        // but that way the file wouldn't have a correct filename
+    });
 };
 
 ICM_ExportLists.prototype.settings = {
