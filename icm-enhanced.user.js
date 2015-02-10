@@ -1831,8 +1831,8 @@ ICM_ExportLists.prototype.Attach = function() {
             sep = '\t';
         }
 
-        var data =  ["rank", "title", "aka", "year",
-            "official_toplists", "checked", "imdb"].join(sep) + sep + '\n';
+        var data =  ["rank", "title", "aka", "year", "official_toplists",
+            "checked", "favorite", "dislike", "imdb"].join(sep) + sep + '\n';
 
         var encode_field = function(field) {
             return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1
@@ -1848,8 +1848,11 @@ ICM_ExportLists.prototype.Attach = function() {
                 year = item.find(".info a:first").text(),
                 toplists = parseInt(item.find(".info a:last").text(), 10),
                 checked = item.hasClass("checked") ? 'yes' : 'no',
+                isFav = item.hasClass("favorite") ? 'yes' : 'no',
+                isDislike = item.hasClass("hated") ? 'yes' : 'no',
                 imdburl = item.find(".optionIMDB").attr("href"),
-                line = [rank, title, aka, year, toplists, checked, imdburl].join(sep) + sep + '\n';
+                line = [rank, title, aka, year, toplists, checked,
+                    isFav, isDislike, imdburl].join(sep) + sep + '\n';
             data += line;
         });
 
@@ -1879,7 +1882,7 @@ ICM_ExportLists.prototype.settings = {
         default: false
     }, {
         name: "delimiter",
-        desc: "Use as delimiter (\\t by default; accepts ';' or ',')",
+        desc: "Use as delimiter (accepts ';' or ','; otherwise uses \\t)",
         type: "textinput",
         default: ';'
     }, {
