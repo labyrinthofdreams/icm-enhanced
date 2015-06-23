@@ -51,6 +51,7 @@ function setProperty(path, obj, val) {
 // ff+gm: uneval for obj: ({a:5})
 // gc+tm: uneval for obj: $1 = {"a":5};
 function evalOrParse(str) {
+    /* jshint evil: true */
     try {
         return JSON.parse(str);
     } catch (e) {
