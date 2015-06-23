@@ -21,6 +21,7 @@
 //+ Jonas Raoni Soares Silva
 //@ http://jsfromhell.com/array/shuffle [rev. #1]
 var shuffle = function(v) {
+    /* jshint nocomma: false */
     for (var j, x, i = v.length;
         i > 1;
         j = Math.floor(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x);
@@ -40,7 +41,8 @@ function setProperty(path, obj, val) {
         last = parts.pop(),
         part;
 
-    while ((part = parts.shift())) { // assignment
+    /* jshint boss: true */
+    while (part = parts.shift()) { // assignment
         // rewrite property if it exists but is not an object
         obj = obj[part] = obj[part] instanceof Object ?
                           obj[part] : {};
