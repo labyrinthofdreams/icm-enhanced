@@ -21,7 +21,9 @@
 //+ Jonas Raoni Soares Silva
 //@ http://jsfromhell.com/array/shuffle [rev. #1]
 var shuffle = function(v) {
-    for (var j, x, i = v.length; i; j = parseInt(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x);
+    for (var j, x, i = v.length;
+        i > 1;
+        j = Math.floor(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x);
     return v;
 };
 
@@ -358,8 +360,8 @@ ICM_RandomFilmLink.prototype.PickRandomFilm = function() {
                     this.random_nums.push( i );
                 }
 
-                // Shuffle the results for randomness
-                this.random_nums = shuffle( this.random_nums );
+                // Shuffle the results for randomness in-place
+                shuffle( this.random_nums );
             }
 
             rand_num = this.random_nums.pop();
