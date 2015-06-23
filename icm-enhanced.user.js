@@ -1710,10 +1710,15 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
         _c = this.config;
 
     if (isOnMoviePage) {
-        var _b = this.block;
+        var lists = this.block.children();
 
         if (_c.sort_official) {
-            var officialLists = _b.children().has("ul.tagList a[href$='user%3Aicheckmovies']");
+            var officialLists = lists
+                .has("ul.tagList a[href$='user%3Aicheckmovies']")
+                .filter(function() {
+                    // icm bug: deleted lists reset to icheckmovies user
+                    return !$(this).find('.title').attr('href').endsWith('//');
+                });
             this.move(officialLists);
         }
 
@@ -1734,18 +1739,18 @@ ICM_ListsTabDisplay.prototype.Attach = function() {
         }
 
         if (_c.sort_filmos) {
-            var filmos = _b.children().filter(function() {
+            var filmos = lists.filter(function() {
                 return $(this).text().toLowerCase().indexOf('filmography') >= 0;
             });
             this.move(filmos);
         }
 
         // visual fix for edge cases when all lists are moved
-        _b.children().last().filter('.groupSeparator').hide();
+        lists.last().filter('.groupSeparator').hide();
     } else if (_c.redirect) { // = if on a list page
-        var linksTolists = $('.listItemMovie > .info > a:last-of-type');
+        var linksToLists = $('.listItemMovie > .info > a:last-of-type');
 
-        linksTolists.each(function () {
+        linksToLists.each(function () {
             var link = $(this),
                 url = link.attr('href').replace('?tags=user:icheckmovies', '');
             link.attr('href', url);
