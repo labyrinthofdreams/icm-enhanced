@@ -40,7 +40,7 @@ function setProperty(path, obj, val) {
 
     while ((part = parts.shift())) { // assignment
         // rewrite property if it exists but is not an object
-        obj = obj[part] = (obj[part] instanceof Object) ?
+        obj = obj[part] = obj[part] instanceof Object ?
                           obj[part] : {};
     }
 
@@ -89,7 +89,7 @@ ICM_BaseFeature.prototype.updateConfig = function(config) {
     $.each(this.settings.options, function(i, option) {
         var idx = option.name,
             oldValue = config.Get(module + '.' + idx),
-            newValue = (oldValue !== undefined) ? oldValue : option.default;
+            newValue = oldValue !== undefined ? oldValue : option.default;
 
         setProperty(idx, cur, newValue);
     });
@@ -153,7 +153,7 @@ ICM_Config.prototype.Toggle = function( index ) {
     if ( val === true || val === false ) {
         changeVal = !val;
     } else if ( val === "asc" || val === "desc" ) {
-        changeVal = (val === "asc" ? "desc" : "asc");
+        changeVal = val === "asc" ? "desc" : "asc";
     } else {
         return false; // Couldn't toggle a value
     }
@@ -410,7 +410,7 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
         var abs = this.config.show_absolute;
         var get_span = function(award, cutoff) {
             var num = Math.ceil(total_items * cutoff) - checks;
-            if ((!abs) && (num <= 0))
+            if (!abs && num <= 0)
                 return '';
             return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
         };
@@ -495,7 +495,7 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
         sel = {progress: {rank: "span.rank", title: "h3 > a"},
                lists: {rank: "span.info > strong:first", title: "h2 > a.title"}},
         // use different selectors depending on page
-        curSel = (location.href.indexOf("progress") !== -1) ?
+        curSel = location.href.indexOf("progress") !== -1 ?
                  sel.progress : sel.lists,
         award_types = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
@@ -558,7 +558,7 @@ ICM_UpcomingAwardsOverview.prototype.HTMLOut = function() {
         var el = this.lists[i],
             unhide_icon = '<img title="Unhide ' + el.list_title + '" alt="Unhide icon" src="' + unhide_icon_data + '">',
             hide_icon = '<img title="Hide ' + el.list_title + '" alt="Hide icon" src="' + hide_icon_data + '">',
-            is_hidden = (this.hidden_lists.indexOf(el.list_url) !== -1);
+            is_hidden = this.hidden_lists.indexOf(el.list_url) !== -1;
 
         list_table  += '<tr class="' + (is_hidden ? "hidden-list" : "") +
             '" data-award-type="' + el.award_type + '" data-list-url="' + el.list_url + '">' +
@@ -915,7 +915,7 @@ ICM_ListCrossCheck.prototype.GetUncheckedFilms = function(list_elem) {
     $.get(url, function(response) {
         $(list_elem).removeClass("icme_listcc_selected icme_listcc_pending").find("span.percentage").show();
 
-        var filter = (_t.config.checks) ? "" : "li.unchecked";
+        var filter = _t.config.checks ? "" : "li.unchecked";
         // the site returns html with extra whitespace
         var unchecked = $($.parseHTML(response)).find("ol#itemListMovies").children(filter);
 
@@ -968,7 +968,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
         if ( !found ) {
             // add it to the main movies array only if the script is not checking for matches on all top lists
             // OR if the script is checking for matches on all top lists, but this is just the first top list
-            if ( !show_perfect_matches || ( show_perfect_matches && this.sequence_number === 1 ) ) {
+            if ( !show_perfect_matches || this.sequence_number === 1 ) {
                 var $item = $(content[i]);
                 $item.find(".rank").html("0");
 
@@ -986,7 +986,7 @@ ICM_ListCrossCheck.prototype.UpdateMovies = function(content) {
         }
     }
 
-    var has_toplists_left = (this.sequence_number < this.toplists.length);
+    var has_toplists_left = this.sequence_number < this.toplists.length;
 
     // if finding movies on all selected top lists
     if ( show_perfect_matches ) {
@@ -1022,7 +1022,7 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
 
         if ( limit > 0 ) {
             this.movies = $.grep(this.movies, function(el) {
-                return (el.c >= limit);
+                return el.c >= limit;
             });
         }
     }
@@ -1169,7 +1169,7 @@ ICM_ListCrossCheck.prototype.CreateTab = function() {
 
                 // Make the current tab work if we want to return to it
                 $("ul.tabMenu").children("li").each(function() {
-                    if (!($(this).children("a").length)) {
+                    if (!$(this).children("a").length) {
                         var $clicked = $(this);
                         $clicked.on("click", function() {
                             $("ol#itemListToplists").children("li").show();
@@ -1622,7 +1622,7 @@ ICM_ListOverviewSort.prototype.Rearrange = function(order, section) {
 ICM_ListOverviewSort.prototype.Straighten = function(list) {
     var even_i = [], odd_i = [];
     for (var i = 0; i < list.length; i++) {
-        if ((i % 2) === 0) {
+        if (i % 2 === 0) {
             even_i.push(list[i]);
         } else {
             odd_i.push(list[i]);
@@ -1773,7 +1773,7 @@ ICM_ListsTabDisplay.prototype.getLists = function(listIDs) {
     if (listIDs.length) {
         var selected = this.block.children().filter(function() {
             var href = $(this).find("a.title").attr("href");
-            return (href && ($.inArray(href.substring(7), listIDs) !== -1)); // sep matches too
+            return href && $.inArray(href.substring(7), listIDs) !== -1; // sep matches too
         });
         return selected;
     }
@@ -1848,9 +1848,9 @@ ICM_ExportLists.prototype.Attach = function() {
             "checked", "favorite", "dislike", "imdb"].join(sep) + sep + '\n';
 
         var encode_field = function(field) {
-            return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1
-                   ? '"' + field.replace('"', '""', 'g') + '"'
-                   : field;
+            return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 ?
+                   '"' + field.replace('"', '""', 'g') + '"' :
+                   field;
         };
 
         $("#itemListMovies > li").each(function() {
@@ -1870,7 +1870,7 @@ ICM_ExportLists.prototype.Attach = function() {
         });
 
         // BOM with ; or , as separator and without sep= - for Excel
-        var bom = (_c.bom) ? '\uFEFF' : '',
+        var bom = _c.bom ? '\uFEFF' : '',
             dataURI = "data:text/csv;charset=utf-8," + bom + encodeURIComponent(data);
         // link swapping with a correct filename - http://caniuse.com/download
         $(this).attr("href", dataURI).attr("download", $("#topList>h1").text() + ".csv");
