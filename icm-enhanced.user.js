@@ -321,7 +321,7 @@ ICM_RandomFilmLink.prototype.Attach = function() {
         if ( $("div#list_container").length !== 1 ) {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + random_film + '</div>';
 
-            $("div#topList").next("div").after( container );
+            $("#movies").parent().before( container );
         } else {
             $("div#list_container").append( random_film );
         }
@@ -413,7 +413,7 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
         if ( $("div#list_container").length !== 1 ) {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + statistics + '</div>';
 
-            $("div#topList").next("div").after( container );
+            $("#movies").parent().before( container );
         } else {
             $("div#list_container").append( statistics );
         }
@@ -1452,7 +1452,7 @@ ICM_LargeList.prototype.Attach = function() {
         if ( $("div#list_container").length !== 1 ) {
             var container = '<div id="list_container" style="height: 35px; position: relative">' + link + '</div>';
 
-            $("div#topList").next("div").after( container );
+            $("#movies").parent().before( container );
         } else {
             if ($("#list_container").find("p").length === 1) {
                 $("#list_container p:first").append("<span> &mdash; </span>" + link);
