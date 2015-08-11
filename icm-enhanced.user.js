@@ -8,39 +8,12 @@
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
+// @require        https://cdnjs.cloudflare.com/ajax/libs/jquery_lazyload/1.9.5/jquery.lazyload.min.js
+// @require        https://github.com/briceburg/jqModal/raw/master/jqModal.min.js
 // @grant          GM_setValue
 // @grant          GM_getValue
 // @grant          GM_addStyle
 // ==/UserScript==
-
-/*
- * jqModal - Minimalist Modaling with jQuery
- *
- * Copyright (c) 2007-2014 Brice Burgess @iceburg_net
- * Dual licensed under the MIT and GPL licenses:
- *   http://www.opensource.org/licenses/mit-license.php
- *   http://www.gnu.org/licenses/gpl.html
- *
- * $Version: 1.0.2 (2014.04.10 +r19)
- * Requires: jQuery 1.2.3+
- */
-(function(e){e.fn.jqm=function(t){var n=e.extend({},e.jqm.params,t);return this.each(function(){var t=e(this),r=e(this).data("jqm");if(!r)r={ID:c++};t.data("jqm",e.extend(n,r)).addClass("jqm-init");n.trigger&&e(this).jqmAddTrigger(n.trigger)})};e.fn.jqmAddTrigger=function(n){return this.each(function(){if(!o(e(this),"jqmShow",n))t("jqmAddTrigger must be called on initialized modals")})};e.fn.jqmAddClose=function(n){return this.each(function(){if(!o(e(this),"jqmHide",n))t("jqmAddClose must be called on initialized modals")})};e.fn.jqmShow=function(t){return this.each(function(){!this._jqmShown&&n(e(this),t)})};e.fn.jqmHide=function(t){return this.each(function(){this._jqmShown&&r(e(this),t)})};var t=function(e){if(window.console&&window.console.error)window.console.error(e)},n=function(t,n){var r=t.data("jqm"),n=n||window.event,i=parseInt(t.css("z-index")),i=i>0?i:3e3,s=e("<div></div>").addClass(r.overlayClass).css({height:"100%",width:"100%",position:"fixed",left:0,top:0,"z-index":i-1,opacity:r.overlay/100}),o={w:t,c:r,o:s,t:n};t.css("z-index",i);if(r.ajax){var a=r.target||t,f=r.ajax;a=typeof a=="string"?e(a,t):e(a);if(f.substr(0,1)=="@")f=e(n).attr(f.substring(1));a.html(r.ajaxText).load(f,function(){r.onLoad&&r.onLoad.call(this,o);u(o)})}else{u(o)}},r=function(e,t){var n=e.data("jqm"),t=t||window.event,r={w:e,c:n,o:e.data("jqmv"),t:t};a(r)},i=function(t){if(t.c.overlay>0)t.o.prependTo("body");t.w.show();e.jqm.focusFunc(t.w);return true},s=function(e){e.w.hide()&&e.o&&e.o.remove();return true},o=function(t,n,r){if(!t.data("jqm"))return false;return e(r).each(function(){this[n]=this[n]||[];this[n].push(t)}).click(function(){var t=this;e.each(this[n],function(e,r){r[n](t)});return false})},u=function(t){var n=t.w,r=t.o,i=t.c;if(i.onShow(t)!==false){n[0]._jqmShown=true;if(i.modal){!h[0]&&f("bind");h.push(n)}else n.jqmAddClose(r);i.closeClass&&n.jqmAddClose(e("."+i.closeClass,n));i.toTop&&r&&n.before('<span id="jqmP'+i.ID+'"></span>').insertAfter(r);n.data("jqmv",r)}},a=function(t){var n=t.w,r=t.o,i=t.c;if(i.onHide(t)!==false){n[0]._jqmShown=false;if(i.modal){h.pop();!h[0]&&f("unbind")}i.toTop&&r&&e("#jqmP"+i.ID).after(n).remove()}},f=function(t){e(document)[t]("keypress keydown mousedown",l)},l=function(t){var n=e(t.target).data("jqm")||e(t.target).parents(".jqm-init:first").data("jqm"),r=h[h.length-1].data("jqm");if(n&&n.ID==r.ID)return true;return e.jqm.focusFunc(r)},c=0,h=[];e.jqm={params:{overlay:50,overlayClass:"jqmOverlay",closeClass:"jqmClose",trigger:".jqModal",ajax:false,target:false,ajaxText:"",modal:false,toTop:false,onShow:i,onHide:s,onLoad:false},focusFunc:function(t){e(":input:visible:first",t).focus();return false}}})(jQuery);
-
-/*
- * Lazy Load - jQuery plugin for lazy loading images
- *
- * Copyright (c) 2007-2013 Mika Tuupola
- *
- * Licensed under the MIT license:
- *   http://www.opensource.org/licenses/mit-license.php
- *
- * Project home:
- *   http://www.appelsiini.net/projects/lazyload
- *
- * Version:  1.9.3
- *
- */
-!function(a,b,c,d){var e=a(b);a.fn.lazyload=function(f){function g(){var b=0;i.each(function(){var c=a(this);if(!j.skip_invisible||c.is(":visible"))if(a.abovethetop(this,j)||a.leftofbegin(this,j));else if(a.belowthefold(this,j)||a.rightoffold(this,j)){if(++b>j.failure_limit)return!1}else c.trigger("appear"),b=0})}var h,i=this,j={threshold:0,failure_limit:0,event:"scroll",effect:"show",container:b,data_attribute:"original",skip_invisible:!0,appear:null,load:null,placeholder:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXYzh8+PB/AAffA0nNPuCLAAAAAElFTkSuQmCC"};return f&&(d!==f.failurelimit&&(f.failure_limit=f.failurelimit,delete f.failurelimit),d!==f.effectspeed&&(f.effect_speed=f.effectspeed,delete f.effectspeed),a.extend(j,f)),h=j.container===d||j.container===b?e:a(j.container),0===j.event.indexOf("scroll")&&h.bind(j.event,function(){return g()}),this.each(function(){var b=this,c=a(b);b.loaded=!1,(c.attr("src")===d||c.attr("src")===!1)&&c.is("img")&&c.attr("src",j.placeholder),c.one("appear",function(){if(!this.loaded){if(j.appear){var d=i.length;j.appear.call(b,d,j)}a("<img />").bind("load",function(){var d=c.attr("data-"+j.data_attribute);c.hide(),c.is("img")?c.attr("src",d):c.css("background-image","url('"+d+"')"),c[j.effect](j.effect_speed),b.loaded=!0;var e=a.grep(i,function(a){return!a.loaded});if(i=a(e),j.load){var f=i.length;j.load.call(b,f,j)}}).attr("src",c.attr("data-"+j.data_attribute))}}),0!==j.event.indexOf("scroll")&&c.bind(j.event,function(){b.loaded||c.trigger("appear")})}),e.bind("resize",function(){g()}),/(?:iphone|ipod|ipad).*os 5/gi.test(navigator.appVersion)&&e.bind("pageshow",function(b){b.originalEvent&&b.originalEvent.persisted&&i.each(function(){a(this).trigger("appear")})}),a(c).ready(function(){g()}),this},a.belowthefold=function(c,f){var g;return g=f.container===d||f.container===b?(b.innerHeight?b.innerHeight:e.height())+e.scrollTop():a(f.container).offset().top+a(f.container).height(),g<=a(c).offset().top-f.threshold},a.rightoffold=function(c,f){var g;return g=f.container===d||f.container===b?e.width()+e.scrollLeft():a(f.container).offset().left+a(f.container).width(),g<=a(c).offset().left-f.threshold},a.abovethetop=function(c,f){var g;return g=f.container===d||f.container===b?e.scrollTop():a(f.container).offset().top,g>=a(c).offset().top+f.threshold+a(c).height()},a.leftofbegin=function(c,f){var g;return g=f.container===d||f.container===b?e.scrollLeft():a(f.container).offset().left,g>=a(c).offset().left+f.threshold+a(c).width()},a.inviewport=function(b,c){return!(a.rightoffold(b,c)||a.leftofbegin(b,c)||a.belowthefold(b,c)||a.abovethetop(b,c))},a.extend(a.expr[":"],{"below-the-fold":function(b){return a.belowthefold(b,{threshold:0})},"above-the-top":function(b){return!a.belowthefold(b,{threshold:0})},"right-of-screen":function(b){return a.rightoffold(b,{threshold:0})},"left-of-screen":function(b){return!a.rightoffold(b,{threshold:0})},"in-viewport":function(b){return a.inviewport(b,{threshold:0})},"above-the-fold":function(b){return!a.belowthefold(b,{threshold:0})},"right-of-fold":function(b){return a.rightoffold(b,{threshold:0})},"left-of-fold":function(b){return!a.rightoffold(b,{threshold:0})}})}(jQuery,window,document);
 
 //+ Jonas Raoni Soares Silva
 //@ http://jsfromhell.com/array/shuffle [rev. #1]
