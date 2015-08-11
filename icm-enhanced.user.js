@@ -700,7 +700,7 @@ function ICM_ListCustomColors(config) {
 }
 
 ICM_ListCustomColors.prototype.Attach = function() {
-    if ( this.config.enabled ) {       
+    if ( this.config.enabled ) {
         var list_colors_css = "";
 
         var buildCSS = function(className, color) {
@@ -734,7 +734,7 @@ ICM_ListCustomColors.prototype.settings = {
         desc: "Favorites",
         type: "textinputcolor",
         default: "#ffdda9"
-    }, {                
+    }, {
         name: "colors.watchlist",
         desc: "Watchlist",
         type: "textinputcolor",
