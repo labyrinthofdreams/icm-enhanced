@@ -9,7 +9,7 @@
 // @include        https://www.icheckmovies.com*
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jquery_lazyload/1.9.5/jquery.lazyload.min.js
-// @require        https://github.com/briceburg/jqModal/raw/master/jqModal.min.js
+// @require        https://greasyfork.org/scripts/3595-jqmodal/code/jqModal.js?version=10865
 // @grant          GM_setValue
 // @grant          GM_getValue
 // @grant          GM_addStyle
