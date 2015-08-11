@@ -10,9 +10,12 @@
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jquery_lazyload/1.9.5/jquery.lazyload.min.js
 // @require        https://greasyfork.org/scripts/3595-jqmodal/code/jqModal.js?version=10865
+// @require        https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.js
+// @resource       spectrumCss https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.css
 // @grant          GM_setValue
 // @grant          GM_getValue
 // @grant          GM_addStyle
+// @grant          GM_getResourceText
 // ==/UserScript==
 
 //+ Jonas Raoni Soares Silva
@@ -197,6 +200,10 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
             str += '<p><span style="vertical-align: top; margin-right: 5px">' + opt.desc +
                    ':</span><textarea rows="4" cols="70" data-cfg-index="' + index +
                    '">' + optValue + '</textarea></p>';
+        } else if (opt.type === "textinputcolor") {
+            str += '<p>' + opt.desc + ': <input type="text" class="colorpickertext" data-cfg-index="' + index +
+                   '" value="' + optValue + '" title="default: ' + opt.default + '">' +
+                   ' <input type="text" class="colorpicker"></p>';
         }
     }
 
@@ -252,6 +259,10 @@ ICM_ConfigWindow.prototype.build = function() {
 
     $("div#cfgModal").on( "change", "input, textarea", function() {
         var index = $(this).data("cfg-index");
+        if(index === undefined) {
+            return;
+        }
+        
         if ( !_t.config.Toggle(index) ) {
             _t.config.Set( index, $(this).val() );
         }
@@ -274,6 +285,25 @@ ICM_ConfigWindow.prototype.build = function() {
 
     // initialize config window
     $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );
+    
+    // Initialize spectrum plugin         
+    GM_addStyle(GM_getResourceText("spectrumCss"));
+    
+    $(".colorpicker").each(function(){
+        $t = $(this);
+        $t.spectrum({
+            color: $t.prev().val(),
+            change: function(color) {
+                $prev = $(this).prev();
+                $prev.val(color.toHexString());
+                $prev.trigger("change");
+            }            
+        });
+    });
+    
+    $(".colorpickertext").on("change input paste", function() {
+        $(this).next().spectrum("set", $(this).val());
+    });    
 };
 
 // Inherit methods from BaseFeature
@@ -670,7 +700,7 @@ function ICM_ListCustomColors(config) {
 }
 
 ICM_ListCustomColors.prototype.Attach = function() {
-    if ( this.config.enabled ) {
+    if ( this.config.enabled ) {       
         var list_colors_css = "";
 
         var buildCSS = function(className, color) {
@@ -702,17 +732,17 @@ ICM_ListCustomColors.prototype.settings = {
     }, {
         name: "colors.favorite",
         desc: "Favorites",
-        type: "textinput",
+        type: "textinputcolor",
         default: "#ffdda9"
-    }, {
+    }, {                
         name: "colors.watchlist",
         desc: "Watchlist",
-        type: "textinput",
+        type: "textinputcolor",
         default: "#ffffd6"
     }, {
         name: "colors.disliked",
         desc: "Disliked",
-        type: "textinput",
+        type: "textinputcolor",
         default: "#ffad99"
     }]
 };
