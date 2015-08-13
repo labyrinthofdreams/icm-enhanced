@@ -215,11 +215,11 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
 
 ICM_ConfigWindow.prototype.initColorPickers = function() {
     $(".colorpicker").each(function(){
-        $t = $(this);
+        var $t = $(this);
         $t.spectrum({
             color: $t.prev().val(),
             change: function(color) {
-                $prev = $(this).prev();
+                var $prev = $t.prev();
                 $prev.val(color.toHexString());
                 $prev.trigger("change");
             }
