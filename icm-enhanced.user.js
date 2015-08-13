@@ -176,7 +176,8 @@ ICM_ConfigWindow.prototype.addModule = function(module) {
 ICM_ConfigWindow.prototype.loadOptions = function(idx) {
     var $c = $("#module_settings"),
         m = this.modules[idx],
-        str = '<p>' + m.desc + '</p>';
+        str = '<p>' + m.desc + '</p>',
+        needsExtraInit = false;
 
     $c.html("");
 
@@ -204,11 +205,33 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
             str += '<p>' + opt.desc + ': <input type="text" class="colorpickertext" data-cfg-index="' + index +
                    '" value="' + optValue + '" title="default: ' + opt.default + '">' +
                    ' <input type="text" class="colorpicker"></p>';
+            needsExtraInit = true;
         }
     }
 
     $c.append(str);
+
+    if (needsExtraInit) {
+        this.initColorPickers();
+    }
 };
+
+ICM_ConfigWindow.prototype.initColorPickers = function() {
+    $(".colorpicker").each(function(){
+        $t = $(this);
+        $t.spectrum({
+            color: $t.prev().val(),
+            change: function(color) {
+                $prev = $(this).prev();
+                $prev.val(color.toHexString());
+                $prev.trigger("change");
+            }
+        });
+    });
+    $(".colorpickertext").on("change input paste", function() {
+        $(this).next().spectrum("set", $(this).val());
+    });
+}
 
 ICM_ConfigWindow.prototype.build = function() {
     // Sort module list by title
@@ -262,7 +285,7 @@ ICM_ConfigWindow.prototype.build = function() {
         if(index === undefined) {
             return;
         }
-        
+
         if ( !_t.config.Toggle(index) ) {
             _t.config.Set( index, $(this).val() );
         }
@@ -285,25 +308,9 @@ ICM_ConfigWindow.prototype.build = function() {
 
     // initialize config window
     $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );
-    
-    // Initialize spectrum plugin         
+
+    // Initialize spectrum plugin
     GM_addStyle(GM_getResourceText("spectrumCss"));
-    
-    $(".colorpicker").each(function(){
-        $t = $(this);
-        $t.spectrum({
-            color: $t.prev().val(),
-            change: function(color) {
-                $prev = $(this).prev();
-                $prev.val(color.toHexString());
-                $prev.trigger("change");
-            }            
-        });
-    });
-    
-    $(".colorpickertext").on("change input paste", function() {
-        $(this).next().spectrum("set", $(this).val());
-    });    
 };
 
 // Inherit methods from BaseFeature
