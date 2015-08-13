@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.7.6.1
+// @version        1.7.6.2
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -102,8 +102,8 @@ ICM_BaseFeature.prototype.updateConfig = function(config) {
 function ICM_Config() {
     this.cfg = {
         script_config: { // script config
-            version: "1.7.6.1",
-            revision: 1761 // numerical representation of version number
+            version: "1.7.6.2",
+            revision: 1762 // numerical representation of version number
         }
     };
 
@@ -174,41 +174,61 @@ ICM_ConfigWindow.prototype.addModule = function(module) {
 };
 
 ICM_ConfigWindow.prototype.loadOptions = function(idx) {
-    var $c = $("#module_settings"),
-        m = this.modules[idx],
-        str = '<p>' + m.desc + '</p>';
+    var m = this.modules[idx],
+        str = '<p>' + m.desc + '</p>',
+        needsExtraInit = false;
 
-    $c.html("");
-
-    for (var i = 0; i < m.options.length; i++) {
-        var opt = m.options[i],
-            index = m.index + '.' + opt.name,
-            optValue = this.config.Get(index); // always up to date
+    for (var opt of m.options) {
+        var index = m.index + '.' + opt.name,
+            optValue = this.config.Get(index), // always up to date
+            indexAttr = ' data-cfg-index="' + index + '"';
 
         if (opt.type === "checkbox") {
-            str += '<p><input type="checkbox" data-cfg-index="' + index + '"' +
+            str += '<p><input type="checkbox"' + indexAttr +
                    (optValue ? ' checked="checked"' : '') + ' title="default: ' +
                    (opt.default ? 'yes' : 'no') + '">' + opt.desc + '</p>';
         } else if (opt.type === "textinput") {
-            str += '<p>' + opt.desc + ': <input type="text" data-cfg-index="' + index +
-                   '" value="' + optValue + '" title="default: ' + opt.default + '"></p>';
+            str += '<p>' + opt.desc + ': <input type="text"' + indexAttr +
+                   ' value="' + optValue + '" title="default: ' + opt.default + '"></p>';
         } else if (opt.type === "textarea") {
             // optValue can be a string (until a module parses it) or an array (after)
             if ($.isArray(optValue)) {
                 optValue = optValue.join('\n');
             }
             str += '<p><span style="vertical-align: top; margin-right: 5px">' + opt.desc +
-                   ':</span><textarea rows="4" cols="70" data-cfg-index="' + index +
-                   '">' + optValue + '</textarea></p>';
+                   ':</span><textarea rows="4" cols="70"' + indexAttr +
+                   '>' + optValue + '</textarea></p>';
         } else if (opt.type === "textinputcolor") {
-            str += '<p>' + opt.desc + ': <input type="text" class="colorpickertext" data-cfg-index="' + index +
-                   '" value="' + optValue + '" title="default: ' + opt.default + '">' +
-                   ' <input type="text" class="colorpicker"></p>';
+            str += '<p>' + opt.desc + ': <input type="text" class="colorpickertext"' +
+                   indexAttr + ' value="' + optValue + '" title="default: ' +
+                   opt.default + '">' + ' <input type="text" class="colorpicker"></p>';
+            needsExtraInit = true;
         }
     }
 
-    $c.append(str);
+    $("#module_settings").html(str);
+
+    if (needsExtraInit) {
+        this.initColorPickers();
+    }
 };
+
+ICM_ConfigWindow.prototype.initColorPickers = function() {
+    $(".colorpicker").each(function(){
+        var $t = $(this);
+        $t.spectrum({
+            color: $t.prev().val(),
+            change: function(color) {
+                var $prev = $t.prev();
+                $prev.val(color.toHexString());
+                $prev.trigger("change");
+            }
+        });
+    });
+    $(".colorpickertext").on("change input paste", function() {
+        $(this).next().spectrum("set", $(this).val());
+    });
+}
 
 ICM_ConfigWindow.prototype.build = function() {
     // Sort module list by title
@@ -262,7 +282,7 @@ ICM_ConfigWindow.prototype.build = function() {
         if(index === undefined) {
             return;
         }
-        
+
         if ( !_t.config.Toggle(index) ) {
             _t.config.Set( index, $(this).val() );
         }
@@ -285,25 +305,9 @@ ICM_ConfigWindow.prototype.build = function() {
 
     // initialize config window
     $("#cfgModal").jqm( { trigger: "a#icm_enhanced_cfg" } );
-    
-    // Initialize spectrum plugin         
+
+    // Initialize spectrum plugin
     GM_addStyle(GM_getResourceText("spectrumCss"));
-    
-    $(".colorpicker").each(function(){
-        $t = $(this);
-        $t.spectrum({
-            color: $t.prev().val(),
-            change: function(color) {
-                $prev = $(this).prev();
-                $prev.val(color.toHexString());
-                $prev.trigger("change");
-            }            
-        });
-    });
-    
-    $(".colorpickertext").on("change input paste", function() {
-        $(this).next().spectrum("set", $(this).val());
-    });    
 };
 
 // Inherit methods from BaseFeature
