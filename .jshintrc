@@ -35,6 +35,7 @@
     "globals"  : {      // true == r/w, false == read-only
         "GM_setValue": false,
         "GM_getValue": false,
-        "GM_addStyle": false
+        "GM_addStyle": false,
+        "GM_getResourceText": false
     }
 }

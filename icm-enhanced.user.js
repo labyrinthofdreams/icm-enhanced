@@ -233,7 +233,7 @@ ICM_ConfigWindow.prototype.initColorPickers = function() {
     $(".colorpickertext").on("change input paste", function() {
         $(this).next().spectrum("set", $(this).val());
     });
-}
+};
 
 ICM_ConfigWindow.prototype.build = function() {
     // Sort module list by title
