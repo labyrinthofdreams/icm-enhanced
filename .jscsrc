@@ -9,7 +9,14 @@
         "try",
         "catch"
     ],
+    "requireDotNotation": true,
     "disallowKeywords": ["with"],
+    "disallowKeywordsOnNewLine": [
+        "else",
+        "catch"
+    ],
+    "requireLineFeedAtFileEnd": true,
+    "disallowMixedSpacesAndTabs": true,
     "requireSpaceAfterBinaryOperators": true,
     "requireSpaceAfterKeywords": [
         "if",
@@ -24,9 +31,15 @@
         "catch",
         "typeof"
     ],
+    "disallowSpaceAfterObjectKeys": true,
     "disallowSpaceAfterPrefixUnaryOperators": true,
+    "disallowSpaceBeforeBinaryOperators": [","],
     "requireSpaceBeforeBinaryOperators": true,
+    "requireSpaceBeforeBlockStatements": true,
+    "disallowSpaceBeforePostfixUnaryOperators": true,
     "requireSpaceBetweenArguments": true,
+    "requireSpacesInConditionalExpression": true,
+    "requireSpacesInForStatement": true,
     "disallowTrailingWhitespace": true,
     "validateIndentation": 4,
     "validateLineBreaks": "LF",

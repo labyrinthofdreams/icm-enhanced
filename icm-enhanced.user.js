@@ -221,7 +221,7 @@ ICM_ConfigWindow.prototype.loadOptions = function(idx) {
 };
 
 ICM_ConfigWindow.prototype.initColorPickers = function() {
-    $('.colorpicker').each(function(){
+    $('.colorpicker').each(function() {
         var $t = $(this);
         $t.spectrum({
             color: $t.prev().val(),
@@ -1533,7 +1533,7 @@ ICM_LargeList.prototype.load = function() {
         $c[i].parentNode.appendChild(img);
     }
 
-    $('img.coverImage').lazyload({ threshold : 200 });
+    $('img.coverImage').lazyload({ threshold: 200 });
 };
 
 ICM_LargeList.prototype.settings = {
