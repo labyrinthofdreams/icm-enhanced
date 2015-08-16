@@ -21,10 +21,11 @@
 //+ Jonas Raoni Soares Silva
 //@ http://jsfromhell.com/array/shuffle [rev. #1]
 var shuffle = function(v) {
-    /* jshint nocomma: false */
+    /* jshint nocomma: false, noempty: false */
     for (var j, x, i = v.length;
         i > 1;
-        j = Math.floor(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x);
+        j = Math.floor(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x) {
+    }
     return v;
 };
 
@@ -118,8 +119,9 @@ function ICM_Config() {
 // Initialize stuff
 ICM_Config.prototype.Init = function() {
     var oldcfg = evalOrParse(GM_getValue("icm_enhanced_cfg"));
-    if (!oldcfg)
+    if (!oldcfg) {
         return;
+    }
 
     var o = oldcfg.script_config,
         n = this.cfg.script_config,
@@ -237,7 +239,7 @@ ICM_ConfigWindow.prototype.initColorPickers = function() {
 
 ICM_ConfigWindow.prototype.build = function() {
     // Sort module list by title
-    this.modules.sort(function(a,b) { return a.title > b.title ? 1 : -1; });
+    this.modules.sort(function(a, b) { return a.title > b.title ? 1 : -1; });
 
     // Create and append a new item in the drop down menu under your username
     var cfgLink = '<li><a id="icm_enhanced_cfg" href="#" title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a></li>';
@@ -284,7 +286,7 @@ ICM_ConfigWindow.prototype.build = function() {
 
     $("div#cfgModal").on( "change", "input, textarea", function() {
         var index = $(this).data("cfg-index");
-        if(index === undefined) {
+        if (index === undefined) {
             return;
         }
 
@@ -414,8 +416,9 @@ ICM_UpcomingAwardsList.prototype.Attach = function() {
         var abs = this.config.show_absolute;
         var get_span = function(award, cutoff) {
             var num = Math.ceil(total_items * cutoff) - checks;
-            if (!abs && num <= 0)
+            if (!abs && num <= 0) {
                 return '';
+            }
             return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
         };
 
@@ -507,8 +510,9 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
         var $el = $(this),
             count_arr = $el.find(curSel.rank).text().match(/\d+/g);
 
-        if (!count_arr)
+        if (!count_arr) {
             return;
+        }
 
         var checks      = parseInt( count_arr[0], 10 ),
             total_items = parseInt( count_arr[1], 10 ),
@@ -518,8 +522,9 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
 
         award_types.forEach(function(award) {
             var award_checks = Math.ceil(total_items * award[1]) - checks;
-            if (award_checks <= 0)
+            if (award_checks <= 0) {
                 return false; // exit loop; the order of array is important!
+            }
 
             that.lists.push({
                 'award_checks': award_checks,
@@ -533,21 +538,22 @@ ICM_UpcomingAwardsOverview.prototype.PopulateLists = function() {
 
 ICM_UpcomingAwardsOverview.prototype.SortLists = function() {
     // sort lists array by least required checks ASC,
-	// then by awards where checks are equal ASC, then by list title ASC
+    // then by awards where checks are equal ASC, then by list title ASC
     var award_order = { "Bronze": 0, "Silver": 1, "Gold": 2, "Platinum": 3 };
     this.lists.sort(function(a, b) {
-        if (a.award_checks < b.award_checks)
+        if (a.award_checks < b.award_checks) {
             return -1;
-        if (a.award_checks > b.award_checks)
+        } else if (a.award_checks > b.award_checks) {
             return 1;
-        if (award_order[a.award_type] < award_order[b.award_type])
+        } else if (award_order[a.award_type] < award_order[b.award_type]) {
             return -1;
-        if (award_order[a.award_type] > award_order[b.award_type])
+        } else if (award_order[a.award_type] > award_order[b.award_type]) {
             return 1;
-        if (a.list_title < b.list_title)
+        } else if (a.list_title < b.list_title) {
             return -1;
-        if (a.list_title > b.list_title)
+        } else if (a.list_title > b.list_title) {
             return 1;
+        }
         return 0;
     });
 };
@@ -713,8 +719,9 @@ ICM_ListCustomColors.prototype.Attach = function() {
         var list_colors_css = "";
 
         var buildCSS = function(className, color) {
-            if (!color.length)
+            if (!color.length) {
                 return;
+            }
             var sel = 'ol#itemListMovies li.' + className;
             list_colors_css += sel + ', ' + sel + ' ul.optionIconMenu { background-color: ' + color + ' !important; }';
         };
@@ -893,7 +900,7 @@ ICM_ListCrossCheck.prototype.Check = function() {
         var checks = $(x).find("span.info > strong:first").text().split("/");
         return checks[1] - checks[0];
     };
-    jq_toplists.sort(function(a,b) {
+    jq_toplists.sort(function(a, b) {
         return get_unchecked(a) < get_unchecked(b) ? -1 : 1;
     });
 
@@ -1032,13 +1039,20 @@ ICM_ListCrossCheck.prototype.OutputMovies = function() {
     }
 
     // Sort by checks DESC, then by year ASC, then by title ASC
-    this.movies.sort(function(a,b) {
-        if (a.c > b.c) return -1;
-        if (a.c < b.c) return 1;
-        if (a.y < b.y) return -1;
-        if (a.y > b.y) return 1;
-        if (a.t < b.t) return -1;
-        if (a.t > b.t) return 1;
+    this.movies.sort(function(a, b) {
+        if (a.c > b.c) {
+            return -1;
+        } else if (a.c < b.c) {
+            return 1;
+        } else if (a.y < b.y) {
+            return -1;
+        } else if (a.y > b.y) {
+            return 1;
+        } else if (a.t < b.t) {
+            return -1;
+        } else if (a.t > b.t) {
+            return 1;
+        }
         return 0;
     });
 
@@ -1498,21 +1512,19 @@ ICM_LargeList.prototype.load = function() {
         ".listItem h2 { z-index:11 !important; font-size:14px !important; width:100% !important; margin:-30px 0 0 0 !important; }" +
         ".listItem .info { font-size:12px !important; width:100% !important; height:auto !important; line-height:16px !important; margin-top:4px !important }" +
         ".checkbox { top:85px !important; right:12px !important }" +
-        //".checkbox { display:none !important }" +
         "#itemListMovies .optionIconMenu { top:120px !important; right:20px !important }" +
         "#itemListMovies .optionIconMenu li { display: block !important }" +
         "#itemListMovies .optionIconMenuCheckbox { right:20px !important }";
-        //".optionIconMenu { display:none !important }";
 
     GM_addStyle(style);
 
     var $c = $("#itemListMovies").find("div.coverImage").hide();
     for (var i = 0; i < $c.length; i++) {
         var cururl = $c[i].style.backgroundImage;
-        if (cururl.substr(4,1) !== "h") {
-            cururl = cururl.slice(5,-2).replace("small", "medium").replace("Small", "Medium");
+        if (cururl.substr(4, 1) !== "h") {
+            cururl = cururl.slice(5, -2).replace("small", "medium").replace("Small", "Medium");
         } else { // chrome handles urls differently
-            cururl = cururl.slice(4,-1).replace("small", "medium").replace("Small", "Medium");
+            cururl = cururl.slice(4, -1).replace("small", "medium").replace("Small", "Medium");
         }
         var img = document.createElement("img");
         img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAMSURBVBhXY5j8rA8ABBcCCCnPKCcAAAAASUVORK5CYII=";
@@ -1640,22 +1652,22 @@ ICM_ListOverviewSort.prototype.Straighten = function(list) {
 ICM_ListOverviewSort.prototype.Interweave = function(list) {
     var res = [],
         half_len = Math.ceil(list.length / 2);
-    for (var i = 0; i< half_len; i++) {
+    for (var i = 0; i < half_len; i++) {
         res.push(list[i]);
-        if (i+half_len < list.length) {
-            res.push(list[i+half_len]);
+        if (i + half_len < list.length) {
+            res.push(list[i + half_len]);
         }
     }
     return res;
 };
 
 // tests
-// a = [1, 'a', 2, 'b', 3, 'c', 4, 'd'];
-// b = [1, 'a', 2, 'b', 3, 'c', 4];
-// function test(arr) {
-    // return JSON.stringify(arr) === JSON.stringify(interweave(straighten(arr)));
-// }
-// test(a) && test(b)
+/* a = [1, 'a', 2, 'b', 3, 'c', 4, 'd'];
+b = [1, 'a', 2, 'b', 3, 'c', 4];
+function test(arr) {
+    return JSON.stringify(arr) === JSON.stringify(interweave(straighten(arr)));
+}
+test(a) && test(b) */
 
 ICM_ListOverviewSort.prototype.settings = {
     title: "Progress page",
@@ -1939,8 +1951,9 @@ ICM_ProgressTopX.prototype.addStats = function(event) {
             oldText = list.text(),
             curRank = oldText.match(/\d+/);
 
-        if (curRank < targetPage * 25)
-           return;
+        if (curRank < targetPage * 25) {
+            return;
+        }
 
         var url = list.attr("href").replace(/=.*$/, "=" + targetPage),
             progress = parseInt(list.parent().text().match(/\d+/), 10);

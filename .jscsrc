@@ -1,0 +1,34 @@
+{
+    "esnext": true,
+    "requireCurlyBraces": [
+        "if",
+        "else",
+        "for",
+        "while",
+        "do",
+        "try",
+        "catch"
+    ],
+    "disallowKeywords": ["with"],
+    "requireSpaceAfterBinaryOperators": true,
+    "requireSpaceAfterKeywords": [
+        "if",
+        "else",
+        "for",
+        "while",
+        "do",
+        "switch",
+        "case",
+        "return",
+        "try",
+        "catch",
+        "typeof"
+    ],
+    "disallowSpaceAfterPrefixUnaryOperators": true,
+    "requireSpaceBeforeBinaryOperators": true,
+    "requireSpaceBetweenArguments": true,
+    "disallowTrailingWhitespace": true,
+    "validateIndentation": 4,
+    "validateLineBreaks": "LF",
+    "validateParameterSeparator": ", "
+}
