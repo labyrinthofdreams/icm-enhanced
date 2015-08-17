@@ -9,6 +9,7 @@
         "try",
         "catch"
     ],
+    "requireCamelCaseOrUpperCaseIdentifiers": "ignoreProperties", // only for configs
     "requireDotNotation": true,
     "disallowKeywords": ["with"],
     "disallowKeywordsOnNewLine": [
