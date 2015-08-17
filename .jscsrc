@@ -42,6 +42,10 @@
     "requireSpacesInConditionalExpression": true,
     "requireSpacesInForStatement": true,
     "disallowTrailingWhitespace": true,
+    "maximumLineLength": {
+        "value": 100,
+        "allExcept": ["urlComments", "regex"]
+    },
     "validateIndentation": 4,
     "validateLineBreaks": "LF",
     "validateParameterSeparator": ", ",
