@@ -342,29 +342,31 @@ function RandomFilmLink(config) {
 
 // Creates an element and inserts it into the DOM
 RandomFilmLink.prototype.attach = function() {
-    if ( this.config.enabled ) {
-        var randomFilm =
-            '<span style="float:right; margin-left: 15px">' +
-                '<a href="#" id="randomFilm">Help me pick a film!</a></span>';
-
-        if ( $('div#list_container').length !== 1 ) {
-            var container =
-                '<div id="list_container" style="height: 35px; position: relative">' +
-                    randomFilm + '</div>';
-
-            $('#movies').parent().before( container );
-        } else {
-            $('div#list_container').append( randomFilm );
-        }
-
-        var that = this;
-
-        $('div#list_container').on( 'click', 'a#randomFilm', function(e) {
-            e.preventDefault();
-
-            that.pickRandomFilm();
-        });
+    if ( !this.config.enabled ) {
+        return;
     }
+
+    var randomFilm =
+        '<span style="float:right; margin-left: 15px">' +
+            '<a href="#" id="randomFilm">Help me pick a film!</a></span>';
+
+    if ( $('div#list_container').length !== 1 ) {
+        var container =
+            '<div id="list_container" style="height: 35px; position: relative">' +
+                randomFilm + '</div>';
+
+        $('#movies').parent().before( container );
+    } else {
+        $('div#list_container').append( randomFilm );
+    }
+
+    var that = this;
+
+    $('div#list_container').on( 'click', 'a#randomFilm', function(e) {
+        e.preventDefault();
+
+        that.pickRandomFilm();
+    });
 };
 
 // Displays a random film on a list
@@ -372,28 +374,29 @@ RandomFilmLink.prototype.pickRandomFilm = function() {
     var $unchecked = $('ol#itemListMovies > li.unchecked'),
         randNum;
 
-    if ( $unchecked.length > 0 ) {
-        if ( this.config.unique ) {
-            // Generate random numbers
-            if ( this.randomNums.length === 0 ) {
-                // Populate randomNums
-                for ( var i = 0; i < $unchecked.length; i++ ) {
-                    this.randomNums.push( i );
-                }
+    if ( !$unchecked.length ) {
+        return;
+    }
 
-                // Shuffle the results for randomness in-place
-                shuffle( this.randomNums );
+    if ( this.config.unique ) {
+        // Generate random numbers
+        if ( !this.randomNums.length ) {
+            // Populate randomNums
+            for ( var i = 0; i < $unchecked.length; i++ ) {
+                this.randomNums.push( i );
             }
 
-            randNum = this.randomNums.pop();
-        } else {
-            randNum = Math.floor( Math.random() * $unchecked.length );
+            // Shuffle the results for randomness in-place
+            shuffle( this.randomNums );
         }
 
-        $('ol#itemListMovies > li').hide();
-
-        $( $unchecked[ randNum ] ).show();
+        randNum = this.randomNums.pop();
+    } else {
+        randNum = Math.floor( Math.random() * $unchecked.length );
     }
+
+    $('ol#itemListMovies > li').hide();
+    $( $unchecked[ randNum ] ).show();
 };
 
 RandomFilmLink.prototype.settings = {
@@ -425,33 +428,34 @@ function UpcomingAwardsList(config) {
 }
 
 UpcomingAwardsList.prototype.attach = function() {
-    if ( this.config.enabled && $('#itemListMovies').length ) {
-        var totalItems = parseInt($('li#listFilterMovies').text().match(/\d+/));
-        var checks      = parseInt($('#topListMoviesCheckedCount').text().match(/\d+/));
+    if ( !this.config.enabled || !$('#itemListMovies').length ) {
+        return;
+    }
 
-        var statistics = '<span><b>Upcoming awards:</b>';
+    var totalItems = parseInt($('li#listFilterMovies').text().match(/\d+/)),
+        checks     = parseInt($('#topListMoviesCheckedCount').text().match(/\d+/)),
+        statistics = '<span><b>Upcoming awards:</b>',
+        abs = this.config.show_absolute;
 
-        var abs = this.config.show_absolute;
-        var getSpan = function(award, cutoff) {
-            var num = Math.ceil(totalItems * cutoff) - checks;
-            if (!abs && num <= 0) {
-                return '';
-            }
-            return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
-        };
-
-        statistics += getSpan('Bronze', 0.5) + getSpan('Silver', 0.75) +
-                      getSpan('Gold', 0.9) + getSpan('Platinum', 1);
-
-        if ( $('div#list_container').length !== 1 ) {
-            var container =
-                '<div id="list_container" style="height: 35px; position: relative">' +
-                    statistics + '</div>';
-
-            $('#movies').parent().before( container );
-        } else {
-            $('div#list_container').append( statistics );
+    var getSpan = function(award, cutoff) {
+        var num = Math.ceil(totalItems * cutoff) - checks;
+        if (!abs && num <= 0) {
+            return '';
         }
+        return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
+    };
+
+    statistics += getSpan('Bronze', 0.5) + getSpan('Silver', 0.75) +
+                  getSpan('Gold', 0.9) + getSpan('Platinum', 1);
+
+    if ( $('div#list_container').length !== 1 ) {
+        var container =
+            '<div id="list_container" style="height: 35px; position: relative">' +
+                statistics + '</div>';
+
+        $('#movies').parent().before( container );
+    } else {
+        $('div#list_container').append( statistics );
     }
 };
 
@@ -1073,8 +1077,8 @@ ListCrossCheck.prototype.updateMovies = function(content) {
         // if a movie wasn't found on previous top lists,
         // add it to the main movies array
         //   only if the script is not checking for matches on all top lists
-        // OR if the script is checking for matches on all top lists,
-        //   but this is just the first top list
+        //     OR if the script is     checking for matches on all top lists,
+        //        but this is just the first top list
         if ( !found && ( !showPerfectMatches || this.sequenceNumber === 1 ) ) {
             var $item = $(content[i]);
             $item.find('.rank').html('0');

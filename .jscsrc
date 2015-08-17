@@ -10,6 +10,8 @@
         "catch"
     ],
     "requireCamelCaseOrUpperCaseIdentifiers": "ignoreProperties", // only for configs
+    "requireCapitalizedConstructors": true,
+    "requireCommaBeforeLineBreak": true,
     "requireDotNotation": true,
     "disallowKeywords": ["with"],
     "disallowKeywordsOnNewLine": [
@@ -18,6 +20,9 @@
     ],
     "requireLineFeedAtFileEnd": true,
     "disallowMixedSpacesAndTabs": true,
+    "disallowMultipleLineBreaks": true,
+    "disallowMultipleLineStrings": true,
+    "requireParenthesesAroundIIFE": true,
     "requireSpaceAfterBinaryOperators": true,
     "requireSpaceAfterKeywords": [
         "if",
@@ -38,9 +43,22 @@
     "requireSpaceBeforeBinaryOperators": true,
     "requireSpaceBeforeBlockStatements": true,
     "disallowSpaceBeforePostfixUnaryOperators": true,
+    "requireSpaceBeforeObjectValues": true,
     "requireSpaceBetweenArguments": true,
     "requireSpacesInConditionalExpression": true,
     "requireSpacesInForStatement": true,
+    "disallowSpacesInFunctionDeclaration": {
+        "beforeOpeningRoundBrace": true
+    },
+    "requireSpacesInFunctionDeclaration": {
+        "beforeOpeningCurlyBrace": true
+    },
+    "disallowSpacesInNamedFunctionExpression": {
+        "beforeOpeningRoundBrace": true
+    },
+    "requireSpacesInNamedFunctionExpression": {
+        "beforeOpeningCurlyBrace": true
+    },
     "disallowTrailingWhitespace": true,
     "maximumLineLength": {
         "value": 100,
