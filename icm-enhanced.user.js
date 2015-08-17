@@ -25,15 +25,17 @@ var gmSetValue = GM_setValue,
     gmGetResourceText = GM_getResourceText;
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
-//+ Jonas Raoni Soares Silva
-//@ http://jsfromhell.com/array/shuffle [rev. #1]
+// + Jonas Raoni Soares Silva
+// @ http://jsfromhell.com/array/shuffle [rev. #1]
 var shuffle = function(v) {
     /* jshint nocomma: false, noempty: false */
+    // jscs:disable disallowEmptyBlocks
     for (var j, x, i = v.length;
         i > 1;
         j = Math.floor(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x) {
     }
     return v;
+    // jscs:enable disallowEmptyBlocks
 };
 
 // Get object property by a dot-separated path
@@ -246,7 +248,9 @@ ConfigWindow.prototype.initColorPickers = function() {
 
 ConfigWindow.prototype.build = function() {
     // Sort module list by title
-    this.modules.sort(function(a, b) { return a.title > b.title ? 1 : -1; });
+    this.modules.sort(function(a, b) {
+        return a.title > b.title ? 1 : -1;
+    });
 
     // Create and append a new item in the drop down menu under your username
     var cfgLink = '<li><a id="icm_enhanced_cfg" href="#"' +
@@ -396,7 +400,7 @@ RandomFilmLink.prototype.pickRandomFilm = function() {
     }
 
     $('ol#itemListMovies > li').hide();
-    $($unchecked[ randNum ]).show();
+    $($unchecked[randNum]).show();
 };
 
 RandomFilmLink.prototype.settings = {
@@ -523,8 +527,8 @@ UpcomingAwardsOverview.prototype.loadAwardData = function() {
 UpcomingAwardsOverview.prototype.populateLists = function() {
     var that = this,
         $allLists = $('ol#progressall, ol#itemListToplists').children('li'),
-        sel = {progress: {rank: 'span.rank', title: 'h3 > a'},
-               lists: {rank: 'span.info > strong:first', title: 'h2 > a.title'}},
+        sel = { progress: { rank: 'span.rank', title: 'h3 > a' },
+               lists: { rank: 'span.info > strong:first', title: 'h2 > a.title' } },
         // use different selectors depending on page
         curSel = location.href.indexOf('progress') !== -1 ?
                  sel.progress : sel.lists,
@@ -551,10 +555,10 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
             }
 
             that.lists.push({
-                'awardChecks': awardChecks,
-                'awardType':   award[0],
-                'listTitle':   listTitle,
-                'listUrl':     listUrl
+                awardChecks: awardChecks,
+                awardType:   award[0],
+                listTitle:   listTitle,
+                listUrl:     listUrl
             });
         });
     });
@@ -563,7 +567,7 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
 UpcomingAwardsOverview.prototype.sortLists = function() {
     // sort lists array by least required checks ASC,
     // then by awards where checks are equal ASC, then by list title ASC
-    var awardOrder = { 'Bronze': 0, 'Silver': 1, 'Gold': 2, 'Platinum': 3 };
+    var awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
     this.lists.sort(function(a, b) {
         if (a.awardChecks < b.awardChecks) {
             return -1;
@@ -1092,7 +1096,7 @@ ListCrossCheck.prototype.updateMovies = function(content) {
             }
 
             // t = title, c = count, u = url, y = year
-            this.movies.push({t: movie, c: 1, u: movieUrl, y: movieYear, jq: $item});
+            this.movies.push({ t: movie, c: 1, u: movieUrl, y: movieYear, jq: $item });
         }
     }
 
@@ -1241,10 +1245,10 @@ ListCrossCheck.prototype.createTab = function() {
     var _t = this;
 
     // Modified from ICM source. Make the tab work.
-    $('#listFilterCRSelected a').on('click', function () {
+    $('#listFilterCRSelected a').on('click', function() {
         var a = $(this).attr('class'),
             b = $(this).closest('li');
-        $('.tabMenu').find('li').each(function () {
+        $('.tabMenu').find('li').each(function() {
             $(this).removeClass('active');
         });
         b.addClass('active');
@@ -1723,7 +1727,7 @@ ListOverviewSort.prototype.rearrange = function(order, section) {
     if (this.config.autosort) {
         var lookupMap = toplistArr.map(function(item, i) {
             var width = $(item).find('span.progress').css('width').replace('px', '');
-            return {index: i, value: parseFloat(width)};
+            return { index: i, value: parseFloat(width) };
         });
 
         lookupMap.sort(function(a, b) {
@@ -1884,7 +1888,7 @@ ListsTabDisplay.prototype.attach = function() {
     } else if (_c.redirect) { // = if on a list page
         var linksToLists = $('.listItemMovie > .info > a:last-of-type');
 
-        linksToLists.each(function () {
+        linksToLists.each(function() {
             var link = $(this),
                 url = link.attr('href').replace('?tags=user:icheckmovies', '');
             link.attr('href', url);
@@ -2054,10 +2058,10 @@ function ProgressTopX(config) {
 ProgressTopX.prototype.attach = function() {
     if (this.config.enabled) {
         var css = 'float: left; margin-right: 0.5em',
-            attr = {text: 'Load stats', id: 'icme_req_for_top', href: '#', style: css},
+            attr = { text: 'Load stats', id: 'icme_req_for_top', href: '#', style: css },
             // can't pass the value directly in case of user changing it and not reloading
-            loadLink = $('<a>', attr).click({cfg: this.config}, this.addStats),
-            spanElem = $('<span>', {text: ' | ', style: css});
+            loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
+            spanElem = $('<span>', { text: ' | ', style: css });
 
         $('#listOrderingWrapper').prepend(loadLink, spanElem);
     }

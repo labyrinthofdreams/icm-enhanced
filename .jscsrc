@@ -1,5 +1,6 @@
 {
     "esnext": true,
+    "requireBlocksOnNewline": true,
     "requireCurlyBraces": [
         "if",
         "else",
@@ -13,6 +14,7 @@
     "requireCapitalizedConstructors": true,
     "requireCommaBeforeLineBreak": true,
     "requireDotNotation": true,
+    "disallowEmptyBlocks": true,
     "disallowKeywords": ["with"],
     "disallowKeywordsOnNewLine": [
         "else",
@@ -22,7 +24,10 @@
     "disallowMixedSpacesAndTabs": true,
     "disallowMultipleLineBreaks": true,
     "disallowMultipleLineStrings": true,
+    "disallowNewlineBeforeBlockStatements": true,
     "requireParenthesesAroundIIFE": true,
+    "disallowQuotedKeysInObjects": true,
+    "requireSemicolons": true,
     "requireSpaceAfterBinaryOperators": true,
     "requireSpaceAfterKeywords": [
         "if",
@@ -37,6 +42,7 @@
         "catch",
         "typeof"
     ],
+    "requireSpaceAfterLineComment": true,
     "disallowSpaceAfterObjectKeys": true,
     "disallowSpaceAfterPrefixUnaryOperators": true,
     "disallowSpaceBeforeBinaryOperators": [","],
@@ -44,7 +50,9 @@
     "requireSpaceBeforeBlockStatements": true,
     "disallowSpaceBeforePostfixUnaryOperators": true,
     "requireSpaceBeforeObjectValues": true,
+    "disallowSpaceBeforeSemicolon": true,
     "requireSpaceBetweenArguments": true,
+    "disallowSpacesInCallExpression": true,
     "requireSpacesInConditionalExpression": true,
     "requireSpacesInForStatement": true,
     "disallowSpacesInFunctionDeclaration": {
@@ -53,12 +61,20 @@
     "requireSpacesInFunctionDeclaration": {
         "beforeOpeningCurlyBrace": true
     },
+    "disallowSpacesInAnonymousFunctionExpression": {
+        "beforeOpeningRoundBrace": true
+    },
+    "requireSpacesInAnonymousFunctionExpression": {
+        "beforeOpeningCurlyBrace": true
+    },
     "disallowSpacesInNamedFunctionExpression": {
         "beforeOpeningRoundBrace": true
     },
     "requireSpacesInNamedFunctionExpression": {
         "beforeOpeningCurlyBrace": true
     },
+    "disallowSpacesInsideBrackets": true,
+    "requireSpacesInsideObjectBrackets": "all",
     "disallowSpacesInsideParentheses": true,
     "disallowTrailingWhitespace": true,
     "maximumLineLength": {
