@@ -473,25 +473,25 @@ function UpcomingAwardsOverview(config) {
 }
 
 UpcomingAwardsOverview.prototype.attach = function() {
-    if ( this.config.enabled ) {
-        if ( this.config.autoload ) {
-            this.loadAwardData();
-        } else {
-            var loadLink = '<p id="lad_container"><a id="load_award_data" href="#">Load upcoming awards for this user</a></p>';
-
-            $('#listOrdering').before(loadLink);
-
-            var that = this;
-
-            $('p#lad_container').on('click', 'a#load_award_data', function(e) {
-                e.preventDefault();
-
-                $( e.target ).remove();
-
-                that.loadAwardData();
-            });
-        }
+    if ( !this.config.enabled ) {
+        return;
     }
+    if ( this.config.autoload ) {
+        this.loadAwardData();
+        return;
+    }
+
+    var loadLink = $('<p>', {id: 'lad_container'})
+        .append($('<a>', {id: 'load_award_data', href: '#', text: 'Load upcoming awards for this user'}));
+
+    $('#listOrdering').before(loadLink);
+
+    var that = this;
+    $('p#lad_container').on('click', 'a#load_award_data', function(e) {
+        e.preventDefault();
+        $( e.target ).remove();
+        that.loadAwardData();
+    });
 };
 
 UpcomingAwardsOverview.prototype.loadAwardData = function() {
@@ -565,40 +565,99 @@ UpcomingAwardsOverview.prototype.sortLists = function() {
     });
 };
 
+/**
+ * Create a function that generates <img> for a hide/unhide button.
+ * Using a factory allows to do costly line concat only once
+ * and only if this module is attached.
+ */
+UpcomingAwardsOverview.prototype.getIconFactory = function() {
+    var unhideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
+        'AQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW' +
+        '1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjR' +
+        'uqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/2' +
+        '6gXmviW5bqnb8yUK028qZjPfoPWEj4Ku5HBspgAz941IXZeze8N1bottSo8BTZviVWrE' +
+        'h546EO03EXpuJOdG63otJbjBKHkEp/Ml6yNYYzpuezWL4s5VMtT8acCMQcb5XL3eJE8V' +
+        'gBlR7BeMGW9Z4yT9y1CeyucuhdTGDxfftaBO7G4L+zg91UocxVmCiy51NpiP3n2treUP' +
+        'ujL8xhOjYOzZYsQWANyRYlU4Y9Br6oHd5bDh0bCpSOixJiWx71YY09J5pM/WEbzFcDmH' +
+        'vwwBu2wnikg+lEj4mwBe5bC5h1OUqcwpdC60dxegRmR06TyjCF9G9z+qM2uCJmuMJmaN' +
+        'ZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzS' +
+        'CwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTk' +
+        'SuQmCC',
+        hideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAK' +
+        'CAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1h' +
+        'Z2VSZWFkeXHJZTwAAADtSURBVHjajFC7DkFREJy9iXg0t+EHRKJDJSqRuIVaJT7AF+jR' +
+        '+xuNRiJyS8WlRaHWeOU+kBy7eyKhs8lkJrOzZ3OWzMAD15gxYhB+yzAm0ndez+eYMYLn' +
+        'gdkIf2vpSYbCfsNkOx07n8kgWa1UpptNII5VR/M56Nyt6Qq33bbhQsHy6aR0WSyEyEmi' +
+        'CG6vR2ffB65X4HCwYC2e9CTjJGGok4/7Hcjl+ImLBWv1uCRDu3peV5eGQ2C5/P1zq4X9' +
+        'dGpXP+LYhmYz4HbDMQgUosWTnmQoKKf0htVKBZvtFsx6S9bm48ktaV3EXwd/CzAAVjt+' +
+        'gHT5me0AAAAASUVORK5CYII=';
+
+    /**
+     * Generate <img> for a hide/unhide button
+     * @param {boolean} hide - true to hide, false to unhide
+     * @param {string} listTitle
+     */
+    var getIcon = function(hide, listTitle) {
+        return '<img src="' + (hide ? hideIconData : unhideIconData) + '" ' +
+            'alt="' + (hide ? 'Hide ' : 'Unhide ') + 'icon" ' +
+            'title="' + (hide ? 'Hide ' : 'Unhide ') + listTitle + '">';
+    };
+
+    return getIcon;
+};
+
 UpcomingAwardsOverview.prototype.htmlOut = function() {
-    var unhideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjRuqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/26gXmviW5bqnb8yUK028qZjPfoPWEj4Ku5HBspgAz941IXZeze8N1bottSo8BTZviVWrEh546EO03EXpuJOdG63otJbjBKHkEp/Ml6yNYYzpuezWL4s5VMtT8acCMQcb5XL3eJE8VgBlR7BeMGW9Z4yT9y1CeyucuhdTGDxfftaBO7G4L+zg91UocxVmCiy51NpiP3n2treUPujL8xhOjYOzZYsQWANyRYlU4Y9Br6oHd5bDh0bCpSOixJiWx71YY09J5pM/WEbzFcDmHvwwBu2wnikg+lEj4mwBe5bC5h1OUqcwpdC60dxegRmR06TyjCF9G9z+qM2uCJmuMJmaNZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzSCwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTkSuQmCC';
-    var hideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAADtSURBVHjajFC7DkFREJy9iXg0t+EHRKJDJSqRuIVaJT7AF+jR+xuNRiJyS8WlRaHWeOU+kBy7eyKhs8lkJrOzZ3OWzMAD15gxYhB+yzAm0ndez+eYMYLngdkIf2vpSYbCfsNkOx07n8kgWa1UpptNII5VR/M56Nyt6Qq33bbhQsHy6aR0WSyEyEmiCG6vR2ffB65X4HCwYC2e9CTjJGGok4/7Hcjl+ImLBWv1uCRDu3peV5eGQ2C5/P1zq4X9dGpXP+LYhmYz4HbDMQgUosWTnmQoKKf0htVKBZvtFsx6S9bm48ktaV3EXwd/CzAAVjt+gHT5me0AAAAASUVORK5CYII=';
+    var getIcon = this.getIconFactory(),
+        listTable =
+            '<table id="award_table"><thead><tr id="award_table_head">' +
+                '<th>Awards</th><th>Checks</th><th>List title</th><th>(Un)Hide</th>' +
+            '</tr></thead><tbody>';
 
-    var listTable = '<table id="award_table"><thead><tr id="award_table_head"><th>Awards</th><th>Checks</th><th>List title</th><th>(Un)Hide</th></tr></head><tbody>';
-
-    for ( var i = 0; i < this.lists.length; i++ ) {
-        var el = this.lists[i],
-            unhideIcon = '<img title="Unhide ' + el.listTitle + '" alt="Unhide icon" src="' + unhideIconData + '">',
-            hideIcon = '<img title="Hide ' + el.listTitle + '" alt="Hide icon" src="' + hideIconData + '">',
-            isHidden = this.hiddenLists.indexOf(el.listUrl) !== -1;
+    for (var el of this.lists) {
+        var isHidden = this.hiddenLists.indexOf(el.listUrl) !== -1,
+            icon = getIcon(!isHidden, el.listTitle);
 
         listTable  += '<tr class="' + (isHidden ? 'hidden-list' : '') +
             '" data-award-type="' + el.awardType + '" data-list-url="' + el.listUrl + '">' +
             '<td style="width: 65px">' + el.awardType + '</td>' +
             '<td style="width: 65px">' + el.awardChecks + '</td>' +
-            '<td><div style="height: 28px; overflow: hidden"><a class="list-title" href="' + el.listUrl + '">' + el.listTitle + '</a></div></td>' +
-            '<td style="width: 70px"><a href="#" class="icm_hide_list">' + (isHidden ? unhideIcon : hideIcon) + '</a></td></tr>';
+            '<td><div style="height: 28px; overflow: hidden">' +
+                '<a class="list-title" href="' + el.listUrl + '">' + el.listTitle + '</a></div></td>' +
+            '<td style="width: 70px"><a href="#" class="icm_toggle_list">' + icon + '</a></td></tr>';
     }
 
     listTable += '</tbody></table>';
 
     // build the html...
-    var toggleUpcomingLink = '<p id="ua_toggle_link_container" style="position: relative; left:0; top:0; width: 200px"><a id="toggle_upcoming_awards" href="#"><span class="_show" style="display: none">Show upcoming awards</span><span class="_hide">Hide upcoming awards</span></a></p>';
-    var toggleFullLink     = '<a id="toggle_full_list" href="#"><span class="_show">Show full list</span><span class="_hide" style="display: none">Minimize full list</span></a>';
-    var toggleHiddenLink   = '<a id="toggle_hidden_list" href="#">Show hidden</a>';
+    var toggleUpcomingLink =
+        '<p id="ua_toggle_link_container" style="position: relative; left:0; top:0; width: 200px">' +
+            '<a id="toggle_upcoming_awards" href="#">' +
+                '<span class="_show" style="display: none">Show upcoming awards</span>' +
+                '<span class="_hide">Hide upcoming awards</span></a></p>';
+    var toggleFullLink =
+        '<a id="toggle_full_list" href="#">' +
+            '<span class="_show">Show full list</span>' +
+            '<span class="_hide" style="display: none">Minimize full list</span></a>';
+    var toggleHiddenLink = '<a id="toggle_hidden_list" href="#">Show hidden</a>';
 
-    var links = '<p id="award_display_links" style="position: absolute; right: 0; top: 0; font-weight: bold">Display: <a id="display_all" href="#">All</a>, ' +
-        '<a id="display_bronze" href="#">Bronze</a>, <a id="display_silver" href="#">Silver</a>, <a id="display_gold" href="#">Gold</a>, ' +
-        '<a id="display_platinum" href="#">Platinum</a>, ' + toggleFullLink + ', ' + toggleHiddenLink + '</p>';
+    var links =
+        '<p id="award_display_links" style="position: absolute; right: 0; top: 0; font-weight: bold">' +
+            'Display: <a id="display_all" href="#">All</a>, ' +
+            '<a id="display_bronze" href="#">Bronze</a>, ' +
+            '<a id="display_silver" href="#">Silver</a>, ' +
+            '<a id="display_gold" href="#">Gold</a>, ' +
+            '<a id="display_platinum" href="#">Platinum</a>, ' +
+            toggleFullLink + ', ' + toggleHiddenLink + '</p>';
 
-    var awardContainer = '<div id="award_container" class="container" style="position: relative; top: 0; width: 830px; height: 240px; overflow: scroll">' + listTable + '</div>';
+    var awardContainer =
+        '<div id="award_container" class="container" ' +
+        'style="position: relative; top: 0; width: 830px; height: 240px; overflow: scroll">' +
+            listTable + '</div>';
 
-    var allHtml = '<div id="icm_award_html_container" style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">' + toggleUpcomingLink + links + awardContainer + '</div>';
+    var allHtml =
+        '<div id="icm_award_html_container" ' +
+        'style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">' +
+            toggleUpcomingLink + links + awardContainer + '</div>';
 
     $('#icm_award_html_container, #ua_toggle_link_container').remove();
 
@@ -615,7 +674,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
 
     var _this = this;
 
-    $('a.icm_hide_list').on('click', function(e) {
+    $('a.icm_toggle_list').on('click', function(e) {
         e.preventDefault();
 
         var $parent = $(this).parent().parent(),
@@ -634,12 +693,9 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
             .filter(function() { // get all awards with the same url
                 return $(this).data('list-url') === listUrl;
             })
-            .toggleClass('hidden-list', hide).hide()
-            .find('.icm_hide_list > img').attr({
-                src: hide ? unhideIconData : hideIconData,
-                alt: (hide ? 'Unhide ' : 'Hide ') + 'Icon',
-                title: (hide ? 'Unhide ' : 'Hide ') + listTitle
-            });
+            .toggleClass('hidden-list', hide)
+            .hide() // = don't show in the current listing
+            .find('.icm_toggle_list > img').replaceWith(getIcon(!hide, listTitle));
 
         // save hidden lists
         gmSetValue('hidden_lists', JSON.stringify(_this.hiddenLists));
