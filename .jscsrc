@@ -59,6 +59,7 @@
     "requireSpacesInNamedFunctionExpression": {
         "beforeOpeningCurlyBrace": true
     },
+    "disallowSpacesInsideParentheses": true,
     "disallowTrailingWhitespace": true,
     "maximumLineLength": {
         "value": 100,
