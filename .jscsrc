@@ -1,10 +1,18 @@
 {
     // "preset": "airbnb",
-    // Settings that should be disabled when extending a preset
+
+    // --- Settings that don't fit this codebase
+    // --- and should be disabled when extending a preset
+    // "disallowAnonymousFunctions": null,
     // "disallowMultipleVarDecl": null,
     // "requirePaddingNewLinesBeforeLineComments": null,
-    // "requireTrailingComma": null,
+    // "requireAlignedObjectValues": null,
+    // "requireArrowFunctions": null,
     // "requireVarDeclFirst": null,
+
+    // --- Settings to revisit later
+    // "requireShorthandArrowFunctions": null,
+    // "requireTrailingComma": null,
 
     "esnext": true,
     "requireBlocksOnNewline": true,
@@ -20,6 +28,7 @@
     "requireCamelCaseOrUpperCaseIdentifiers": "ignoreProperties", // only for configs
     "requireCapitalizedConstructors": true,
     "requireCommaBeforeLineBreak": true,
+    "requireDollarBeforejQueryAssignment": true,
     "requireDotNotation": true,
     "disallowEmptyBlocks": true,
     "disallowKeywords": ["with"],

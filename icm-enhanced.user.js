@@ -529,8 +529,7 @@ UpcomingAwardsOverview.prototype.loadAwardData = function() {
 };
 
 UpcomingAwardsOverview.prototype.populateLists = function() {
-    var that = this,
-        $allLists = $('ol#progressall, ol#itemListToplists').children('li'),
+    var $allLists = $('ol#progressall, ol#itemListToplists').children('li'),
         sel = { progress: { rank: 'span.rank', title: 'h3 > a' },
                lists: { rank: 'span.info > strong:first', title: 'h2 > a.title' } },
         // use different selectors depending on page
@@ -538,6 +537,7 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
                  sel.progress : sel.lists,
         awardTypes = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
+    var that = this;
     $allLists.each(function() {
         var $el = $(this),
             countArr = $el.find(curSel.rank).text().match(/\d+/g);
@@ -880,8 +880,8 @@ ListCrossCheck.prototype.init = function() {
     // array of movie objects
     this.movies = [];
 
-    // array of top list objects
-    this.toplists = [];
+    // array of top list jQuery elements
+    this.$toplists = [];
 
     // number of total toplists
     this.numToplists = 0;
@@ -946,23 +946,23 @@ ListCrossCheck.prototype.activate = function() {
             return;
         }
 
-        var li = $(this);
+        var $li = $(this);
         // event actions must not work for cloned toplists under the selected tab
-        if (li.hasClass('icme_listcc')) {
+        if ($li.hasClass('icme_listcc')) {
             return false; // ff 3.6 compatibility
         }
 
-        var wasSelected = li.hasClass('icme_listcc_selected');
+        var wasSelected = $li.hasClass('icme_listcc_selected');
         if (e.type === 'mouseover' && !wasSelected) {
-            li.addClass('icme_listcc_hover').find('span.percentage').hide();
+            $li.addClass('icme_listcc_hover').find('span.percentage').hide();
         } else if (e.type === 'mouseout' && !wasSelected) {
-            li.removeClass('icme_listcc_hover').find('span.percentage').show();
+            $li.removeClass('icme_listcc_hover').find('span.percentage').show();
         } else if (e.type === 'click') {
-            li.removeClass('icme_listcc_hover');
-            li.toggleClass('icme_listcc_selected');
+            $li.removeClass('icme_listcc_hover');
+            $li.toggleClass('icme_listcc_selected');
 
             if (wasSelected) { // before click
-                li.addClass('icme_listcc_hover');
+                $li.addClass('icme_listcc_hover');
             }
         }
 
@@ -973,10 +973,10 @@ ListCrossCheck.prototype.activate = function() {
 };
 
 ListCrossCheck.prototype.deactivate = function() {
-    var selectedToplists = $('li.icme_listcc_selected', 'ul#topLists');
+    var $selectedToplists = $('li.icme_listcc_selected', 'ul#topLists');
 
     // if there's still selected top lists, change them back to normal
-    $(selectedToplists).removeClass('icme_listcc_selected').find('span.percentage').show();
+    $selectedToplists.removeClass('icme_listcc_selected').find('span.percentage').show();
 
     $('ol#itemListToplists').children('li')
         .removeClass('icme_listcc_selected').removeClass('icme_listcc_hover');
@@ -991,15 +991,15 @@ ListCrossCheck.prototype.deactivate = function() {
  * Check through every selected top list
  */
 ListCrossCheck.prototype.check = function() {
-    var toplistCont = $('ol#itemListToplists');
+    var $toplistCont = $('ol#itemListToplists');
 
     // make selected top lists normal under the regular tabs
-    toplistCont.children('li.icme_listcc_selected')
+    $toplistCont.children('li.icme_listcc_selected')
         .removeClass('icme_listcc_selected')
         .find('span.percentage').show();
 
     // get selected top lists
-    var $toplists = toplistCont.children('li.icme_listcc');
+    var $toplists = $toplistCont.children('li.icme_listcc');
 
     this.numToplists = $toplists.length;
     this.inProgress = true;
@@ -1017,42 +1017,38 @@ ListCrossCheck.prototype.check = function() {
     // make selected toplists highlighted under the selected tab
     $toplists.addClass('icme_listcc_selected').find('span.percentage').hide();
 
-    this.toplists = $toplists.get();
-    this.getUncheckedFilms(this.toplists[this.sequenceNumber]);
+    this.$toplists = $toplists;
+    this.getUncheckedFilms(this.$toplists.eq(this.sequenceNumber));
 };
 
 /**
  * Get unchecked films from a top list.
  *
- * @param {jQuery} listElem - the top list element
+ * @param {jQuery} $list - the top list element
  */
-ListCrossCheck.prototype.getUncheckedFilms = function(listElem) {
-    var url = $(listElem).find('a').attr('href');
-
-    $(listElem).addClass('icme_listcc_pending');
+ListCrossCheck.prototype.getUncheckedFilms = function($list) {
+    var url = $list.find('a').attr('href');
+    $list.addClass('icme_listcc_pending');
 
     var that = this;
-
     $.get(url, function(response) {
-        $(listElem).removeClass('icme_listcc_selected icme_listcc_pending')
+        $list.removeClass('icme_listcc_selected icme_listcc_pending')
             .find('span.percentage').show();
 
         var filter = that.config.checks ? '' : 'li.unchecked';
         // the site returns html with extra whitespace
-        var unchecked = $($.parseHTML(response)).find('ol#itemListMovies').children(filter);
+        var $unchecked = $($.parseHTML(response)).find('ol#itemListMovies').children(filter);
 
-        that.updateMovies(unchecked);
+        that.updateMovies($unchecked);
     });
 };
 
 /**
  * Update array of movies.
  *
- * @param {jQuery} content - unchecked movies (<li> elements) on a top list page
+ * @param {jQuery} $content - unchecked movies (<li> elements) on a top list page
  */
-ListCrossCheck.prototype.updateMovies = function(content) {
-    var movieTitles = content.find('h2');
-
+ListCrossCheck.prototype.updateMovies = function($content) {
     this.sequenceNumber += 1;
 
     // keeps track if at least one movie on the current top list is also found
@@ -1063,25 +1059,24 @@ ListCrossCheck.prototype.updateMovies = function(content) {
 
     var showPerfectMatches = this.config.match_all;
 
-    for (var i = 0; i < $(movieTitles).length; i++) {
+    var that = this;
+    $content.each(function() {
         var found = false,
-            curTitle = $(movieTitles[i]),
-            movie = $.trim(curTitle.text()),
-            movieUrl = curTitle.find('a').attr('href'),
-            movieYear = curTitle.next('span.info').children('a:first').text();
+            $movie = $(this),
+            $movieTitle = $movie.find('h2'),
+            curTitle = $movieTitle.text().trim(),
+            curUrl = $movieTitle.find('a').attr('href'),
+            curYear = $movieTitle.next('span.info').children('a:first').text();
 
-        for (var j = 0; j < this.movies.length; j++) {
+        for (var movieObj of that.movies) {
             // compare urls as they're guaranteed to be unique
             // in some cases movie title and release year are the same for different movies
             // which results in incorrect top list values
-            if (movieUrl === this.movies[j].u) {
-                this.movies[j].c += 1;
-
-                this.movies[j].jq.find('.rank').html(this.movies[j].c);
+            if (curUrl === movieObj.url) {
+                movieObj.count += 1;
+                movieObj.jq.find('.rank').html(movieObj.count);
                 found = true;
-
                 globalToplistMatch = true;
-
                 break;
             }
         }
@@ -1091,24 +1086,27 @@ ListCrossCheck.prototype.updateMovies = function(content) {
         //   only if the script is not checking for matches on all top lists
         //     OR if the script is     checking for matches on all top lists,
         //        but this is just the first top list
-        if (!found && (!showPerfectMatches || this.sequenceNumber === 1)) {
-            var $item = $(content[i]);
-            $item.find('.rank').html('0');
-
-            var itemid = $item.attr('id');
+        if (!found && (!showPerfectMatches || that.sequenceNumber === 1)) {
+            $movie.find('.rank').html('0');
+            var itemid = $movie.attr('id');
 
             // check if owned
             var owned = evalOrParse(gmGetValue('owned_movies', '[]'));
             if (owned.indexOf(itemid) !== -1) {
-                $item.removeClass('notowned').addClass('owned');
+                $movie.removeClass('notowned').addClass('owned');
             }
 
-            // t = title, c = count, u = url, y = year
-            this.movies.push({ t: movie, c: 1, u: movieUrl, y: movieYear, jq: $item });
+            that.movies.push({
+                title: curTitle,
+                count: 1,
+                url: curUrl,
+                year: curYear,
+                jq: $movie
+            });
         }
-    }
+    });
 
-    var hasToplistsLeft = this.sequenceNumber < this.toplists.length;
+    var hasToplistsLeft = this.sequenceNumber < this.$toplists.length;
 
     // if finding movies on all selected top lists
     if (showPerfectMatches) {
@@ -1118,7 +1116,7 @@ ListCrossCheck.prototype.updateMovies = function(content) {
             if (this.sequenceNumber > 1) {
                 var cutoff = this.sequenceNumber;
                 this.movies = $.grep(this.movies, function(el) {
-                    return el.c === cutoff;
+                    return el.count === cutoff;
                 });
             }
         // if didn't find a single match, abort if it's the last or not the first top list
@@ -1130,7 +1128,7 @@ ListCrossCheck.prototype.updateMovies = function(content) {
 
     // if there's still more top lists
     if (hasToplistsLeft) {
-        this.getUncheckedFilms(this.toplists[this.sequenceNumber]);
+        this.getUncheckedFilms(this.$toplists.eq(this.sequenceNumber));
     } else {
         this.outputMovies();
     }
@@ -1144,35 +1142,35 @@ ListCrossCheck.prototype.outputMovies = function() {
 
         if (limit > 0) {
             this.movies = $.grep(this.movies, function(el) {
-                return el.c >= limit;
+                return el.count >= limit;
             });
         }
     }
 
     // Sort by checks DESC, then by year ASC, then by title ASC
     this.movies.sort(function(a, b) {
-        if (a.c > b.c) {
+        if (a.count > b.count) {
             return -1;
-        } else if (a.c < b.c) {
+        } else if (a.count < b.count) {
             return 1;
-        } else if (a.y < b.y) {
+        } else if (a.year < b.year) {
             return -1;
-        } else if (a.y > b.y) {
+        } else if (a.year > b.year) {
             return 1;
-        } else if (a.t < b.t) {
+        } else if (a.title < b.title) {
             return -1;
-        } else if (a.t > b.t) {
+        } else if (a.title > b.title) {
             return 1;
         }
 
         return 0;
     });
 
-    if (this.movies.length > 0) {
+    if (this.movies.length) {
         var menu = '<ul>';
-        for (var i = 0; i < this.toplists.length; ++i) {
-            menu += '<li><b>' + $(this.toplists[i]).find('h2').text() + '</b></li>';
-        }
+        this.$toplists.each(function() {
+            menu += '<li><b>' + $(this).find('h2').text() + '</b></li>';
+        });
 
         menu += '</ul><ul class="tabMenu tabMenuPush">' +
             '<li class="topListMoviesFilter active">' +
@@ -1186,8 +1184,8 @@ ListCrossCheck.prototype.outputMovies = function() {
 
         $('#itemContainer').after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
         $('#itemContainer').after(menu);
-        for (i = 0; i < this.movies.length; ++i) {
-            $('#itemListMovies').append(this.movies[i].jq);
+        for (var movie of this.movies) {
+            $('#itemListMovies').append(movie.jq);
         }
 
         $('#itemListMovies').children('li').show();
@@ -1213,8 +1211,8 @@ ListCrossCheck.prototype.outputMovies = function() {
             var data = '"found_toplists","title","year","official_toplists","imdb"\n',
                 $items = $('#itemListMovies').children('li');
 
-            for (var i = 0; i < $items.length; ++i) {
-                var $item = $($items[i]),
+            $items.each(function() {
+                var $item = $(this),
                     foundToplists = $item.find('.rank').text(),
                     title = $item.find('h2').text().trim().replace('"', '""'),
                     year = $item.find('.info a:first').text(),
@@ -1227,7 +1225,7 @@ ListCrossCheck.prototype.outputMovies = function() {
                            '"' + imdburl + '"\n';
 
                 data += line;
-            }
+            });
 
             // This should use window instead of unsafeWindow, but
             // FF 39.0.3 broke changing window.location in GM sandbox.
@@ -1262,11 +1260,11 @@ ListCrossCheck.prototype.createTab = function() {
     // Modified from ICM source. Make the tab work.
     $('#listFilterCRSelected a').on('click', function() {
         var a = $(this).attr('class'),
-            b = $(this).closest('li');
+            $b = $(this).closest('li');
         $('.tabMenu').find('li').each(function() {
             $(this).removeClass('active');
         });
-        b.addClass('active');
+        $b.addClass('active');
 
         if (a === 'icme_listcc' && !that.inProgress) {
             var $topListUl = $('ol#itemListToplists');
@@ -1309,9 +1307,9 @@ ListCrossCheck.prototype.createTab = function() {
             }
         }
 
-        b = $('ol#itemListToplists');
-        b.find('li').hide();
-        b.find('li.' + a).show();
+        $b = $('ol#itemListToplists');
+        $b.find('li').hide();
+        $b.find('li.' + a).show();
 
         return false;
     });
@@ -1859,7 +1857,7 @@ ListsTabDisplay.prototype.constructor = ListsTabDisplay;
 function ListsTabDisplay(config) {
     BaseFeature.call(this, config);
 
-    this.block = $('#itemListToplists');
+    this.$block = $('#itemListToplists');
     this.sep = '<li class="groupSeparator"><br><hr><br></li>';
     // multiline regex that leaves only list name, excl. a common beginning and parameters
     this.reURL = /^[ \t]*(?:https?:\/\/)?(?:www\.)?(?:icheckmovies.com)?\/?(?:lists)?\/?([^\s\?]+\/)(?:\?.+)?[ \t]*$/gm;
@@ -1870,7 +1868,7 @@ ListsTabDisplay.prototype.attach = function() {
         _c = this.config;
 
     if (isOnMoviePage) {
-        var lists = this.block.children();
+        var lists = this.$block.children();
 
         if (_c.sort_official) {
             var officialLists = lists
@@ -1884,7 +1882,7 @@ ListsTabDisplay.prototype.attach = function() {
 
         if (_c.sort_groups) {
             var that = this;
-            ['group1', 'group2'].forEach(function(group) {
+            for (var group of ['group1', 'group2']) {
                 var stored = _c[group];
                 if (typeof stored === 'string') {
                     // Parse textarea content
@@ -1894,27 +1892,27 @@ ListsTabDisplay.prototype.attach = function() {
                     that.globalConfig.save();
                 }
 
-                var personal = that.getLists(stored);
-                that.move(personal);
-            });
+                var $personal = that.getLists(stored);
+                that.move($personal);
+            }
         }
 
         if (_c.sort_filmos) {
-            var filmos = lists.filter(function() {
+            var $filmos = lists.filter(function() {
                 return $(this).text().toLowerCase().indexOf('filmography') >= 0;
             });
-            this.move(filmos);
+            this.move($filmos);
         }
 
         // visual fix for edge cases when all lists are moved
         lists.last().filter('.groupSeparator').hide();
     } else if (_c.redirect) { // = if on a list page
-        var linksToLists = $('.listItemMovie > .info > a:last-of-type');
+        var $linksToLists = $('.listItemMovie > .info > a:last-of-type');
 
-        linksToLists.each(function() {
-            var link = $(this),
-                url = link.attr('href').replace('?tags=user:icheckmovies', '');
-            link.attr('href', url);
+        $linksToLists.each(function() {
+            var $link = $(this),
+                url = $link.attr('href').replace('?tags=user:icheckmovies', '');
+            $link.attr('href', url);
         });
     }
 };
@@ -1924,11 +1922,11 @@ ListsTabDisplay.prototype.move = function(lists) {
         return;
     }
 
-    var target = this.block.find('li.groupSeparator').last();
-    if (target.length) {
-        target.after(lists, this.sep);
+    var $target = this.$block.find('li.groupSeparator').last();
+    if ($target.length) {
+        $target.after(lists, this.sep);
     } else {
-        this.block.prepend(lists, this.sep);
+        this.$block.prepend(lists, this.sep);
     }
 };
 
@@ -1937,11 +1935,11 @@ ListsTabDisplay.prototype.getLists = function(listIDs) {
         return [];
     }
 
-    var selected = this.block.children().filter(function() {
+    var $selected = this.$block.children().filter(function() {
         var href = $(this).find('a.title').attr('href');
         return href && $.inArray(href.substring(7), listIDs) !== -1; // sep matches too
     });
-    return selected;
+    return $selected;
 };
 
 ListsTabDisplay.prototype.settings = {
@@ -2020,16 +2018,16 @@ ExportLists.prototype.attach = function() {
         };
 
         $('#itemListMovies > li').each(function() {
-            var item = $(this),
-                rank = item.find('.rank').text().trim().replace(/ .+/, ''),
-                title = encodeField(item.find('h2>a').text()),
-                aka = encodeField(item.find('.info > em').text()),
-                year = item.find('.info a:first').text(),
-                toplists = parseInt(item.find('.info a:last').text(), 10),
-                checked = item.hasClass('checked') ? 'yes' : 'no',
-                isFav = item.hasClass('favorite') ? 'yes' : 'no',
-                isDislike = item.hasClass('hated') ? 'yes' : 'no',
-                imdburl = item.find('.optionIMDB').attr('href'),
+            var $item = $(this),
+                rank = $item.find('.rank').text().trim().replace(/ .+/, ''),
+                title = encodeField($item.find('h2>a').text()),
+                aka = encodeField($item.find('.info > em').text()),
+                year = $item.find('.info a:first').text(),
+                toplists = parseInt($item.find('.info a:last').text(), 10),
+                checked = $item.hasClass('checked') ? 'yes' : 'no',
+                isFav = $item.hasClass('favorite') ? 'yes' : 'no',
+                isDislike = $item.hasClass('hated') ? 'yes' : 'no',
+                imdburl = $item.find('.optionIMDB').attr('href'),
                 line = [rank, title, aka, year, toplists, checked,
                     isFav, isDislike, imdburl].join(sep) + sep + '\n';
             data += line;
@@ -2086,36 +2084,36 @@ ProgressTopX.prototype.attach = function() {
         var css = 'float: left; margin-right: 0.5em',
             attr = { text: 'Load stats', id: 'icme_req_for_top', href: '#', style: css },
             // can't pass the value directly in case of user changing it and not reloading
-            loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
-            spanElem = $('<span>', { text: ' | ', style: css });
+            $loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
+            $spanElem = $('<span>', { text: ' | ', style: css });
 
-        $('#listOrderingWrapper').prepend(loadLink, spanElem);
+        $('#listOrderingWrapper').prepend($loadLink, $spanElem);
     }
 };
 
 ProgressTopX.prototype.addStats = function(event) {
     var targetPage = parseInt(event.data.cfg.target_page, 10), // * 25 = target rank
-        lists = $('.itemListCompact[id^="progress"]:visible span.rank a');
+        $lists = $('.itemListCompact[id^="progress"]:visible span.rank a');
 
-    lists.each(function() {
-        var list = $(this),
-            oldText = list.text(),
+    $lists.each(function() {
+        var $list = $(this),
+            oldText = $list.text(),
             curRank = oldText.match(/\d+/);
 
         if (curRank < targetPage * 25) {
             return;
         }
 
-        var url = list.attr('href').replace(/=.*$/, '=' + targetPage),
-            progress = parseInt(list.parent().text().match(/\d+/), 10);
+        var url = $list.attr('href').replace(/=.*$/, '=' + targetPage),
+            progress = parseInt($list.parent().text().match(/\d+/), 10);
 
         $.get(url, function(data) {
             data = data.match(/\d+<\/strong> checks in this list,/g).pop().match(/\d+/);
             if (data) {
                 var minchecks = parseInt(data[0], 10),
                     dif = minchecks - progress;
-                list.text(oldText + ' - ' + minchecks + ' req - ' + dif + ' dif');
-                list.attr('href', url);
+                $list.text(oldText + ' - ' + minchecks + ' req - ' + dif + ' dif');
+                $list.attr('href', url);
             }
         });
     });
