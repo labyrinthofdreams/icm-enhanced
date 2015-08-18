@@ -20,11 +20,14 @@
         "else",
         "catch"
     ],
+    "requireLineBreakAfterVariableAssignment": true,
     "requireLineFeedAtFileEnd": true,
     "disallowMixedSpacesAndTabs": true,
     "disallowMultipleLineBreaks": true,
     "disallowMultipleLineStrings": true,
     "disallowNewlineBeforeBlockStatements": true,
+    "disallowOperatorBeforeLineBreak": ["."],
+    "requireOperatorBeforeLineBreak": true,
     "requireParenthesesAroundIIFE": true,
     "disallowQuotedKeysInObjects": true,
     "requireSemicolons": true,
@@ -48,6 +51,7 @@
     "disallowSpaceBeforeBinaryOperators": [","],
     "requireSpaceBeforeBinaryOperators": true,
     "requireSpaceBeforeBlockStatements": true,
+    "disallowSpaceBeforeComma": true,
     "disallowSpaceBeforePostfixUnaryOperators": true,
     "requireSpaceBeforeObjectValues": true,
     "disallowSpaceBeforeSemicolon": true,
@@ -77,6 +81,7 @@
     "requireSpacesInsideObjectBrackets": "all",
     "disallowSpacesInsideParentheses": true,
     "disallowTrailingWhitespace": true,
+    "disallowYodaConditions": true,
     "maximumLineLength": {
         "value": 100,
         "allExcept": ["urlComments", "regex"]
@@ -84,5 +89,21 @@
     "validateIndentation": 4,
     "validateLineBreaks": "LF",
     "validateParameterSeparator": ", ",
-    "validateQuoteMarks": "'"
+    "validateQuoteMarks": "'",
+
+    "jsDoc": {
+        "checkAnnotations": "jsdoc3",
+        "checkParamNames": true,
+        "requireParamTypes": true,
+        "checkRedundantParams": true,
+        "checkReturnTypes": true,
+        "checkRedundantReturns": true,
+        "requireReturnTypes": true,
+        "checkTypes": "strictNativeCase",
+        "checkRedundantAccess": true,
+        "leadingUnderscoreAccess": true,
+        "requireHyphenBeforeDescription": true,
+        "requireNewlineAfterDescription": true,
+        "requireDescriptionCompleteSentence": true
+    }
 }

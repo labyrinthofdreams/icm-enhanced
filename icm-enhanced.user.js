@@ -614,7 +614,8 @@ UpcomingAwardsOverview.prototype.getIconFactory = function() {
         'gHT5me0AAAAASUVORK5CYII=';
 
     /**
-     * Generate <img> for a hide/unhide button
+     * Generate <img> for a hide/unhide button.
+     *
      * @param {boolean} hide - true to hide, false to unhide
      * @param {string} listTitle
      */
@@ -1014,9 +1015,9 @@ ListCrossCheck.prototype.check = function() {
 };
 
 /**
- * Get unchecked films from a top list
+ * Get unchecked films from a top list.
  *
- * @param listElem jQuery object of the top list element
+ * @param {jQuery} listElem - the top list element
  */
 ListCrossCheck.prototype.getUncheckedFilms = function(listElem) {
     var url = $(listElem).find('a').attr('href');
@@ -1038,9 +1039,9 @@ ListCrossCheck.prototype.getUncheckedFilms = function(listElem) {
 };
 
 /**
- * Update array of movies
+ * Update array of movies.
  *
- * @param content jQuery object that consists of unchecked movies (<li> elements) on a top list page
+ * @param {jQuery} content - unchecked movies (<li> elements) on a top list page
  */
 ListCrossCheck.prototype.updateMovies = function(content) {
     var movieTitles = content.find('h2');
@@ -1758,7 +1759,8 @@ ListOverviewSort.prototype.rearrange = function(order, section) {
 // [1, 'a', 2, 'b', 3, 'c']    -> [1, 2, 3, 'a', 'b', 'c']
 // [1, 'a', 2, 'b', 3, 'c', 4] -> [1, 2, 3, 4, 'a', 'b', 'c']
 ListOverviewSort.prototype.straighten = function(list) {
-    var even = [], odd = [];
+    var even = [],
+        odd  = [];
     for (var i = 0; i < list.length; i++) {
         if (i % 2 === 0) {
             even.push(list[i]);
