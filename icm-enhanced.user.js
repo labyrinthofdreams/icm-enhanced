@@ -303,7 +303,7 @@ ConfigWindow.prototype.build = function() {
         top: '17%', left: '50%', marginLeft: '-400px', width: '800px', height: '450px'
     }).appendTo('body');
 
-    var _t = this;
+    var that = this;
 
     $('div#cfgModal').on('change', 'input, textarea', function() {
         var index = $(this).data('cfg-index');
@@ -311,22 +311,22 @@ ConfigWindow.prototype.build = function() {
             return;
         }
 
-        if (!_t.config.toggle(index)) {
-            _t.config.set(index, $(this).val());
+        if (!that.config.toggle(index)) {
+            that.config.set(index, $(this).val());
         }
 
         $('button#configSave').prop('disabled', false);
     });
 
     $('div#cfgModal').on('click', 'button#configSave', function() {
-        _t.config.save();
+        that.config.save();
 
         $(this).prop('disabled', true);
     });
 
     $('#modulelist').on('change', function() {
         var idx = document.getElementById('modulelist').selectedIndex;
-        _t.loadOptions(idx);
+        that.loadOptions(idx);
     });
 
     $('#modulelist').trigger('change');
@@ -703,7 +703,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
     // hide hidden
     $lists.filter('.hidden-list').hide();
 
-    var _this = this;
+    var that = this;
 
     $('a.icm_toggle_list').on('click', function(e) {
         e.preventDefault();
@@ -711,13 +711,13 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
         var $parent = $(this).parent().parent(),
             listTitle = $.trim($parent.find('.list-title').text()),
             listUrl = $parent.data('list-url'),
-            ind = _this.hiddenLists.indexOf(listUrl),
+            ind = that.hiddenLists.indexOf(listUrl),
             hide = ind === -1;
 
         if (hide) { // hide list
-            _this.hiddenLists.push(listUrl);
+            that.hiddenLists.push(listUrl);
         } else { // unhide list
-            _this.hiddenLists.splice(ind, 1);
+            that.hiddenLists.splice(ind, 1);
         }
 
         $lists.filter(hide ? 'tr' : 'tr.hidden-list')
@@ -729,7 +729,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
             .find('.icm_toggle_list > img').replaceWith(getIcon(!hide, listTitle));
 
         // save hidden lists
-        gmSetValue('hidden_lists', JSON.stringify(_this.hiddenLists));
+        gmSetValue('hidden_lists', JSON.stringify(that.hiddenLists));
     });
 
     $('#toggle_hidden_list').on('click', function(e) {
@@ -902,12 +902,12 @@ ListCrossCheck.prototype.attach = function() {
         '<button id="cfgListCCActivate">Activate CR</button></div>';
 
     $('#itemContainer').before(actions);
-    var _t = this;
+    var that = this;
 
     $('div#crActions').on('click', 'button#cfgListCCActivate', function() {
         $(this).prop('disabled', true);
-        _t.createTab();
-        _t.activate();
+        that.createTab();
+        that.activate();
     });
 
     var customCSS = '<style type="text/css">' +
@@ -925,13 +925,13 @@ ListCrossCheck.prototype.attach = function() {
 ListCrossCheck.prototype.activate = function() {
     this.init();
     this.activated = true;
-    var _t = this;
+    var that = this;
 
     $('button#cfgListCCActivate')
         .after('<button id="cfgListCCDeactivate">Deactivate</button>');
 
     $('div#crActions').on('click', 'button#cfgListCCDeactivate', function() {
-        _t.deactivate();
+        that.deactivate();
         $('button#cfgListCCActivate').prop('disabled', false);
     });
 
@@ -941,7 +941,7 @@ ListCrossCheck.prototype.activate = function() {
     }
 
     $('ol#itemListToplists li').on('click mouseover mouseout', function(e) {
-        var activeAndIdle = _t.activated && !_t.inProgress;
+        var activeAndIdle = that.activated && !that.inProgress;
         if (!activeAndIdle) { // ff 3.6 compatibility
             return;
         }
@@ -1031,17 +1031,17 @@ ListCrossCheck.prototype.getUncheckedFilms = function(listElem) {
 
     $(listElem).addClass('icme_listcc_pending');
 
-    var _t = this;
+    var that = this;
 
     $.get(url, function(response) {
         $(listElem).removeClass('icme_listcc_selected icme_listcc_pending')
             .find('span.percentage').show();
 
-        var filter = _t.config.checks ? '' : 'li.unchecked';
+        var filter = that.config.checks ? '' : 'li.unchecked';
         // the site returns html with extra whitespace
         var unchecked = $($.parseHTML(response)).find('ol#itemListMovies').children(filter);
 
-        _t.updateMovies(unchecked);
+        that.updateMovies(unchecked);
     });
 };
 
@@ -1251,7 +1251,7 @@ ListCrossCheck.prototype.createTab = function() {
     var $tlfilter = $('ul.tabMenu', 'div#itemContainer');
     $tlfilter.append(tab);
 
-    var _t = this;
+    var that = this;
 
     // Modified from ICM source. Make the tab work.
     $('#listFilterCRSelected a').on('click', function() {
@@ -1262,7 +1262,7 @@ ListCrossCheck.prototype.createTab = function() {
         });
         b.addClass('active');
 
-        if (a === 'icme_listcc' && !_t.inProgress) {
+        if (a === 'icme_listcc' && !that.inProgress) {
             var $topListUl = $('ol#itemListToplists');
             $topListUl.children('li.icme_listcc').remove();
 
@@ -1283,7 +1283,7 @@ ListCrossCheck.prototype.createTab = function() {
                 $('button#icme_listcc_check').on('click', function() {
                     $(this).prop('disabled', true);
 
-                    _t.check();
+                    that.check();
                 });
 
                 // Make the current tab work if we want to return to it
@@ -1601,11 +1601,11 @@ LargeList.prototype.attach = function() {
         }
     }
 
-    var _t = this;
+    var that = this;
     $('#icme_large_posters').on('click', function(e) {
         e.preventDefault();
 
-        _t.load();
+        that.load();
     });
 };
 
@@ -1710,10 +1710,10 @@ ListOverviewSort.prototype.attach = function() {
     var order = this.config.order === true ? 'desc' : 'asc';
     this.rearrange(order, 'all');
 
-    var _t = this;
+    var that = this;
     $('#progressFilter a').not('#progressFilter-all').one('click', function() {
         var section = $(this).attr('id').split('-')[1];
-        _t.rearrange(order, section);
+        that.rearrange(order, section);
     });
 };
 
@@ -1877,19 +1877,19 @@ ListsTabDisplay.prototype.attach = function() {
         }
 
         if (_c.sort_groups) {
-            var _t = this;
+            var that = this;
             ['group1', 'group2'].forEach(function(group) {
                 var stored = _c[group];
                 if (typeof stored === 'string') {
                     // Parse textarea content
                     console.log('Parsing ListsTabDisplay group', group);
-                    stored = stored.trim().replace(_t.reURL, '$1').split('\n');
+                    stored = stored.trim().replace(that.reURL, '$1').split('\n');
                     _c[group] = stored;
-                    _t.globalConfig.save();
+                    that.globalConfig.save();
                 }
 
-                var personal = _t.getLists(stored);
-                _t.move(personal);
+                var personal = that.getLists(stored);
+                that.move(personal);
             });
         }
 

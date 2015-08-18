@@ -1,4 +1,11 @@
 {
+    // "preset": "airbnb",
+    // Settings that should be disabled when extending a preset
+    // "disallowMultipleVarDecl": null,
+    // "requirePaddingNewLinesBeforeLineComments": null,
+    // "requireTrailingComma": null,
+    // "requireVarDeclFirst": null,
+
     "esnext": true,
     "requireBlocksOnNewline": true,
     "requireCurlyBraces": [
@@ -31,6 +38,7 @@
     "requirePaddingNewLinesAfterBlocks": {
         "allExcept": ["inCallExpressions"]
     },
+    "disallowPaddingNewlinesInBlocks": true,
     "requireParenthesesAroundIIFE": true,
     "disallowQuotedKeysInObjects": true,
     "requireSemicolons": true,
@@ -55,6 +63,12 @@
     "requireSpaceBeforeBinaryOperators": true,
     "requireSpaceBeforeBlockStatements": true,
     "disallowSpaceBeforeComma": true,
+    "requireSpaceBeforeKeywords": [
+        "else",
+        "while",
+        "catch",
+        "finally"
+    ],
     "disallowSpaceBeforePostfixUnaryOperators": true,
     "requireSpaceBeforeObjectValues": true,
     "disallowSpaceBeforeSemicolon": true,
@@ -85,10 +99,12 @@
     "disallowSpacesInsideParentheses": true,
     "disallowTrailingWhitespace": true,
     "disallowYodaConditions": true,
+
     "maximumLineLength": {
         "value": 100,
         "allExcept": ["urlComments", "regex"]
     },
+    "safeContextKeyword": ["that"],
     "validateIndentation": 4,
     "validateLineBreaks": "LF",
     "validateParameterSeparator": ", ",
