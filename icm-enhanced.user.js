@@ -1229,7 +1229,13 @@ ListCrossCheck.prototype.outputMovies = function() {
                 data += line;
             }
 
-            window.location.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(data);
+            // This should use window instead of unsafeWindow, but
+            // FF 39.0.3 broke changing window.location in GM sandbox.
+            // When they fix that, either revert back to window
+            // or re-use code from ExportLists.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=1192821
+            // https://github.com/greasemonkey/greasemonkey/issues/2232
+            unsafeWindow.location.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(data);
         });
     } else {
         $('#icme-crossref-notfound').remove();
