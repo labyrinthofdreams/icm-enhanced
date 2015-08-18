@@ -34,6 +34,7 @@ var shuffle = function(v) {
         i > 1;
         j = Math.floor(Math.random() * i), x = v[--i], v[i] = v[j], v[j] = x) {
     }
+
     return v;
     // jscs:enable disallowEmptyBlocks
 };
@@ -172,6 +173,7 @@ Config.prototype.toggle = function(index) {
     } else {
         return false; // Couldn't toggle a value
     }
+
     this.set(index, changeVal);
     return true; // Value toggled
 };
@@ -211,6 +213,7 @@ ConfigWindow.prototype.loadOptions = function(idx) {
             if ($.isArray(optValue)) {
                 optValue = optValue.join('\n');
             }
+
             str += '<p><span style="vertical-align: top; margin-right: 5px">' + opt.desc +
                    ':</span><textarea rows="4" cols="70"' + indexAttr +
                    '>' + optValue + '</textarea></p>';
@@ -282,6 +285,7 @@ ConfigWindow.prototype.build = function() {
         var m = this.modules[i];
         moduleList += '<option value="' + i + '">' + m.title + '</option>';
     }
+
     moduleList += '</select>';
 
     // HTML for the main jqmodal window
@@ -365,10 +369,8 @@ RandomFilmLink.prototype.attach = function() {
     }
 
     var that = this;
-
     $('div#list_container').on('click', 'a#randomFilm', function(e) {
         e.preventDefault();
-
         that.pickRandomFilm();
     });
 };
@@ -446,6 +448,7 @@ UpcomingAwardsList.prototype.attach = function() {
         if (!abs && num <= 0) {
             return '';
         }
+
         return '<span style="margin-left: 30px">' + award + ': <b>' + num + '</b></span>';
     };
 
@@ -497,6 +500,7 @@ UpcomingAwardsOverview.prototype.attach = function() {
     if (!this.config.enabled) {
         return;
     }
+
     if (this.config.autoload) {
         this.loadAwardData();
         return;
@@ -582,6 +586,7 @@ UpcomingAwardsOverview.prototype.sortLists = function() {
         } else if (a.listTitle > b.listTitle) {
             return 1;
         }
+
         return 0;
     });
 };
@@ -811,6 +816,7 @@ ListCustomColors.prototype.attach = function() {
             if (!color.length) {
                 return;
             }
+
             var sel = 'ol#itemListMovies li.' + className;
             listColorsCss += sel + ', ' + sel + ' ul.optionIconMenu ' +
                 '{ background-color: ' + color + ' !important; }';
@@ -1003,6 +1009,7 @@ ListCrossCheck.prototype.check = function() {
         var checks = $(x).find('span.info > strong:first').text().split('/');
         return checks[1] - checks[0];
     };
+
     $toplists.sort(function(a, b) {
         return getUnchecked(a) < getUnchecked(b) ? -1 : 1;
     });
@@ -1157,6 +1164,7 @@ ListCrossCheck.prototype.outputMovies = function() {
         } else if (a.t > b.t) {
             return 1;
         }
+
         return 0;
     });
 
@@ -1493,6 +1501,7 @@ Owned.prototype.attach = function() {
             } else {
                 owned.push(movieId);
             }
+
             $movie.toggleClass('notowned owned');
 
             if (onListPage) {
@@ -1647,6 +1656,7 @@ LargeList.prototype.load = function() {
         } else { // chrome handles urls differently
             cururl = cururl.slice(4, -1).replace('small', 'medium').replace('Small', 'Medium');
         }
+
         var img = document.createElement('img');
         img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIA' +
             'AACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMA' +
@@ -1749,10 +1759,12 @@ ListOverviewSort.prototype.rearrange = function(order, section) {
         // restore default two-column view after sorting/hiding
         toplistArr = this.interweave(toplistArr);
     }
+
     if (isInterweaved && verticalOrder) {
         // no sorting/hiding happened; rearrange the list with original order
         toplistArr = this.straighten(toplistArr);
     }
+
     $toplistList.append(toplistArr);
 };
 
@@ -1768,6 +1780,7 @@ ListOverviewSort.prototype.straighten = function(list) {
             odd.push(list[i]);
         }
     }
+
     return $.merge(even, odd);
 };
 
@@ -1782,6 +1795,7 @@ ListOverviewSort.prototype.interweave = function(list) {
             res.push(list[i + halfLen]);
         }
     }
+
     return res;
 };
 
@@ -1873,6 +1887,7 @@ ListsTabDisplay.prototype.attach = function() {
                     _c[group] = stored;
                     _t.globalConfig.save();
                 }
+
                 var personal = _t.getLists(stored);
                 _t.move(personal);
             });
@@ -1899,25 +1914,28 @@ ListsTabDisplay.prototype.attach = function() {
 };
 
 ListsTabDisplay.prototype.move = function(lists) {
-    if (lists.length) {
-        var target = this.block.find('li.groupSeparator').last();
-        if (target.length) {
-            target.after(lists, this.sep);
-        } else {
-            this.block.prepend(lists, this.sep);
-        }
+    if (!lists.length) {
+        return;
+    }
+
+    var target = this.block.find('li.groupSeparator').last();
+    if (target.length) {
+        target.after(lists, this.sep);
+    } else {
+        this.block.prepend(lists, this.sep);
     }
 };
 
 ListsTabDisplay.prototype.getLists = function(listIDs) {
-    if (listIDs.length) {
-        var selected = this.block.children().filter(function() {
-            var href = $(this).find('a.title').attr('href');
-            return href && $.inArray(href.substring(7), listIDs) !== -1; // sep matches too
-        });
-        return selected;
+    if (!listIDs.length) {
+        return [];
     }
-    return [];
+
+    var selected = this.block.children().filter(function() {
+        var href = $(this).find('a.title').attr('href');
+        return href && $.inArray(href.substring(7), listIDs) !== -1; // sep matches too
+    });
+    return selected;
 };
 
 ListsTabDisplay.prototype.settings = {

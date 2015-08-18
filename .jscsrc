@@ -28,6 +28,9 @@
     "disallowNewlineBeforeBlockStatements": true,
     "disallowOperatorBeforeLineBreak": ["."],
     "requireOperatorBeforeLineBreak": true,
+    "requirePaddingNewLinesAfterBlocks": {
+        "allExcept": ["inCallExpressions"]
+    },
     "requireParenthesesAroundIIFE": true,
     "disallowQuotedKeysInObjects": true,
     "requireSemicolons": true,
