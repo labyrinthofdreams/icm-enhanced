@@ -3,15 +3,20 @@
 
     // --- Settings that don't fit this codebase
     // --- and should be disabled when extending a preset
+    // "requireAlignedObjectValues": null,
     // "disallowAnonymousFunctions": null,
+    // "requireArrowFunctions": null,
+    // "requireFunctionDeclarations": null,
+    // "disallowMultipleSpaces": null,
     // "disallowMultipleVarDecl": null,
     // "requirePaddingNewLinesBeforeLineComments": null,
-    // "requireAlignedObjectValues": null,
-    // "requireArrowFunctions": null,
     // "requireVarDeclFirst": null,
+    // "validateNewlineAfterArrayElements": null,
 
     // --- Settings to revisit later
+    // "disallowParenthesesAroundArrowParam": null,
     // "requireShorthandArrowFunctions": null,
+    // "requireTemplateStrings": null,
     // "requireTrailingComma": null,
 
     "esnext": true,
@@ -38,10 +43,12 @@
     ],
     "requireLineBreakAfterVariableAssignment": true,
     "requireLineFeedAtFileEnd": true,
+    "requireMatchingFunctionName": true,
     "disallowMixedSpacesAndTabs": true,
     "disallowMultipleLineBreaks": true,
     "disallowMultipleLineStrings": true,
     "disallowNewlineBeforeBlockStatements": true,
+    "disallowNodeTypes": ["LabeledStatement"],
     "disallowOperatorBeforeLineBreak": ["."],
     "requireOperatorBeforeLineBreak": true,
     "requirePaddingNewLinesAfterBlocks": {
@@ -114,6 +121,7 @@
         "allExcept": ["urlComments", "regex"]
     },
     "safeContextKeyword": ["that"],
+    "validateAlignedFunctionParameters": true,
     "validateIndentation": 4,
     "validateLineBreaks": "LF",
     "validateParameterSeparator": ", ",

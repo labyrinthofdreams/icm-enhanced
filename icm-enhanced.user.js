@@ -27,7 +27,7 @@ var gmSetValue = GM_setValue,
 
 // + Jonas Raoni Soares Silva
 // @ http://jsfromhell.com/array/shuffle [rev. #1]
-var shuffle = function(v) {
+function shuffle(v) {
     /* jshint nocomma: false, noempty: false */
     // jscs:disable disallowEmptyBlocks
     for (var j, x, i = v.length;
@@ -37,7 +37,7 @@ var shuffle = function(v) {
 
     return v;
     // jscs:enable disallowEmptyBlocks
-};
+}
 
 // Get object property by a dot-separated path
 function getProperty(path, obj) {
@@ -644,7 +644,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
         var isHidden = this.hiddenLists.indexOf(el.listUrl) !== -1,
             icon = getIcon(!isHidden, el.listTitle);
 
-        listTable  += '<tr class="' + (isHidden ? 'hidden-list' : '') +
+        listTable += '<tr class="' + (isHidden ? 'hidden-list' : '') +
             '" data-award-type="' + el.awardType + '" data-list-url="' + el.listUrl + '">' +
             '<td style="width: 65px">' + el.awardType + '</td>' +
             '<td style="width: 65px">' + el.awardChecks + '</td>' +
@@ -809,25 +809,26 @@ function ListCustomColors(config) {
 }
 
 ListCustomColors.prototype.attach = function() {
-    if (this.config.enabled) {
-        var listColorsCss = '';
-
-        var buildCSS = function(className, color) {
-            if (!color.length) {
-                return;
-            }
-
-            var sel = 'ol#itemListMovies li.' + className;
-            listColorsCss += sel + ', ' + sel + ' ul.optionIconMenu ' +
-                '{ background-color: ' + color + ' !important; }';
-        };
-
-        buildCSS('favorite', this.config.colors.favorite);
-        buildCSS('watch', this.config.colors.watchlist);
-        buildCSS('hated', this.config.colors.disliked);
-
-        gmAddStyle(listColorsCss);
+    if (!this.config.enabled) {
+        return;
     }
+
+    function buildCSS(className, color) {
+        if (!color.length) {
+            return;
+        }
+
+        var sel = 'ol#itemListMovies li.' + className;
+        return sel + ', ' + sel + ' ul.optionIconMenu ' +
+            '{ background-color: ' + color + ' !important; }';
+    }
+
+    var listColorsCss =
+        buildCSS('favorite', this.config.colors.favorite) +
+        buildCSS('watch',    this.config.colors.watchlist) +
+        buildCSS('hated',    this.config.colors.disliked);
+
+    gmAddStyle(listColorsCss);
 };
 
 ListCustomColors.prototype.settings = {
@@ -1005,10 +1006,10 @@ ListCrossCheck.prototype.check = function() {
     this.inProgress = true;
 
     // sort selected top lists in ascending order by number of unchecked films
-    var getUnchecked = function(x) {
+    function getUnchecked(x) {
         var checks = $(x).find('span.info > strong:first').text().split('/');
         return checks[1] - checks[0];
-    };
+    }
 
     $toplists.sort(function(a, b) {
         return getUnchecked(a) < getUnchecked(b) ? -1 : 1;
@@ -2008,14 +2009,14 @@ ExportLists.prototype.attach = function() {
             sep = '\t';
         }
 
-        var data =  ['rank', 'title', 'aka', 'year', 'official_toplists',
+        var data = ['rank', 'title', 'aka', 'year', 'official_toplists',
             'checked', 'favorite', 'dislike', 'imdb'].join(sep) + sep + '\n';
 
-        var encodeField = function(field) {
+        function encodeField(field) {
             return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 ?
                    '"' + field.replace('"', '""', 'g') + '"' :
                    field;
-        };
+        }
 
         $('#itemListMovies > li').each(function() {
             var $item = $(this),
