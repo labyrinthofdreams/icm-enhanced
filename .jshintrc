@@ -33,10 +33,11 @@
 
     // Custom Globals
     "globals"  : {      // true == r/w, false == read-only
-        "unsafeWindow": false,
-        "GM_setValue": false,
-        "GM_getValue": false,
-        "GM_addStyle": false,
+        "unsafeWindow"      : false,
+        "GM_info"           : false,
+        "GM_setValue"       : false,
+        "GM_getValue"       : false,
+        "GM_addStyle"       : false,
         "GM_getResourceText": false
     }
 }

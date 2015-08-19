@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.7.6.2
+// @version        1.7.7
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -19,7 +19,8 @@
 // ==/UserScript==
 
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
-var gmSetValue = GM_setValue,
+var gmInfo = GM_info,
+    gmSetValue = GM_setValue,
     gmGetValue = GM_getValue,
     gmAddStyle = GM_addStyle,
     gmGetResourceText = GM_getResourceText;
@@ -116,10 +117,17 @@ BaseFeature.prototype.updateConfig = function(config) {
 
 // Config object constructor
 function Config() {
+    // test:
+    // ['1', '1.7', '1.7.1', '1.7.1.1', '1.7.1.1.1'].map(verToNumber) ===
+    // [1000, 1700, 1710, 1711, 1711]
+    function verToNumber(str) {
+        return +(str.replace(/\./g, '') + '0000').slice(0, 4);
+    }
+
     this.cfg = {
         script_config: { // script config
-            version: '1.7.6.2',
-            revision: 1762 // numerical representation of version number
+            version: gmInfo.script.version, // dot-separated string
+            revision: verToNumber(gmInfo.script.version) // 4-digit number
         }
     };
 
@@ -141,6 +149,7 @@ Config.prototype.init = function() {
     this.cfg = oldcfg;
 
     if (isUpdated) {
+        console.log('Updating to ' + n.revision);
         this.save();
     }
 };
