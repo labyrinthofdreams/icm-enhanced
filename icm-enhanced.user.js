@@ -2014,7 +2014,7 @@ ExportLists.prototype.attach = function() {
 
         function encodeField(field) {
             return field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 ?
-                   '"' + field.replace('"', '""', 'g') + '"' :
+                   '"' + field.replace(/"/g, '""') + '"' :
                    field;
         }
 
