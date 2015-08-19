@@ -96,21 +96,21 @@ BaseFeature.prototype.isEnabled = function() {
             this.settings.includes.some(testRegex);
 };
 
-// Add module options to the config;
+// Add module options to the global config;
 // Keeps loaded values, excludes outdated options, adds new options
 BaseFeature.prototype.updateConfig = function(config) {
     var module = this.settings.index,
         cur = {};
 
-    $.each(this.settings.options, function(i, option) {
+    for (var option of this.settings.options) {
         var idx = option.name,
             oldValue = config.get(module + '.' + idx),
             newValue = oldValue !== undefined ? oldValue : option.default;
 
         setProperty(idx, cur, newValue);
-    });
+    }
 
-    // save references to the global and module configs in a module
+    // save references to the module and global configs in a module
     this.config = config.cfg[module] = cur;
     this.globalConfig = config; // allows modules to use Save/Set/Get
 };
@@ -290,9 +290,8 @@ ConfigWindow.prototype.build = function() {
     gmAddStyle(customCSS);
 
     var moduleList = '<select id="modulelist" name="modulelist">';
-    for (var i = 0; i < this.modules.length; ++i) {
-        var m = this.modules[i];
-        moduleList += '<option value="' + i + '">' + m.title + '</option>';
+    for (var m of this.modules) {
+        moduleList += '<option>' + m.title + '</option>';
     }
 
     moduleList += '</select>';
@@ -480,7 +479,7 @@ UpcomingAwardsList.prototype.settings = {
     desc: 'Displays upcoming awards on individual lists',
     index: 'ua_list',
     includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: ['icheckmovies.com/list/$'],
+    excludes: [],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -561,14 +560,14 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
             listTitle  = $t.attr('title').replace(/^View the | top list$/g, ''),
             listUrl    = $t.attr('href');
 
-        awardTypes.forEach(function(award) {
-            var awardChecks = Math.ceil(totalItems * award[1]) - checks;
-            if (awardChecks <= 0) {
-                return false; // exit loop; the order of array is important!
+        for (var award of awardTypes) {
+            var neededForAward = Math.ceil(totalItems * award[1]) - checks;
+            if (neededForAward <= 0) {
+                break; // the order of awardTypes array is important!
             }
 
-            that.lists.push({ awardChecks, listTitle, listUrl, awardType: award[0] });
-        });
+            that.lists.push({ neededForAward, listTitle, listUrl, awardType: award[0] });
+        }
     });
 };
 
@@ -577,9 +576,9 @@ UpcomingAwardsOverview.prototype.sortLists = function() {
     // then by awards where checks are equal ASC, then by list title ASC
     var awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
     this.lists.sort(function(a, b) {
-        if (a.awardChecks < b.awardChecks) {
+        if (a.neededForAward < b.neededForAward) {
             return -1;
-        } else if (a.awardChecks > b.awardChecks) {
+        } else if (a.neededForAward > b.neededForAward) {
             return 1;
         } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
             return -1;
@@ -651,7 +650,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
         listTable += '<tr class="' + (isHidden ? 'hidden-list' : '') +
             '" data-award-type="' + el.awardType + '" data-list-url="' + el.listUrl + '">' +
             '<td style="width: 65px">' + el.awardType + '</td>' +
-            '<td style="width: 65px">' + el.awardChecks + '</td>' +
+            '<td style="width: 65px">' + el.neededForAward + '</td>' +
             '<td><div style="height: 28px; overflow: hidden">' +
                 '<a class="list-title" href="' + el.listUrl + '">' + el.listTitle + '</a>' +
             '</div></td>' +
@@ -713,7 +712,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
         e.preventDefault();
 
         var $parent = $(this).parent().parent(),
-            listTitle = $.trim($parent.find('.list-title').text()),
+            listTitle = $parent.find('.list-title').text().trim(),
             listUrl = $parent.data('list-url'),
             ind = that.hiddenLists.indexOf(listUrl),
             hide = ind === -1;
@@ -1880,19 +1879,18 @@ ListsTabDisplay.prototype.attach = function() {
         }
 
         if (_c.sort_groups) {
-            var that = this;
             for (var group of ['group1', 'group2']) {
                 var stored = _c[group];
                 if (typeof stored === 'string') {
                     // Parse textarea content
                     console.log('Parsing ListsTabDisplay group', group);
-                    stored = stored.trim().replace(that.reURL, '$1').split('\n');
+                    stored = stored.trim().replace(this.reURL, '$1').split('\n');
                     _c[group] = stored;
-                    that.globalConfig.save();
+                    this.globalConfig.save();
                 }
 
-                var $personal = that.getLists(stored);
-                that.move($personal);
+                var $personal = this.getLists(stored);
+                this.move($personal);
             }
         }
 
@@ -2079,15 +2077,17 @@ function ProgressTopX(config) {
 }
 
 ProgressTopX.prototype.attach = function() {
-    if (this.config.enabled) {
-        var style = 'float: left; margin-right: 0.5em',
-            attr = { style, text: 'Load stats', id: 'icme_req_for_top', href: '#' },
-            // can't pass the value directly in case of user changing it and not reloading
-            $loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
-            $spanElem = $('<span>', { style, text: ' | ' });
-
-        $('#listOrderingWrapper').prepend($loadLink, $spanElem);
+    if (!this.config.enabled) {
+        return;
     }
+
+    var style = 'float: left; margin-right: 0.5em',
+        attr = { style, text: 'Load stats', id: 'icme_req_for_top', href: '#' },
+        // can't pass the value directly in case of user changing it and not reloading
+        $loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
+        $spanElem = $('<span>', { style, text: ' | ' });
+
+    $('#listOrderingWrapper').prepend($loadLink, $spanElem);
 };
 
 ProgressTopX.prototype.addStats = function(event) {
@@ -2141,25 +2141,27 @@ ProgressTopX.prototype.settings = {
 
 /**
  * Main application
- * Register and load modules
+ * Initialize, register and load modules
  */
-function Enhanced(scriptConfig) {
+function Enhanced(globalConfig) {
     this.modules = [];
-    this.configWindow = new ConfigWindow(scriptConfig);
+    this.config = globalConfig;
+    this.configWindow = new ConfigWindow(globalConfig);
 }
 
-Enhanced.prototype.register = function(module) {
+Enhanced.prototype.register = function(Module) {
+    var module = new Module(this.config);
     this.modules.push(module);
     this.configWindow.addModule(module.settings);
 };
 
 Enhanced.prototype.load = function() {
-    $.each(this.modules, function(i, m) {
+    for (var m of this.modules) {
         if (m.isEnabled()) {
             console.log('Attaching ' + m.constructor.name);
             m.attach();
         }
-    });
+    }
 
     this.configWindow.build();
 };
@@ -2184,8 +2186,9 @@ var useModules = [
 ];
 
 var app = new Enhanced(config);
-$.each(useModules, function(i, Obj) {
-    app.register(new Obj(config));
-});
+for (var m of useModules) {
+    app.register(m);
+}
+
 app.load();
-console.log('window built');
+console.log('ICM Enhanced is ready.');
