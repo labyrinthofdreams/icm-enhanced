@@ -14,9 +14,10 @@
     // "validateNewlineAfterArrayElements": null,
 
     // --- Settings to revisit later
-    // "disallowParenthesesAroundArrowParam": null,
-    // "requireShorthandArrowFunctions": null,
-    // "requireTemplateStrings": null,
+    // "disallowKeywords": ["with"],
+    // "disallowParenthesesAroundArrowParam": true,
+    // "requireShorthandArrowFunctions": true,
+    // "requireTemplateStrings": { "allExcept": ["stringConcatenation"] },
     // "requireTrailingComma": null,
 
     "esnext": true,

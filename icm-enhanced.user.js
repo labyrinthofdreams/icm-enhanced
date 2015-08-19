@@ -567,12 +567,7 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
                 return false; // exit loop; the order of array is important!
             }
 
-            that.lists.push({
-                awardChecks: awardChecks,
-                awardType:   award[0],
-                listTitle:   listTitle,
-                listUrl:     listUrl
-            });
+            that.lists.push({ awardChecks, listTitle, listUrl, awardType: award[0] });
         });
     });
 };
@@ -1074,15 +1069,15 @@ ListCrossCheck.prototype.updateMovies = function($content) {
         var found = false,
             $movie = $(this),
             $movieTitle = $movie.find('h2'),
-            curTitle = $movieTitle.text().trim(),
-            curUrl = $movieTitle.find('a').attr('href'),
-            curYear = $movieTitle.next('span.info').children('a:first').text();
+            title = $movieTitle.text().trim(),
+            url = $movieTitle.find('a').attr('href'),
+            year = $movieTitle.next('span.info').children('a:first').text();
 
         for (var movieObj of that.movies) {
             // compare urls as they're guaranteed to be unique
             // in some cases movie title and release year are the same for different movies
             // which results in incorrect top list values
-            if (curUrl === movieObj.url) {
+            if (url === movieObj.url) {
                 movieObj.count += 1;
                 movieObj.jq.find('.rank').html(movieObj.count);
                 found = true;
@@ -1106,13 +1101,7 @@ ListCrossCheck.prototype.updateMovies = function($content) {
                 $movie.removeClass('notowned').addClass('owned');
             }
 
-            that.movies.push({
-                title: curTitle,
-                count: 1,
-                url: curUrl,
-                year: curYear,
-                jq: $movie
-            });
+            that.movies.push({ title, url, year, count: 1, jq: $movie });
         }
     });
 
@@ -1750,9 +1739,9 @@ ListOverviewSort.prototype.rearrange = function(order, section) {
     var toplistArr = $toplistItems.toArray();
 
     if (this.config.autosort) {
-        var lookupMap = toplistArr.map(function(item, i) {
+        var lookupMap = toplistArr.map(function(item, index) {
             var width = $(item).find('span.progress').css('width').replace('px', '');
-            return { index: i, value: parseFloat(width) };
+            return { index, value: parseFloat(width) };
         });
 
         lookupMap.sort(function(a, b) {
@@ -2091,11 +2080,11 @@ function ProgressTopX(config) {
 
 ProgressTopX.prototype.attach = function() {
     if (this.config.enabled) {
-        var css = 'float: left; margin-right: 0.5em',
-            attr = { text: 'Load stats', id: 'icme_req_for_top', href: '#', style: css },
+        var style = 'float: left; margin-right: 0.5em',
+            attr = { style, text: 'Load stats', id: 'icme_req_for_top', href: '#' },
             // can't pass the value directly in case of user changing it and not reloading
             $loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
-            $spanElem = $('<span>', { text: ' | ', style: css });
+            $spanElem = $('<span>', { style, text: ' | ' });
 
         $('#listOrderingWrapper').prepend($loadLink, $spanElem);
     }
