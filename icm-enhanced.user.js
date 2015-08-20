@@ -211,7 +211,8 @@ ConfigWindow.prototype.loadOptions = function(idx) {
             indexAttr = ' data-cfg-index="' + index + '"';
 
         if (opt.type === 'checkbox') {
-            str += '<p><input type="checkbox"' + indexAttr +
+            str += '<p' + (opt.inline ? ' class="inline-opt"' : '') + '>' +
+                   (opt.frontDesc || '') + '<input type="checkbox"' + indexAttr +
                    (optValue ? ' checked="checked"' : '') + ' title="default: ' +
                    (opt.default ? 'yes' : 'no') + '">' + opt.desc + '</p>';
         } else if (opt.type === 'textinput') {
@@ -284,6 +285,7 @@ ConfigWindow.prototype.build = function() {
         'input[type=text] { font-family: monospace }' +
         '#module_settings { margin:10px 0; }' +
         '#module_settings > p { margin-bottom: 0.5em; }' +
+        '#module_settings > p.inline-opt { display: inline-block; margin-right: 5px }' +
         '#configSave { position: absolute; bottom:15px; left: 30px }' +
         'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
 
@@ -1862,6 +1864,10 @@ function ListsTabDisplay(config) {
 }
 
 ListsTabDisplay.prototype.attach = function() {
+    if (!this.config.enabled) {
+        return;
+    }
+
     var isOnMoviePage = (new RegExp(this.settings.includes[2])).test(window.location.href),
         _c = this.config;
 
@@ -1952,24 +1958,33 @@ ListsTabDisplay.prototype.settings = {
         'icheckmovies.com/movies/((un)?checked|favorited|disliked|owned|watchlist|recommended)/'],
     excludes: [],
     options: [{
+        name: 'enabled',
+        desc: 'Enabled',
+        type: 'checkbox',
+        default: true
+    }, {
         name: 'redirect',
         desc: 'Redirect "in # lists" movie links to "All" lists tab',
         type: 'checkbox',
         default: true
     }, {
         name: 'sort_official',
-        desc: 'Auto-sort official lists',
+        frontDesc: 'Auto-sort (move to the top): ',
+        desc: 'official lists',
         type: 'checkbox',
+        inline: true,
         default: true
     }, {
         name: 'sort_filmos',
-        desc: 'Auto-sort filmographies',
+        desc: 'filmographies',
         type: 'checkbox',
+        inline: true,
         default: true
     }, {
         name: 'sort_groups',
-        desc: 'Auto-sort lists from user defined groups',
+        desc: 'lists from user defined groups',
         type: 'checkbox',
+        inline: true,
         default: true
     }, {
         name: 'group1',
