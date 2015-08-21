@@ -382,6 +382,13 @@ RandomFilmLink.prototype.attach = function() {
         return;
     }
 
+    // Disable on completed lists and list of checked/favs.
+    // If a user unchecks smth., the link will show up only after reloading,
+    // but it's a rare case.
+    if (!$('ol#itemListMovies > li.unchecked').length) {
+        return;
+    }
+
     var randomFilm =
         '<span style="float:right; margin-left: 15px">' +
             '<a href="#" id="icme_random_film">Help me pick a film!</a></span>';
@@ -393,10 +400,19 @@ RandomFilmLink.prototype.attach = function() {
         e.preventDefault();
         that.pickRandomFilm();
     });
+
+    // Allow resetting visible movies on /movies/watchlist/ etc. by clicking on tab's label
+    var $activeTab = $('.tabMenu > .active');
+    if (!$activeTab.find('a').length) {
+        $activeTab.on('click', function() {
+            $('ol#itemListMovies > li').show();
+        });
+    }
 };
 
 // Displays a random film on a list
 RandomFilmLink.prototype.pickRandomFilm = function() {
+    // Recalc in case user has checked smth. while on a page
     var $unchecked = $('ol#itemListMovies > li.unchecked'),
         randNum;
 
@@ -427,7 +443,8 @@ RandomFilmLink.prototype.pickRandomFilm = function() {
 
 RandomFilmLink.prototype.settings = {
     title: 'Random film link',
-    desc: 'Displays "Help me pick a film" link on individual lists',
+    desc: 'Displays "Help me pick a film" link on movie lists (if they have unchecked movies).' +
+        '<br>Click on a list tab\'s label to return to full list.',
     index: 'random_film',
     includes: ['icheckmovies.com/lists/(.+)'],
     excludes: ['icheckmovies.com/lists/$'],
