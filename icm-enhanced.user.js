@@ -18,6 +18,8 @@
 // @grant          GM_getResourceText
 // ==/UserScript==
 
+// ----- Utils -----
+
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 var gmInfo = GM_info,
     gmSetValue = GM_setValue,
@@ -73,6 +75,22 @@ function evalOrParse(str) {
     } catch (e) {
         console.log('Converting from old storage mode with spooky eval');
         return eval(str);
+    }
+}
+
+// ----- Interacting with ICM -----
+
+function addToMovieListBar(htmlStr) {
+    var $container = $('#icme_list_container');
+    if (!$container.length) {
+        $container = $('<div id="icme_list_container" style="height: 35px; ' +
+            'position: relative">' + htmlStr + '</div>');
+
+        $('#topList, #listTitle') // movieList and movieListGeneral+Special use different headers
+            .nextAll('.container').last()
+            .before($container);
+    } else {
+        $container.append(htmlStr);
     }
 }
 
@@ -366,20 +384,12 @@ RandomFilmLink.prototype.attach = function() {
 
     var randomFilm =
         '<span style="float:right; margin-left: 15px">' +
-            '<a href="#" id="randomFilm">Help me pick a film!</a></span>';
+            '<a href="#" id="icme_random_film">Help me pick a film!</a></span>';
 
-    if ($('div#list_container').length !== 1) {
-        var container =
-            '<div id="list_container" style="height: 35px; position: relative">' +
-                randomFilm + '</div>';
-
-        $('#movies').parent().before(container);
-    } else {
-        $('div#list_container').append(randomFilm);
-    }
+    addToMovieListBar(randomFilm);
 
     var that = this;
-    $('div#list_container').on('click', 'a#randomFilm', function(e) {
+    $('#icme_random_film').on('click', function(e) {
         e.preventDefault();
         that.pickRandomFilm();
     });
@@ -465,15 +475,7 @@ UpcomingAwardsList.prototype.attach = function() {
     statistics += getSpan('Bronze', 0.5) + getSpan('Silver', 0.75) +
                   getSpan('Gold', 0.9) + getSpan('Platinum', 1);
 
-    if ($('div#list_container').length !== 1) {
-        var container =
-            '<div id="list_container" style="height: 35px; position: relative">' +
-                statistics + '</div>';
-
-        $('#movies').parent().before(container);
-    } else {
-        $('div#list_container').append(statistics);
-    }
+    addToMovieListBar(statistics);
 };
 
 UpcomingAwardsList.prototype.settings = {
@@ -1592,23 +1594,11 @@ LargeList.prototype.attach = function() {
     var link = '<span style="float: right; margin-left: 15px">' +
         '<a id="icme_large_posters" href="#">Large posters</a></span>';
 
-    if ($('div#list_container').length !== 1) {
-        var container = '<div id="list_container" style="height: 35px; ' +
-            'position: relative">' + link + '</div>';
-
-        $('#movies').parent().before(container);
-    } else {
-        if ($('#list_container').find('p').length === 1) {
-            $('#list_container p:first').append('<span> &mdash; </span>' + link);
-        } else {
-            $('div#list_container').append(link);
-        }
-    }
+    addToMovieListBar(link);
 
     var that = this;
     $('#icme_large_posters').on('click', function(e) {
         e.preventDefault();
-
         that.load();
     });
 };
