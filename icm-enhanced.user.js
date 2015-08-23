@@ -1373,24 +1373,31 @@ function HideTags(config) {
 }
 
 HideTags.prototype.attach = function() {
-    if (this.config.enabled) {
-        gmAddStyle(
-            'ol#itemListToplists li .info:last-child, ' +
-            'ol#itemListMovies li .tagList ' +
-                '{ display: none !important; }');
+    if (!this.config.enabled) {
+        return;
+    }
 
-        if (this.config.show_hover) {
-            gmAddStyle(
-                'ol#itemListToplists li:hover .info:last-child, ' +
-                'ol#itemListMovies li:hover .tagList ' +
-                    '{ display: block !important; }');
-        }
+    if (this.config.list_tags) {
+        // /movies/<title>/rankings/ and /lists/ have different structure
+        gmAddStyle('ol#itemListToplists > li > .info:last-child, ' +
+                   'ol#itemListToplists > li > .tagList { display: none !important; }');
+    }
+
+    if (this.config.movie_tags) {
+        gmAddStyle('ol#itemListMovies > li > .tagList { display: none !important; }');
+    }
+
+    if (this.config.show_hover) {
+        gmAddStyle(
+            'ol#itemListToplists li:hover .info:last-child, ' +
+            'ol#itemListMovies li:hover .tagList ' +
+                '{ display: block !important; }');
     }
 };
 
 HideTags.prototype.settings = {
     title: 'Hide tags',
-    desc: 'Hides tags on individual lists',
+    desc: 'Hides tags on movie lists and lists of lists',
     index: 'hide_tags',
     includes: ['icheckmovies.com/'],
     excludes: [],
@@ -1400,8 +1407,21 @@ HideTags.prototype.settings = {
         type: 'checkbox',
         default: false
     }, {
+        name: 'list_tags',
+        frontDesc: 'Hide on: ',
+        desc: 'lists',
+        type: 'checkbox',
+        inline: true,
+        default: true
+    }, {
+        name: 'movie_tags',
+        desc: 'movies',
+        type: 'checkbox',
+        inline: true,
+        default: true
+    }, {
         name: 'show_hover',
-        desc: 'Show tags when moving the cursor over a movie',
+        desc: 'Show tags when moving the cursor over a movie or a list',
         type: 'checkbox',
         default: false
     }]
