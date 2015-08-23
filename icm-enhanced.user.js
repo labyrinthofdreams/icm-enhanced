@@ -16,6 +16,7 @@
 // @grant          GM_getValue
 // @grant          GM_addStyle
 // @grant          GM_getResourceText
+// @grant          unsafeWindow
 // ==/UserScript==
 
 // ----- Utils -----
