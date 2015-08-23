@@ -1378,19 +1378,22 @@ HideTags.prototype.attach = function() {
     }
 
     if (this.config.list_tags) {
-        // /movies/<title>/rankings/ and /lists/ have different structure
-        gmAddStyle('ol#itemListToplists > li > .info:last-child, ' +
-                   'ol#itemListToplists > li > .tagList { display: none !important; }');
+        // /lists/ and /movies/<title>/rankings/ have different structure
+        gmAddStyle('ol#itemListToplists.listViewNormal > li > .info:last-child' + ', ' +
+                   'ol#itemListToplists > li > .tagList ' +
+                   '{ display: none !important; }');
     }
 
     if (this.config.movie_tags) {
-        gmAddStyle('ol#itemListMovies > li > .tagList { display: none !important; }');
+        gmAddStyle('ol#itemListMovies.listViewNormal > li > .tagList ' +
+                   '{ display: none !important; }');
     }
 
     if (this.config.show_hover) {
         gmAddStyle(
-            'ol#itemListToplists li:hover .info:last-child, ' +
-            'ol#itemListMovies li:hover .tagList ' +
+            'ol#itemListToplists.listViewNormal > li:hover > .info:last-child' + ', ' +
+            'ol#itemListToplists > li:hover > .tagList' + ', ' +
+            'ol#itemListMovies.listViewNormal > li:hover > .tagList ' +
                 '{ display: block !important; }');
     }
 };

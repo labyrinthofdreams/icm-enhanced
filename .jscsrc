@@ -114,6 +114,7 @@
     "disallowSpacesInsideBrackets": true,
     "requireSpacesInsideObjectBrackets": "all",
     "disallowSpacesInsideParentheses": true,
+    "disallowSpacesInsideParenthesizedExpression": true,
     "disallowTrailingWhitespace": true,
     "disallowYodaConditions": true,
 
