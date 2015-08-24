@@ -1941,7 +1941,7 @@ ListsTabDisplay.prototype.attach = function() {
         // visual fix for edge cases when all lists are moved
         lists.last().filter('.groupSeparator').hide();
     } else if (_c.redirect) { // = if on a list page
-        var $linksToLists = $('.listItemMovie > .info > a:last-of-type');
+        var $linksToLists = $('.listItemMovie > .info > a:nth-of-type(2)');
 
         $linksToLists.each(function() {
             var $link = $(this),
