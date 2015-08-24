@@ -81,6 +81,30 @@ function evalOrParse(str) {
 
 // ----- Interacting with ICM -----
 
+// mutually exclusive regexes for matching page type
+var reICM = Object.freeze({
+    movie: // movie pages only, not /movies/ or /movies/checked/ etc. or /rankings/
+        /icheckmovies\.com\/movies\/(?!$|\?|(?:(un)?checked|favorited|disliked|watchlist|owned|recommended)\/)[^/]+\/(?!rankings\/)/,
+    movieList: // personal user list
+        /icheckmovies\.com\/lists\/(?!$|\?|(?:favorited|disliked|watchlist)\/)/,
+    movieListGeneral: // /movies/ only
+        /icheckmovies\.com\/movies\/(?:$|\?)/,
+    movieListSpecial: // /movies/checked/ etc.
+        /icheckmovies\.com\/movies\/(?:((un)?checked|favorited|disliked|watchlist|owned|recommended)\/)/,
+    movieSearch:
+        /icheckmovies\.com\/search\/movies\//,
+    movieRankings:
+        /icheckmovies\.com\/movies\/[^/]+\/rankings\//,
+    listsGeneral: // /lists/ only
+        /icheckmovies\.com\/lists\/(?:$|\?)/,
+    listsSpecial: // /lists/favorited/ etc.
+        /icheckmovies\.com\/lists\/(?:favorited|disliked|watchlist)\//,
+    listsSearch:
+        /icheckmovies\.com\/search\/lists\//,
+    progress:
+        /icheckmovies.com\/profiles\/progress\//
+});
+
 function addToMovieListBar(htmlStr) {
     var $container = $('#icme_list_container');
     if (!$container.length) {
@@ -102,17 +126,38 @@ function BaseFeature(config) {
 }
 
 BaseFeature.prototype.settings = {
-    includes: [],
-    excludes: []
+    // in general use enableOn, (in|ex)cludes are for special cases and exceptions
+    enableOn: [], // string keys of reICM
+    includes: [], // additional regexes (str or objects) to include
+    excludes: []  // additional regexes (str or objects) to exclude
 };
 
-BaseFeature.prototype.isEnabled = function() {
-    function testRegex(str) {
-        return (new RegExp(str)).test(window.location.href);
+BaseFeature.prototype.testRe = function(strOrRe) {
+    if (typeof strOrRe === 'string') {
+        strOrRe = new RegExp(strOrRe);
     }
 
-    return !this.settings.excludes.some(testRegex) &&
-            this.settings.includes.some(testRegex);
+    return strOrRe.test(window.location.href);
+};
+
+BaseFeature.prototype.getRegexes = function(arrOfKeys) {
+    return arrOfKeys.map(function(key) {
+        if (reICM[key] === undefined) {
+            throw new TypeError('Invalid icm-regex name: ' + key);
+        }
+
+        return reICM[key];
+    });
+};
+
+BaseFeature.prototype.matchesUrl = function() {
+    var _s = this.settings,
+        // if an array is not specified, [].some(...) is always false
+        matchesPageType = this.getRegexes(_s.enableOn || []).some(this.testRe),
+        isIncluded = (_s.includes || []).some(this.testRe),
+        isExcluded = (_s.excludes || []).some(this.testRe);
+
+    return (matchesPageType || isIncluded) && !isExcluded;
 };
 
 // Add module options to the global config;
@@ -447,8 +492,7 @@ RandomFilmLink.prototype.settings = {
     desc: 'Displays "Help me pick a film" link on movie lists (if they have unchecked movies).' +
         '<br>Click on a list tab\'s label to return to full list.',
     index: 'random_film',
-    includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: ['icheckmovies.com/lists/$'],
+    enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -500,8 +544,7 @@ UpcomingAwardsList.prototype.settings = {
     title: 'Upcoming awards (individual lists)',
     desc: 'Displays upcoming awards on individual lists',
     index: 'ua_list',
-    includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: [],
+    enableOn: ['movieList'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -807,11 +850,7 @@ UpcomingAwardsOverview.prototype.settings = {
     title: 'Upcoming awards overview',
     desc: 'Displays upcoming awards on progress page',
     index: 'ua',
-    includes: ['/profiles/progress/',
-               '/lists/favorited/',
-               '/lists/watchlist/',
-               '/lists/disliked/'],
-    excludes: [],
+    enableOn: ['listsSpecial', 'progress'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -858,11 +897,10 @@ ListCustomColors.prototype.attach = function() {
 
 ListCustomColors.prototype.settings = {
     title: 'Custom list colors',
-    desc: 'Changes entry colors on lists to visually separate entries ' +
-          'in your favorites/watchlist/dislikes',
+    desc: 'Changes entry colors on lists to visually separate ' +
+          'your favorites/watchlist/dislikes',
     index: 'list_colors',
-    includes: ['icheckmovies.com/'],
-    excludes: [],
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1339,8 +1377,7 @@ ListCrossCheck.prototype.settings = {
     title: 'List cross-reference',
     desc: 'Cross-reference lists to find what films they share',
     index: 'list_cross_ref',
-    includes: ['icheckmovies.com/lists/'],
-    excludes: [],
+    enableOn: ['listsGeneral', 'listsSpecial'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1402,8 +1439,9 @@ HideTags.prototype.settings = {
     title: 'Hide tags',
     desc: 'Hides tags on movie lists and lists of lists',
     index: 'hide_tags',
-    includes: ['icheckmovies.com/'],
-    excludes: [],
+    // ICM bug: movieListGeneral and movieSearch never have tags
+    enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
+        'movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch', 'movieRankings'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1483,8 +1521,7 @@ WatchlistTab.prototype.settings = {
     title: 'Watchlist tab',
     desc: 'Creates a tab on lists that shows watchlist entries.',
     index: 'watchlist_tab',
-    includes: ['icheckmovies.com/lists'],
-    excludes: [],
+    enableOn: ['movieList'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1596,8 +1633,8 @@ Owned.prototype.settings = {
     title: 'Owned tab',
     desc: 'Creates a tab on lists that shows owned entries. Emulates the paid feature',
     index: 'owned_tab',
-    includes: ['icheckmovies.com/'],
-    excludes: [],
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
+        'movie', 'movieRankings'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1708,10 +1745,7 @@ LargeList.prototype.settings = {
     title: 'Large posters',
     desc: 'Display large posters on individual lists (large posters are lazy loaded)',
     index: 'large_lists',
-    includes: ['icheckmovies\\.com/lists/(.+)/(.*)'],
-    excludes: ['icheckmovies\\.com/lists/favorited',
-               'icheckmovies\\.com/lists/disliked',
-               'icheckmovies\\.com/lists/watchlist'],
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1846,8 +1880,7 @@ ListOverviewSort.prototype.settings = {
     title: 'Progress page',
     desc: 'Change the order of lists on the progress page',
     index: 'toplists_sort',
-    includes: ['icheckmovies.com/profiles/progress'],
-    excludes: [],
+    enableOn: ['progress'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -1899,7 +1932,7 @@ ListsTabDisplay.prototype.attach = function() {
         return;
     }
 
-    var isOnMoviePage = (new RegExp(this.settings.includes[2])).test(window.location.href),
+    var isOnMoviePage = reICM.movieRankings.test(window.location.href),
         _c = this.config;
 
     if (isOnMoviePage) {
@@ -1981,13 +2014,8 @@ ListsTabDisplay.prototype.settings = {
     desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
           '<a href="/movies/pulp+fiction/rankings/">example</a>)',
     index: 'lists_tab_display',
-    includes: [
-        'icheckmovies.com/lists/(.+)',
-        'icheckmovies.com/search/movies/(.+)',
-        'icheckmovies.com/movies/.+/rankings/(.*)',
-        'icheckmovies.com/movies/[^/]*$', // list of all movies
-        'icheckmovies.com/movies/((un)?checked|favorited|disliked|owned|watchlist|recommended)/'],
-    excludes: [],
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
+        'movieRankings', 'movieSearch'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -2039,12 +2067,12 @@ function ExportLists(config) {
 }
 
 ExportLists.prototype.attach = function() {
-    var _c = this.config;
-    if (!_c.enabled) {
+    if (!this.config.enabled) {
         return;
     }
 
-    var sep = _c.delimiter;
+    var _c = this.config,
+        sep = _c.delimiter;
 
     $('.optionExport').one('click', function() {
         if (sep !== ',' && sep !== ';') {
@@ -2095,8 +2123,7 @@ ExportLists.prototype.settings = {
     desc: 'Download any list as .csv (doesn\'t support search results). ' +
           'Emulates the paid feature, so don\'t enable it if you have a paid account',
     index: 'export_lists',
-    includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: [],
+    enableOn: ['movieList', 'movieListSpecial'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -2171,8 +2198,7 @@ ProgressTopX.prototype.settings = {
     title: 'Progress top X',
     desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
     index: 'progress_top_x',
-    includes: ['icheckmovies.com/profiles/progress/'],
-    excludes: [],
+    enableOn: ['progress'],
     options: [{
         name: 'enabled',
         desc: 'Enabled',
@@ -2204,7 +2230,7 @@ Enhanced.prototype.register = function(Module) {
 
 Enhanced.prototype.load = function() {
     for (var m of this.modules) {
-        if (m.isEnabled()) {
+        if (m.matchesUrl()) {
             console.log('Attaching ' + m.constructor.name);
             m.attach();
         }
