@@ -2066,7 +2066,7 @@ ExportLists.prototype.attach = function() {
                 title = encodeField($item.find('h2>a').text()),
                 aka = encodeField($item.find('.info > em').text()),
                 year = $item.find('.info a:first').text(),
-                toplists = parseInt($item.find('.info a:last').text(), 10),
+                toplists = parseInt($item.find('.info a:nth-of-type(2)').text(), 10),
                 checked = $item.hasClass('checked') ? 'yes' : 'no',
                 isFav = $item.hasClass('favorite') ? 'yes' : 'no',
                 isDislike = $item.hasClass('hated') ? 'yes' : 'no',
@@ -2078,9 +2078,10 @@ ExportLists.prototype.attach = function() {
 
         // BOM with ; or , as separator and without sep= - for Excel
         var bom = _c.bom ? '\uFEFF' : '',
-            dataURI = 'data:text/csv;charset=utf-8,' + bom + encodeURIComponent(data);
+            dataURI = 'data:text/csv;charset=utf-8,' + bom + encodeURIComponent(data),
+            filename = $('#topList>h1').text().trim() || $('#listTitle > h1').text().trim();
         // link swapping with a correct filename - http://caniuse.com/download
-        $(this).attr('href', dataURI).attr('download', $('#topList>h1').text() + '.csv');
+        $(this).attr('href', dataURI).attr('download', filename + '.csv');
 
         // after changing URL jQuery fires a default click event
         // on the link user clicked on, and loads dataURI as URL (!)
