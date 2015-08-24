@@ -79,6 +79,22 @@ function evalOrParse(str) {
     }
 }
 
+/**
+ * Create a necessary BaseFeature-settings-options item that defines
+ * whether or not a module should be loaded by default.
+ * (Should be a BaseFeature method, but the way settings are defined makes it hard.)
+ *
+ * @param {boolean} isEnabled
+ */
+function getDefState(isEnabled) {
+    return {
+        name: 'enabled',
+        desc: 'Enabled',
+        type: 'checkbox',
+        default: isEnabled
+    };
+}
+
 // ----- Interacting with ICM -----
 
 // mutually exclusive regexes for matching page type
@@ -424,10 +440,6 @@ function RandomFilmLink(config) {
 
 // Creates an element and inserts it into the DOM
 RandomFilmLink.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     // Disable on completed lists and list of checked/favs.
     // If a user unchecks smth., the link will show up only after reloading,
     // but it's a rare case.
@@ -493,12 +505,7 @@ RandomFilmLink.prototype.settings = {
         '<br>Click on a list tab\'s label to return to full list.',
     index: 'random_film',
     enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'unique',
         desc: 'Unique suggestions (shows each entry only once ' +
               'until every entry has been shown once)',
@@ -516,7 +523,7 @@ function UpcomingAwardsList(config) {
 }
 
 UpcomingAwardsList.prototype.attach = function() {
-    if (!this.config.enabled || !$('#itemListMovies').length) {
+    if (!$('#itemListMovies').length) {
         return;
     }
 
@@ -545,12 +552,7 @@ UpcomingAwardsList.prototype.settings = {
     desc: 'Displays upcoming awards on individual lists',
     index: 'ua_list',
     enableOn: ['movieList'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'show_absolute',
         desc: 'Display negative values',
         type: 'checkbox',
@@ -570,10 +572,6 @@ function UpcomingAwardsOverview(config) {
 }
 
 UpcomingAwardsOverview.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.autoload) {
         this.loadAwardData();
         return;
@@ -851,12 +849,7 @@ UpcomingAwardsOverview.prototype.settings = {
     desc: 'Displays upcoming awards on progress page',
     index: 'ua',
     enableOn: ['listsSpecial', 'progress'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'autoload',
         desc: 'Autoload',
         type: 'checkbox',
@@ -873,10 +866,6 @@ function ListCustomColors(config) {
 }
 
 ListCustomColors.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     function buildCSS(className, color) {
         if (!color.length) {
             return;
@@ -901,12 +890,7 @@ ListCustomColors.prototype.settings = {
           'your favorites/watchlist/dislikes',
     index: 'list_colors',
     enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'colors.favorite',
         desc: 'Favorites',
         type: 'textinputcolor',
@@ -958,7 +942,7 @@ ListCrossCheck.prototype.init = function() {
 };
 
 ListCrossCheck.prototype.attach = function() {
-    if (!this.config.enabled || $('#itemListToplists').length === 0) {
+    if (!$('#itemListToplists').length) {
         return;
     }
 
@@ -1378,12 +1362,7 @@ ListCrossCheck.prototype.settings = {
     desc: 'Cross-reference lists to find what films they share',
     index: 'list_cross_ref',
     enableOn: ['listsGeneral', 'listsSpecial'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    options: [getDefState(true), {
         name: 'match_all',
         desc: 'Find films that appear on all selected lists',
         type: 'checkbox',
@@ -1410,10 +1389,6 @@ function HideTags(config) {
 }
 
 HideTags.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.list_tags) {
         // /lists/ and /movies/<title>/rankings/ have different structure
         gmAddStyle('ol#itemListToplists.listViewNormal > li > .info:last-child' + ', ' +
@@ -1442,12 +1417,7 @@ HideTags.prototype.settings = {
     // ICM bug: movieListGeneral and movieSearch never have tags
     enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
         'movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch', 'movieRankings'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    options: [getDefState(false), {
         name: 'list_tags',
         frontDesc: 'Hide on: ',
         desc: 'lists',
@@ -1477,10 +1447,6 @@ function WatchlistTab(config) {
 }
 
 WatchlistTab.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var $movies = $('#itemListMovies');
     if ($movies.length === 0) {
         return;
@@ -1522,12 +1488,7 @@ WatchlistTab.prototype.settings = {
     desc: 'Creates a tab on lists that shows watchlist entries.',
     index: 'watchlist_tab',
     enableOn: ['movieList'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }]
+    options: [getDefState(false)]
 };
 
 // Inherit methods from BaseFeature
@@ -1539,10 +1500,6 @@ function Owned(config) {
 }
 
 Owned.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var $movielist = $('#itemListMovies'),
         $markOwned = $('.optionMarkOwned');
     // Check if 'owned' button exists
@@ -1635,12 +1592,7 @@ Owned.prototype.settings = {
     index: 'owned_tab',
     enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
         'movie', 'movieRankings'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    options: [getDefState(false), {
         name: 'free_account',
         desc: 'I have a free account (must uncheck if you have a paid account)',
         type: 'checkbox',
@@ -1659,10 +1611,6 @@ function LargeList(config) {
 }
 
 LargeList.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.autoload) {
         this.load();
         return;
@@ -1746,12 +1694,7 @@ LargeList.prototype.settings = {
     desc: 'Display large posters on individual lists (large posters are lazy loaded)',
     index: 'large_lists',
     enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'autoload',
         desc: 'Autoload',
         type: 'checkbox',
@@ -1768,10 +1711,6 @@ function ListOverviewSort(config) {
 }
 
 ListOverviewSort.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.single_col) {
         gmAddStyle('.itemList .listItem.listItemProgress { float: none !important; }');
     }
@@ -1881,12 +1820,7 @@ ListOverviewSort.prototype.settings = {
     desc: 'Change the order of lists on the progress page',
     index: 'toplists_sort',
     enableOn: ['progress'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    options: [getDefState(false), {
         name: 'autosort',
         desc: 'Sort lists by completion rate',
         type: 'checkbox',
@@ -1928,10 +1862,6 @@ function ListsTabDisplay(config) {
 }
 
 ListsTabDisplay.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var isOnMoviePage = reICM.movieRankings.test(window.location.href),
         _c = this.config;
 
@@ -2016,12 +1946,7 @@ ListsTabDisplay.prototype.settings = {
     index: 'lists_tab_display',
     enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
         'movieRankings', 'movieSearch'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'redirect',
         desc: 'Redirect "in # lists" movie links to "All" lists tab',
         type: 'checkbox',
@@ -2067,10 +1992,6 @@ function ExportLists(config) {
 }
 
 ExportLists.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var _c = this.config,
         sep = _c.delimiter;
 
@@ -2124,12 +2045,7 @@ ExportLists.prototype.settings = {
           'Emulates the paid feature, so don\'t enable it if you have a paid account',
     index: 'export_lists',
     enableOn: ['movieList', 'movieListSpecial'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    options: [getDefState(false), {
         name: 'delimiter',
         desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
         type: 'textinput',
@@ -2151,10 +2067,6 @@ function ProgressTopX(config) {
 }
 
 ProgressTopX.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var style = 'float: left; margin-right: 0.5em',
         attr = { style, text: 'Load stats', id: 'icme_req_for_top', href: '#' },
         // can't pass the value directly in case of user changing it and not reloading
@@ -2199,12 +2111,7 @@ ProgressTopX.prototype.settings = {
     desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
     index: 'progress_top_x',
     enableOn: ['progress'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    options: [getDefState(true), {
         name: 'target_page',
         desc: 'Ranking page you want to be on (page x 25 = rank)',
         type: 'textinput',
@@ -2231,8 +2138,12 @@ Enhanced.prototype.register = function(Module) {
 Enhanced.prototype.load = function() {
     for (var m of this.modules) {
         if (m.matchesUrl()) {
-            console.log('Attaching ' + m.constructor.name);
-            m.attach();
+            if (m.config.enabled) {
+                console.log('Attaching ' + m.constructor.name);
+                m.attach();
+            } else {
+                console.log('Skipping ' + m.constructor.name);
+            }
         }
     }
 
