@@ -17,7 +17,7 @@
 
     // Enforcing - deprecated (should be removed after v3.*)
     "camelcase"   : false, // Identifiers must be in camelCase
-                           // TODO: temporary disabled until fixed
+                           // NOTE: disabled, jscs allows to ignore properties
     "immed"       : true,  // Require immediate invocations to be wrapped in parens
     "newcap"      : false, // Require capitalization of all constructor functions
                            // NOTE: for GM_ APIs (their names break this convention)

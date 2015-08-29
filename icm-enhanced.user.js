@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.7.7
+// @version        1.7.8
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -16,7 +16,10 @@
 // @grant          GM_getValue
 // @grant          GM_addStyle
 // @grant          GM_getResourceText
+// @grant          unsafeWindow
 // ==/UserScript==
+
+// ----- Utils -----
 
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 var gmInfo = GM_info,
@@ -76,6 +79,62 @@ function evalOrParse(str) {
     }
 }
 
+/**
+ * Create a necessary BaseFeature-settings-options item that defines
+ * whether or not a module should be loaded by default.
+ * (Should be a BaseFeature method, but the way settings are defined makes it hard.)
+ *
+ * @param {boolean} isEnabled
+ */
+function getDefState(isEnabled) {
+    return {
+        name: 'enabled',
+        desc: 'Enabled',
+        type: 'checkbox',
+        default: isEnabled
+    };
+}
+
+// ----- Interacting with ICM -----
+
+// mutually exclusive regexes for matching page type
+var reICM = Object.freeze({
+    movie: // movie pages only, not /movies/ or /movies/checked/ etc. or /rankings/
+        /icheckmovies\.com\/movies\/(?!$|\?|(?:(un)?checked|favorited|disliked|watchlist|owned|recommended)\/)[^/]+\/(?!rankings\/)/,
+    movieList: // personal user list
+        /icheckmovies\.com\/lists\/(?!$|\?|(?:favorited|disliked|watchlist)\/)/,
+    movieListGeneral: // /movies/ only
+        /icheckmovies\.com\/movies\/(?:$|\?)/,
+    movieListSpecial: // /movies/checked/ etc.
+        /icheckmovies\.com\/movies\/(?:((un)?checked|favorited|disliked|watchlist|owned|recommended)\/)/,
+    movieSearch:
+        /icheckmovies\.com\/search\/movies\//,
+    movieRankings:
+        /icheckmovies\.com\/movies\/[^/]+\/rankings\//,
+    listsGeneral: // /lists/ only
+        /icheckmovies\.com\/lists\/(?:$|\?)/,
+    listsSpecial: // /lists/favorited/ etc.
+        /icheckmovies\.com\/lists\/(?:favorited|disliked|watchlist)\//,
+    listsSearch:
+        /icheckmovies\.com\/search\/lists\//,
+    progress:
+        /icheckmovies.com\/profiles\/progress\//
+});
+
+function addToMovieListBar(htmlStr) {
+    var $container = $('#icme_list_container');
+    if (!$container.length) {
+        $container = $('<div id="icme_list_container" style="height: 35px; ' +
+            'position: relative">' + htmlStr + '</div>');
+
+        $('#topList, #listTitle') // movieList and movieListGeneral+Special use different headers
+            .nextAll('.container').last()
+            .before($container);
+    } else {
+        $container.append(htmlStr);
+    }
+}
+
 // ----- Objects -----
 
 function BaseFeature(config) {
@@ -83,34 +142,55 @@ function BaseFeature(config) {
 }
 
 BaseFeature.prototype.settings = {
-    includes: [],
-    excludes: []
+    // in general use enableOn, (in|ex)cludes are for special cases and exceptions
+    enableOn: [], // string keys of reICM
+    includes: [], // additional regexes (str or objects) to include
+    excludes: []  // additional regexes (str or objects) to exclude
 };
 
-BaseFeature.prototype.isEnabled = function() {
-    function testRegex(str) {
-        return (new RegExp(str)).test(window.location.href);
+BaseFeature.prototype.testRe = function(strOrRe) {
+    if (typeof strOrRe === 'string') {
+        strOrRe = new RegExp(strOrRe);
     }
 
-    return !this.settings.excludes.some(testRegex) &&
-            this.settings.includes.some(testRegex);
+    return strOrRe.test(window.location.href);
 };
 
-// Add module options to the config;
+BaseFeature.prototype.getRegexes = function(arrOfKeys) {
+    return arrOfKeys.map(function(key) {
+        if (reICM[key] === undefined) {
+            throw new TypeError('Invalid icm-regex name: ' + key);
+        }
+
+        return reICM[key];
+    });
+};
+
+BaseFeature.prototype.matchesUrl = function() {
+    var _s = this.settings,
+        // if an array is not specified, [].some(...) is always false
+        matchesPageType = this.getRegexes(_s.enableOn || []).some(this.testRe),
+        isIncluded = (_s.includes || []).some(this.testRe),
+        isExcluded = (_s.excludes || []).some(this.testRe);
+
+    return (matchesPageType || isIncluded) && !isExcluded;
+};
+
+// Add module options to the global config;
 // Keeps loaded values, excludes outdated options, adds new options
 BaseFeature.prototype.updateConfig = function(config) {
     var module = this.settings.index,
         cur = {};
 
-    $.each(this.settings.options, function(i, option) {
+    for (var option of this.settings.options) {
         var idx = option.name,
             oldValue = config.get(module + '.' + idx),
             newValue = oldValue !== undefined ? oldValue : option.default;
 
         setProperty(idx, cur, newValue);
-    });
+    }
 
-    // save references to the global and module configs in a module
+    // save references to the module and global configs in a module
     this.config = config.cfg[module] = cur;
     this.globalConfig = config; // allows modules to use Save/Set/Get
 };
@@ -211,7 +291,8 @@ ConfigWindow.prototype.loadOptions = function(idx) {
             indexAttr = ' data-cfg-index="' + index + '"';
 
         if (opt.type === 'checkbox') {
-            str += '<p><input type="checkbox"' + indexAttr +
+            str += '<p' + (opt.inline ? ' class="inline-opt"' : '') + '>' +
+                   (opt.frontDesc || '') + '<input type="checkbox"' + indexAttr +
                    (optValue ? ' checked="checked"' : '') + ' title="default: ' +
                    (opt.default ? 'yes' : 'no') + '">' + opt.desc + '</p>';
         } else if (opt.type === 'textinput') {
@@ -284,15 +365,15 @@ ConfigWindow.prototype.build = function() {
         'input[type=text] { font-family: monospace }' +
         '#module_settings { margin:10px 0; }' +
         '#module_settings > p { margin-bottom: 0.5em; }' +
+        '#module_settings > p.inline-opt { display: inline-block; margin-right: 5px }' +
         '#configSave { position: absolute; bottom:15px; left: 30px }' +
         'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
 
     gmAddStyle(customCSS);
 
     var moduleList = '<select id="modulelist" name="modulelist">';
-    for (var i = 0; i < this.modules.length; ++i) {
-        var m = this.modules[i];
-        moduleList += '<option value="' + i + '">' + m.title + '</option>';
+    for (var m of this.modules) {
+        moduleList += '<option>' + m.title + '</option>';
     }
 
     moduleList += '</select>';
@@ -359,33 +440,37 @@ function RandomFilmLink(config) {
 
 // Creates an element and inserts it into the DOM
 RandomFilmLink.prototype.attach = function() {
-    if (!this.config.enabled) {
+    // Disable on completed lists and list of checked/favs.
+    // If a user unchecks smth., the link will show up only after reloading,
+    // but it's a rare case.
+    if (!$('ol#itemListMovies > li.unchecked').length) {
         return;
     }
 
     var randomFilm =
         '<span style="float:right; margin-left: 15px">' +
-            '<a href="#" id="randomFilm">Help me pick a film!</a></span>';
+            '<a href="#" id="icme_random_film">Help me pick a film!</a></span>';
 
-    if ($('div#list_container').length !== 1) {
-        var container =
-            '<div id="list_container" style="height: 35px; position: relative">' +
-                randomFilm + '</div>';
-
-        $('#movies').parent().before(container);
-    } else {
-        $('div#list_container').append(randomFilm);
-    }
+    addToMovieListBar(randomFilm);
 
     var that = this;
-    $('div#list_container').on('click', 'a#randomFilm', function(e) {
+    $('#icme_random_film').on('click', function(e) {
         e.preventDefault();
         that.pickRandomFilm();
     });
+
+    // Allow resetting visible movies on /movies/watchlist/ etc. by clicking on tab's label
+    var $activeTab = $('.tabMenu > .active');
+    if (!$activeTab.find('a').length) {
+        $activeTab.on('click', function() {
+            $('ol#itemListMovies > li').show();
+        });
+    }
 };
 
 // Displays a random film on a list
 RandomFilmLink.prototype.pickRandomFilm = function() {
+    // Recalc in case user has checked smth. while on a page
     var $unchecked = $('ol#itemListMovies > li.unchecked'),
         randNum;
 
@@ -416,16 +501,11 @@ RandomFilmLink.prototype.pickRandomFilm = function() {
 
 RandomFilmLink.prototype.settings = {
     title: 'Random film link',
-    desc: 'Displays "Help me pick a film" link on individual lists',
+    desc: 'Displays "Help me pick a film" link on movie lists (if they have unchecked movies).' +
+        '<br>Click on a list tab\'s label to return to full list.',
     index: 'random_film',
-    includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: ['icheckmovies.com/lists/$'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
+    options: [getDefState(true), {
         name: 'unique',
         desc: 'Unique suggestions (shows each entry only once ' +
               'until every entry has been shown once)',
@@ -443,7 +523,7 @@ function UpcomingAwardsList(config) {
 }
 
 UpcomingAwardsList.prototype.attach = function() {
-    if (!this.config.enabled || !$('#itemListMovies').length) {
+    if (!$('#itemListMovies').length) {
         return;
     }
 
@@ -464,29 +544,15 @@ UpcomingAwardsList.prototype.attach = function() {
     statistics += getSpan('Bronze', 0.5) + getSpan('Silver', 0.75) +
                   getSpan('Gold', 0.9) + getSpan('Platinum', 1);
 
-    if ($('div#list_container').length !== 1) {
-        var container =
-            '<div id="list_container" style="height: 35px; position: relative">' +
-                statistics + '</div>';
-
-        $('#movies').parent().before(container);
-    } else {
-        $('div#list_container').append(statistics);
-    }
+    addToMovieListBar(statistics);
 };
 
 UpcomingAwardsList.prototype.settings = {
     title: 'Upcoming awards (individual lists)',
     desc: 'Displays upcoming awards on individual lists',
     index: 'ua_list',
-    includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: ['icheckmovies.com/list/$'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    enableOn: ['movieList'],
+    options: [getDefState(true), {
         name: 'show_absolute',
         desc: 'Display negative values',
         type: 'checkbox',
@@ -506,10 +572,6 @@ function UpcomingAwardsOverview(config) {
 }
 
 UpcomingAwardsOverview.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.autoload) {
         this.loadAwardData();
         return;
@@ -561,19 +623,14 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
             listTitle  = $t.attr('title').replace(/^View the | top list$/g, ''),
             listUrl    = $t.attr('href');
 
-        awardTypes.forEach(function(award) {
-            var awardChecks = Math.ceil(totalItems * award[1]) - checks;
-            if (awardChecks <= 0) {
-                return false; // exit loop; the order of array is important!
+        for (var award of awardTypes) {
+            var neededForAward = Math.ceil(totalItems * award[1]) - checks;
+            if (neededForAward <= 0) {
+                break; // the order of awardTypes array is important!
             }
 
-            that.lists.push({
-                awardChecks: awardChecks,
-                awardType:   award[0],
-                listTitle:   listTitle,
-                listUrl:     listUrl
-            });
-        });
+            that.lists.push({ neededForAward, listTitle, listUrl, awardType: award[0] });
+        }
     });
 };
 
@@ -582,9 +639,9 @@ UpcomingAwardsOverview.prototype.sortLists = function() {
     // then by awards where checks are equal ASC, then by list title ASC
     var awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
     this.lists.sort(function(a, b) {
-        if (a.awardChecks < b.awardChecks) {
+        if (a.neededForAward < b.neededForAward) {
             return -1;
-        } else if (a.awardChecks > b.awardChecks) {
+        } else if (a.neededForAward > b.neededForAward) {
             return 1;
         } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
             return -1;
@@ -656,7 +713,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
         listTable += '<tr class="' + (isHidden ? 'hidden-list' : '') +
             '" data-award-type="' + el.awardType + '" data-list-url="' + el.listUrl + '">' +
             '<td style="width: 65px">' + el.awardType + '</td>' +
-            '<td style="width: 65px">' + el.awardChecks + '</td>' +
+            '<td style="width: 65px">' + el.neededForAward + '</td>' +
             '<td><div style="height: 28px; overflow: hidden">' +
                 '<a class="list-title" href="' + el.listUrl + '">' + el.listTitle + '</a>' +
             '</div></td>' +
@@ -718,7 +775,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
         e.preventDefault();
 
         var $parent = $(this).parent().parent(),
-            listTitle = $.trim($parent.find('.list-title').text()),
+            listTitle = $parent.find('.list-title').text().trim(),
             listUrl = $parent.data('list-url'),
             ind = that.hiddenLists.indexOf(listUrl),
             hide = ind === -1;
@@ -791,17 +848,8 @@ UpcomingAwardsOverview.prototype.settings = {
     title: 'Upcoming awards overview',
     desc: 'Displays upcoming awards on progress page',
     index: 'ua',
-    includes: ['/profiles/progress/',
-               '/lists/favorited/',
-               '/lists/watchlist/',
-               '/lists/disliked/'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    enableOn: ['listsSpecial', 'progress'],
+    options: [getDefState(true), {
         name: 'autoload',
         desc: 'Autoload',
         type: 'checkbox',
@@ -818,10 +866,6 @@ function ListCustomColors(config) {
 }
 
 ListCustomColors.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     function buildCSS(className, color) {
         if (!color.length) {
             return;
@@ -842,17 +886,11 @@ ListCustomColors.prototype.attach = function() {
 
 ListCustomColors.prototype.settings = {
     title: 'Custom list colors',
-    desc: 'Changes entry colors on lists to visually separate entries ' +
-          'in your favorites/watchlist/dislikes',
+    desc: 'Changes entry colors on lists to visually separate ' +
+          'your favorites/watchlist/dislikes',
     index: 'list_colors',
-    includes: ['icheckmovies.com/'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch'],
+    options: [getDefState(true), {
         name: 'colors.favorite',
         desc: 'Favorites',
         type: 'textinputcolor',
@@ -904,7 +942,7 @@ ListCrossCheck.prototype.init = function() {
 };
 
 ListCrossCheck.prototype.attach = function() {
-    if (!this.config.enabled || $('#itemListToplists').length === 0) {
+    if (!$('#itemListToplists').length) {
         return;
     }
 
@@ -1074,15 +1112,15 @@ ListCrossCheck.prototype.updateMovies = function($content) {
         var found = false,
             $movie = $(this),
             $movieTitle = $movie.find('h2'),
-            curTitle = $movieTitle.text().trim(),
-            curUrl = $movieTitle.find('a').attr('href'),
-            curYear = $movieTitle.next('span.info').children('a:first').text();
+            title = $movieTitle.text().trim(),
+            url = $movieTitle.find('a').attr('href'),
+            year = $movieTitle.next('span.info').children('a:first').text();
 
         for (var movieObj of that.movies) {
             // compare urls as they're guaranteed to be unique
             // in some cases movie title and release year are the same for different movies
             // which results in incorrect top list values
-            if (curUrl === movieObj.url) {
+            if (url === movieObj.url) {
                 movieObj.count += 1;
                 movieObj.jq.find('.rank').html(movieObj.count);
                 found = true;
@@ -1106,13 +1144,7 @@ ListCrossCheck.prototype.updateMovies = function($content) {
                 $movie.removeClass('notowned').addClass('owned');
             }
 
-            that.movies.push({
-                title: curTitle,
-                count: 1,
-                url: curUrl,
-                year: curYear,
-                jq: $movie
-            });
+            that.movies.push({ title, url, year, count: 1, jq: $movie });
         }
     });
 
@@ -1329,14 +1361,8 @@ ListCrossCheck.prototype.settings = {
     title: 'List cross-reference',
     desc: 'Cross-reference lists to find what films they share',
     index: 'list_cross_ref',
-    includes: ['icheckmovies.com/lists/'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    enableOn: ['listsGeneral', 'listsSpecial'],
+    options: [getDefState(true), {
         name: 'match_all',
         desc: 'Find films that appear on all selected lists',
         type: 'checkbox',
@@ -1363,35 +1389,50 @@ function HideTags(config) {
 }
 
 HideTags.prototype.attach = function() {
-    if (this.config.enabled) {
-        gmAddStyle(
-            'ol#itemListToplists li .info:last-child, ' +
-            'ol#itemListMovies li .tagList ' +
-                '{ display: none !important; }');
+    if (this.config.list_tags) {
+        // /lists/ and /movies/<title>/rankings/ have different structure
+        gmAddStyle('ol#itemListToplists.listViewNormal > li > .info:last-child' + ', ' +
+                   'ol#itemListToplists > li > .tagList ' +
+                   '{ display: none !important; }');
+    }
 
-        if (this.config.show_hover) {
-            gmAddStyle(
-                'ol#itemListToplists li:hover .info:last-child, ' +
-                'ol#itemListMovies li:hover .tagList ' +
-                    '{ display: block !important; }');
-        }
+    if (this.config.movie_tags) {
+        gmAddStyle('ol#itemListMovies.listViewNormal > li > .tagList ' +
+                   '{ display: none !important; }');
+    }
+
+    if (this.config.show_hover) {
+        gmAddStyle(
+            'ol#itemListToplists.listViewNormal > li:hover > .info:last-child' + ', ' +
+            'ol#itemListToplists > li:hover > .tagList' + ', ' +
+            'ol#itemListMovies.listViewNormal > li:hover > .tagList ' +
+                '{ display: block !important; }');
     }
 };
 
 HideTags.prototype.settings = {
     title: 'Hide tags',
-    desc: 'Hides tags on individual lists',
+    desc: 'Hides tags on movie lists and lists of lists',
     index: 'hide_tags',
-    includes: ['icheckmovies.com/'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
+    // ICM bug: movieListGeneral and movieSearch never have tags
+    enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
+        'movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch', 'movieRankings'],
+    options: [getDefState(false), {
+        name: 'list_tags',
+        frontDesc: 'Hide on: ',
+        desc: 'lists',
         type: 'checkbox',
-        default: false
+        inline: true,
+        default: true
+    }, {
+        name: 'movie_tags',
+        desc: 'movies',
+        type: 'checkbox',
+        inline: true,
+        default: true
     }, {
         name: 'show_hover',
-        desc: 'Show tags when moving the cursor over a movie',
+        desc: 'Show tags when moving the cursor over a movie or a list',
         type: 'checkbox',
         default: false
     }]
@@ -1406,10 +1447,6 @@ function WatchlistTab(config) {
 }
 
 WatchlistTab.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var $movies = $('#itemListMovies');
     if ($movies.length === 0) {
         return;
@@ -1450,14 +1487,8 @@ WatchlistTab.prototype.settings = {
     title: 'Watchlist tab',
     desc: 'Creates a tab on lists that shows watchlist entries.',
     index: 'watchlist_tab',
-    includes: ['icheckmovies.com/lists'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }]
+    enableOn: ['movieList'],
+    options: [getDefState(false)]
 };
 
 // Inherit methods from BaseFeature
@@ -1469,10 +1500,6 @@ function Owned(config) {
 }
 
 Owned.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     var $movielist = $('#itemListMovies'),
         $markOwned = $('.optionMarkOwned');
     // Check if 'owned' button exists
@@ -1563,14 +1590,9 @@ Owned.prototype.settings = {
     title: 'Owned tab',
     desc: 'Creates a tab on lists that shows owned entries. Emulates the paid feature',
     index: 'owned_tab',
-    includes: ['icheckmovies.com/'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
+        'movie', 'movieRankings'],
+    options: [getDefState(false), {
         name: 'free_account',
         desc: 'I have a free account (must uncheck if you have a paid account)',
         type: 'checkbox',
@@ -1589,10 +1611,6 @@ function LargeList(config) {
 }
 
 LargeList.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.autoload) {
         this.load();
         return;
@@ -1602,23 +1620,11 @@ LargeList.prototype.attach = function() {
     var link = '<span style="float: right; margin-left: 15px">' +
         '<a id="icme_large_posters" href="#">Large posters</a></span>';
 
-    if ($('div#list_container').length !== 1) {
-        var container = '<div id="list_container" style="height: 35px; ' +
-            'position: relative">' + link + '</div>';
-
-        $('#movies').parent().before(container);
-    } else {
-        if ($('#list_container').find('p').length === 1) {
-            $('#list_container p:first').append('<span> &mdash; </span>' + link);
-        } else {
-            $('div#list_container').append(link);
-        }
-    }
+    addToMovieListBar(link);
 
     var that = this;
     $('#icme_large_posters').on('click', function(e) {
         e.preventDefault();
-
         that.load();
     });
 };
@@ -1687,16 +1693,8 @@ LargeList.prototype.settings = {
     title: 'Large posters',
     desc: 'Display large posters on individual lists (large posters are lazy loaded)',
     index: 'large_lists',
-    includes: ['icheckmovies\\.com/lists/(.+)/(.*)'],
-    excludes: ['icheckmovies\\.com/lists/favorited',
-               'icheckmovies\\.com/lists/disliked',
-               'icheckmovies\\.com/lists/watchlist'],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
+    options: [getDefState(true), {
         name: 'autoload',
         desc: 'Autoload',
         type: 'checkbox',
@@ -1713,10 +1711,6 @@ function ListOverviewSort(config) {
 }
 
 ListOverviewSort.prototype.attach = function() {
-    if (!this.config.enabled) {
-        return;
-    }
-
     if (this.config.single_col) {
         gmAddStyle('.itemList .listItem.listItemProgress { float: none !important; }');
     }
@@ -1750,9 +1744,9 @@ ListOverviewSort.prototype.rearrange = function(order, section) {
     var toplistArr = $toplistItems.toArray();
 
     if (this.config.autosort) {
-        var lookupMap = toplistArr.map(function(item, i) {
+        var lookupMap = toplistArr.map(function(item, index) {
             var width = $(item).find('span.progress').css('width').replace('px', '');
-            return { index: i, value: parseFloat(width) };
+            return { index, value: parseFloat(width) };
         });
 
         lookupMap.sort(function(a, b) {
@@ -1825,14 +1819,8 @@ ListOverviewSort.prototype.settings = {
     title: 'Progress page',
     desc: 'Change the order of lists on the progress page',
     index: 'toplists_sort',
-    includes: ['icheckmovies.com/profiles/progress'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    enableOn: ['progress'],
+    options: [getDefState(false), {
         name: 'autosort',
         desc: 'Sort lists by completion rate',
         type: 'checkbox',
@@ -1874,7 +1862,7 @@ function ListsTabDisplay(config) {
 }
 
 ListsTabDisplay.prototype.attach = function() {
-    var isOnMoviePage = (new RegExp(this.settings.includes[2])).test(window.location.href),
+    var isOnMoviePage = reICM.movieRankings.test(window.location.href),
         _c = this.config;
 
     if (isOnMoviePage) {
@@ -1891,19 +1879,18 @@ ListsTabDisplay.prototype.attach = function() {
         }
 
         if (_c.sort_groups) {
-            var that = this;
             for (var group of ['group1', 'group2']) {
                 var stored = _c[group];
                 if (typeof stored === 'string') {
                     // Parse textarea content
                     console.log('Parsing ListsTabDisplay group', group);
-                    stored = stored.trim().replace(that.reURL, '$1').split('\n');
+                    stored = stored.trim().replace(this.reURL, '$1').split('\n');
                     _c[group] = stored;
-                    that.globalConfig.save();
+                    this.globalConfig.save();
                 }
 
-                var $personal = that.getLists(stored);
-                that.move($personal);
+                var $personal = this.getLists(stored);
+                this.move($personal);
             }
         }
 
@@ -1917,7 +1904,7 @@ ListsTabDisplay.prototype.attach = function() {
         // visual fix for edge cases when all lists are moved
         lists.last().filter('.groupSeparator').hide();
     } else if (_c.redirect) { // = if on a list page
-        var $linksToLists = $('.listItemMovie > .info > a:last-of-type');
+        var $linksToLists = $('.listItemMovie > .info > a:nth-of-type(2)');
 
         $linksToLists.each(function() {
             var $link = $(this),
@@ -1957,32 +1944,31 @@ ListsTabDisplay.prototype.settings = {
     desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
           '<a href="/movies/pulp+fiction/rankings/">example</a>)',
     index: 'lists_tab_display',
-    includes: [
-        'icheckmovies.com/lists/(.+)',
-        'icheckmovies.com/search/movies/(.+)',
-        'icheckmovies.com/movies/.+/rankings/(.*)',
-        'icheckmovies.com/movies/[^/]*$', // list of all movies
-        'icheckmovies.com/movies/((un)?checked|favorited|disliked|owned|watchlist|recommended)/'],
-    excludes: [],
-    options: [{
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
+        'movieRankings', 'movieSearch'],
+    options: [getDefState(true), {
         name: 'redirect',
         desc: 'Redirect "in # lists" movie links to "All" lists tab',
         type: 'checkbox',
         default: true
     }, {
         name: 'sort_official',
-        desc: 'Auto-sort official lists',
+        frontDesc: 'Auto-sort (move to the top): ',
+        desc: 'official lists',
         type: 'checkbox',
+        inline: true,
         default: true
     }, {
         name: 'sort_filmos',
-        desc: 'Auto-sort filmographies',
+        desc: 'filmographies',
         type: 'checkbox',
+        inline: true,
         default: true
     }, {
         name: 'sort_groups',
-        desc: 'Auto-sort lists from user defined groups',
+        desc: 'lists from user defined groups',
         type: 'checkbox',
+        inline: true,
         default: true
     }, {
         name: 'group1',
@@ -2006,12 +1992,8 @@ function ExportLists(config) {
 }
 
 ExportLists.prototype.attach = function() {
-    var _c = this.config;
-    if (!_c.enabled) {
-        return;
-    }
-
-    var sep = _c.delimiter;
+    var _c = this.config,
+        sep = _c.delimiter;
 
     $('.optionExport').one('click', function() {
         if (sep !== ',' && sep !== ';') {
@@ -2033,7 +2015,7 @@ ExportLists.prototype.attach = function() {
                 title = encodeField($item.find('h2>a').text()),
                 aka = encodeField($item.find('.info > em').text()),
                 year = $item.find('.info a:first').text(),
-                toplists = parseInt($item.find('.info a:last').text(), 10),
+                toplists = parseInt($item.find('.info a:nth-of-type(2)').text(), 10),
                 checked = $item.hasClass('checked') ? 'yes' : 'no',
                 isFav = $item.hasClass('favorite') ? 'yes' : 'no',
                 isDislike = $item.hasClass('hated') ? 'yes' : 'no',
@@ -2045,9 +2027,10 @@ ExportLists.prototype.attach = function() {
 
         // BOM with ; or , as separator and without sep= - for Excel
         var bom = _c.bom ? '\uFEFF' : '',
-            dataURI = 'data:text/csv;charset=utf-8,' + bom + encodeURIComponent(data);
+            dataURI = 'data:text/csv;charset=utf-8,' + bom + encodeURIComponent(data),
+            filename = $('#topList>h1').text().trim() || $('#listTitle > h1').text().trim();
         // link swapping with a correct filename - http://caniuse.com/download
-        $(this).attr('href', dataURI).attr('download', $('#topList>h1').text() + '.csv');
+        $(this).attr('href', dataURI).attr('download', filename + '.csv');
 
         // after changing URL jQuery fires a default click event
         // on the link user clicked on, and loads dataURI as URL (!)
@@ -2061,14 +2044,8 @@ ExportLists.prototype.settings = {
     desc: 'Download any list as .csv (doesn\'t support search results). ' +
           'Emulates the paid feature, so don\'t enable it if you have a paid account',
     index: 'export_lists',
-    includes: ['icheckmovies.com/lists/(.+)'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: false
-    }, {
+    enableOn: ['movieList', 'movieListSpecial'],
+    options: [getDefState(false), {
         name: 'delimiter',
         desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
         type: 'textinput',
@@ -2090,15 +2067,13 @@ function ProgressTopX(config) {
 }
 
 ProgressTopX.prototype.attach = function() {
-    if (this.config.enabled) {
-        var css = 'float: left; margin-right: 0.5em',
-            attr = { text: 'Load stats', id: 'icme_req_for_top', href: '#', style: css },
-            // can't pass the value directly in case of user changing it and not reloading
-            $loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
-            $spanElem = $('<span>', { text: ' | ', style: css });
+    var style = 'float: left; margin-right: 0.5em',
+        attr = { style, text: 'Load stats', id: 'icme_req_for_top', href: '#' },
+        // can't pass the value directly in case of user changing it and not reloading
+        $loadLink = $('<a>', attr).click({ cfg: this.config }, this.addStats),
+        $spanElem = $('<span>', { style, text: ' | ' });
 
-        $('#listOrderingWrapper').prepend($loadLink, $spanElem);
-    }
+    $('#listOrderingWrapper').prepend($loadLink, $spanElem);
 };
 
 ProgressTopX.prototype.addStats = function(event) {
@@ -2135,14 +2110,8 @@ ProgressTopX.prototype.settings = {
     title: 'Progress top X',
     desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
     index: 'progress_top_x',
-    includes: ['icheckmovies.com/profiles/progress/'],
-    excludes: [],
-    options: [{
-        name: 'enabled',
-        desc: 'Enabled',
-        type: 'checkbox',
-        default: true
-    }, {
+    enableOn: ['progress'],
+    options: [getDefState(true), {
         name: 'target_page',
         desc: 'Ranking page you want to be on (page x 25 = rank)',
         type: 'textinput',
@@ -2152,25 +2121,31 @@ ProgressTopX.prototype.settings = {
 
 /**
  * Main application
- * Register and load modules
+ * Initialize, register and load modules
  */
-function Enhanced(scriptConfig) {
+function Enhanced(globalConfig) {
     this.modules = [];
-    this.configWindow = new ConfigWindow(scriptConfig);
+    this.config = globalConfig;
+    this.configWindow = new ConfigWindow(globalConfig);
 }
 
-Enhanced.prototype.register = function(module) {
+Enhanced.prototype.register = function(Module) {
+    var module = new Module(this.config);
     this.modules.push(module);
     this.configWindow.addModule(module.settings);
 };
 
 Enhanced.prototype.load = function() {
-    $.each(this.modules, function(i, m) {
-        if (m.isEnabled()) {
-            console.log('Attaching ' + m.constructor.name);
-            m.attach();
+    for (var m of this.modules) {
+        if (m.matchesUrl()) {
+            if (m.config.enabled) {
+                console.log('Attaching ' + m.constructor.name);
+                m.attach();
+            } else {
+                console.log('Skipping ' + m.constructor.name);
+            }
         }
-    });
+    }
 
     this.configWindow.build();
 };
@@ -2195,8 +2170,9 @@ var useModules = [
 ];
 
 var app = new Enhanced(config);
-$.each(useModules, function(i, Obj) {
-    app.register(new Obj(config));
-});
+for (var m of useModules) {
+    app.register(m);
+}
+
 app.load();
-console.log('window built');
+console.log('ICM Enhanced is ready.');
