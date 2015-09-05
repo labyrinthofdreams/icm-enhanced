@@ -893,7 +893,8 @@ ListCustomColors.prototype.settings = {
     desc: 'Changes entry colors on lists to visually separate ' +
           'your favorites/watchlist/dislikes',
     index: 'list_colors',
-    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch'],
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
+        'listsGeneral', 'listsSpecial'],
     options: [getDefState(true), {
         name: 'colors.favorite',
         desc: 'Favorites',
@@ -934,9 +935,6 @@ ListCrossCheck.prototype.init = function() {
 
     // array of top list jQuery elements
     this.$toplists = [];
-
-    // number of total toplists
-    this.numToplists = 0;
 
     // cross-referencing in progress
     this.inProgress = false;
@@ -1053,7 +1051,6 @@ ListCrossCheck.prototype.check = function() {
     // get selected top lists
     var $toplists = $toplistCont.children('li.icme_listcc');
 
-    this.numToplists = $toplists.length;
     this.inProgress = true;
 
     // sort selected top lists in ascending order by number of unchecked films
