@@ -636,16 +636,16 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
 
 UpcomingAwardsOverview.prototype.sortLists = function() {
     // sort lists array by least required checks ASC,
-    // then by awards where checks are equal ASC, then by list title ASC
+    // then by award type if checks are equal DESC, then by list title ASC
     var awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
     this.lists.sort(function(a, b) {
         if (a.neededForAward < b.neededForAward) {
             return -1;
         } else if (a.neededForAward > b.neededForAward) {
             return 1;
-        } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
-            return -1;
         } else if (awardOrder[a.awardType] > awardOrder[b.awardType]) {
+            return -1;
+        } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
             return 1;
         } else if (a.listTitle < b.listTitle) {
             return -1;
