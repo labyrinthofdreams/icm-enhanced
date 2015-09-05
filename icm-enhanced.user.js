@@ -572,6 +572,10 @@ function UpcomingAwardsOverview(config) {
 }
 
 UpcomingAwardsOverview.prototype.attach = function() {
+    if (!$('.listItemToplist').length) {
+        return;
+    }
+
     if (this.config.autoload) {
         this.loadAwardData();
         return;
