@@ -1636,33 +1636,39 @@ LargeList.prototype.load = function() {
 
     this.loaded = true;
 
-    var style =
-        '#itemListMovies > .listItem ' +
-            '{ float:left; height: 330px; width: 255px; } ' +
-        '.listItem .listImage ' +
+    // make sure normal view is enabled
+    this.enableNormalView();
+
+    var root = '#itemListMovies.listViewNormal',
+        style =
+        root + ' > .listItem ' +
+            '{ float:left; width: 255px; } ' +
+        root + ' .listItem .listImage ' +
             '{ float:none; width: 230px; height: 305px; left:-18px; top:-18px; margin:0; } ' +
-        '.listImage a ' +
+        root + ' .listImage a ' +
             '{ width:100%; height:100%; background: url("/images/dvdCover.png") ' +
             'no-repeat scroll center center transparent; } ' +
-        '.listImage .coverImage ' +
+        root + ' .listImage .coverImage ' +
             '{ width:190px; height:258px; top:21px; left: 19px; right:auto; } ' +
-        '.listItem .rank ' +
+        root + ' .listItem .rank ' +
             '{ top: 15px; position:absolute; height:auto; width:65px; ' +
             'right:0; margin:0; font-size:30px; } ' +
-        '.listItem .rank .positiondifference span ' +
+        root + ' .listItem .rank .positiondifference span ' +
             '{ font-size: 12px; } ' +
-        '.listItem h2 ' +
+        root + ' .listItem h2 ' +
             '{ z-index:11; font-size:14px; width:100%; margin:-30px 0 0 0; } ' +
-        '.listItem .info ' +
+        root + ' .listItem .info ' +
             '{ font-size:12px; width:100%; height:auto; line-height:16px; margin-top:4px; } ' +
-        '.checkbox ' +
+        root + ' .checkbox ' +
             '{ top:85px; right:12px; } ' +
-        '#itemListMovies .optionIconMenu ' +
+        root + ' .optionIconMenu ' +
             '{ top:120px; right:20px; } ' +
-        '#itemListMovies .optionIconMenu li ' +
+        root + ' .optionIconMenu li ' +
             '{ display: block; } ' +
-        '#itemListMovies .optionIconMenuCheckbox ' +
-            '{ right:20px; }';
+        root + ' .optionIconMenuCheckbox ' +
+            '{ right:20px; }' +
+        '#itemListMovies.listViewCompact > .listItem' +
+            '{ height: auto; }';
 
     style = style.replace(/;/g, ' !important;');
 
@@ -1687,6 +1693,29 @@ LargeList.prototype.load = function() {
     }
 
     $('img.coverImage').lazyload({ threshold: 200 });
+    this.adjustHeights(); // tags and long titles can increase item's height
+};
+
+LargeList.prototype.enableNormalView = function() {
+    var $normalViewSwitch = $('#listViewNormal').find('a');
+    if (!$normalViewSwitch.hasClass('active')) {
+        // copied from ICM source code
+        $('#listViewCompact').find('a').removeClass('active');
+        $normalViewSwitch.addClass('active');
+        $('ol.itemList')
+            .removeClass('listViewCompact')
+            .addClass('listViewNormal');
+    }
+};
+
+LargeList.prototype.adjustHeights = function() {
+    $('.listItemMovie:nth-child(3n-2)').each(function() {
+        var $t = $(this),
+            $t2 = $t.next(),
+            $t3 = $t2.next(),
+            maxHeight = Math.max($t.height(), $t2.height(), $t3.height());
+        $t.add($t2).add($t3).height(maxHeight);
+    });
 };
 
 LargeList.prototype.settings = {
