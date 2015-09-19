@@ -667,7 +667,7 @@ UpcomingAwardsOverview.prototype.sortLists = function() {
  * and only if this module is attached.
  */
 UpcomingAwardsOverview.prototype.getIconFactory = function() {
-    var unhideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
+    var unhideIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
         'AQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW' +
         '1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjR' +
         'uqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/2' +
@@ -679,7 +679,7 @@ UpcomingAwardsOverview.prototype.getIconFactory = function() {
         'ZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzS' +
         'CwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTk' +
         'SuQmCC',
-        hideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAK' +
+        hideIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAK' +
         'CAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1h' +
         'Z2VSZWFkeXHJZTwAAADtSURBVHjajFC7DkFREJy9iXg0t+EHRKJDJSqRuIVaJT7AF+jR' +
         '+xuNRiJyS8WlRaHWeOU+kBy7eyKhs8lkJrOzZ3OWzMAD15gxYhB+yzAm0ndez+eYMYLn' +
