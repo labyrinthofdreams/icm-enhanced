@@ -1252,7 +1252,8 @@ ListCrossCheck.prototype.outputMovies = function() {
             e.preventDefault();
 
             var data = '"found_toplists","title","year","official_toplists","imdb"\n',
-                $items = $('#itemListMovies').children('li');
+                // target only the list below the button (in case there are several)
+                $items = $(this).parents('.tabMenu').next('.itemList').children('li');
 
             $items.each(function() {
                 var $item = $(this),
