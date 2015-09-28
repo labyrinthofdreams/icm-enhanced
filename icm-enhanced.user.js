@@ -148,6 +148,16 @@ BaseFeature.prototype.settings = {
     excludes: []  // additional regexes (str or objects) to exclude
 };
 
+/**
+ * Basic function for checking current page type.
+ *
+ * @param {(string|string[])} keys - A key of reICM, or array of keys
+ * @returns {boolean} true if current page matches any of specified regexes
+ */
+BaseFeature.prototype.matchesPageType = function(keys) {
+    return this.getRegexes(Array.isArray(keys) ? keys : [keys]).some(this.testRe);
+};
+
 BaseFeature.prototype.testRe = function(strOrRe) {
     if (typeof strOrRe === 'string') {
         strOrRe = new RegExp(strOrRe);
@@ -169,7 +179,7 @@ BaseFeature.prototype.getRegexes = function(arrOfKeys) {
 BaseFeature.prototype.matchesUrl = function() {
     var _s = this.settings,
         // if an array is not specified, [].some(...) is always false
-        matchesPageType = this.getRegexes(_s.enableOn || []).some(this.testRe),
+        matchesPageType = this.matchesPageType(_s.enableOn || []),
         isIncluded = (_s.includes || []).some(this.testRe),
         isExcluded = (_s.excludes || []).some(this.testRe);
 
@@ -608,8 +618,7 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
         sel = { progress: { rank: 'span.rank', title: 'h3 > a' },
                lists: { rank: 'span.info > strong:first', title: 'h2 > a.title' } },
         // use different selectors depending on page
-        curSel = location.href.indexOf('progress') !== -1 ?
-                 sel.progress : sel.lists,
+        curSel = this.matchesPageType('progress') ? sel.progress : sel.lists,
         awardTypes = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
     var that = this;
@@ -762,7 +771,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
 
     $('#icm_award_html_container, #ua_toggle_link_container').remove();
 
-    if (location.href.indexOf('progress') !== -1) {
+    if (this.matchesPageType('progress')) {
         $('#listOrdering').before(allHtml);
     } else {
         $('#itemContainer').before(allHtml);
@@ -1893,10 +1902,10 @@ function ListsTabDisplay(config) {
 }
 
 ListsTabDisplay.prototype.attach = function() {
-    var isOnMoviePage = reICM.movieRankings.test(window.location.href),
+    var onMoviePage = this.matchesPageType('movieRankings'),
         _c = this.config;
 
-    if (isOnMoviePage) {
+    if (onMoviePage) {
         var lists = this.$block.children();
 
         if (_c.sort_official) {
