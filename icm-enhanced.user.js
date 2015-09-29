@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.7.8
+// @version        1.7.9
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
@@ -148,6 +148,16 @@ BaseFeature.prototype.settings = {
     excludes: []  // additional regexes (str or objects) to exclude
 };
 
+/**
+ * Basic function for checking current page type.
+ *
+ * @param {(string|string[])} keys - A key of reICM, or array of keys
+ * @returns {boolean} true if current page matches any of specified regexes
+ */
+BaseFeature.prototype.matchesPageType = function(keys) {
+    return this.getRegexes(Array.isArray(keys) ? keys : [keys]).some(this.testRe);
+};
+
 BaseFeature.prototype.testRe = function(strOrRe) {
     if (typeof strOrRe === 'string') {
         strOrRe = new RegExp(strOrRe);
@@ -169,7 +179,7 @@ BaseFeature.prototype.getRegexes = function(arrOfKeys) {
 BaseFeature.prototype.matchesUrl = function() {
     var _s = this.settings,
         // if an array is not specified, [].some(...) is always false
-        matchesPageType = this.getRegexes(_s.enableOn || []).some(this.testRe),
+        matchesPageType = this.matchesPageType(_s.enableOn || []),
         isIncluded = (_s.includes || []).some(this.testRe),
         isExcluded = (_s.excludes || []).some(this.testRe);
 
@@ -572,6 +582,10 @@ function UpcomingAwardsOverview(config) {
 }
 
 UpcomingAwardsOverview.prototype.attach = function() {
+    if (!$('.listItemToplist').length) {
+        return;
+    }
+
     if (this.config.autoload) {
         this.loadAwardData();
         return;
@@ -604,8 +618,7 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
         sel = { progress: { rank: 'span.rank', title: 'h3 > a' },
                lists: { rank: 'span.info > strong:first', title: 'h2 > a.title' } },
         // use different selectors depending on page
-        curSel = location.href.indexOf('progress') !== -1 ?
-                 sel.progress : sel.lists,
+        curSel = this.matchesPageType('progress') ? sel.progress : sel.lists,
         awardTypes = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
     var that = this;
@@ -636,16 +649,16 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
 
 UpcomingAwardsOverview.prototype.sortLists = function() {
     // sort lists array by least required checks ASC,
-    // then by awards where checks are equal ASC, then by list title ASC
+    // then by award type if checks are equal DESC, then by list title ASC
     var awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
     this.lists.sort(function(a, b) {
         if (a.neededForAward < b.neededForAward) {
             return -1;
         } else if (a.neededForAward > b.neededForAward) {
             return 1;
-        } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
-            return -1;
         } else if (awardOrder[a.awardType] > awardOrder[b.awardType]) {
+            return -1;
+        } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
             return 1;
         } else if (a.listTitle < b.listTitle) {
             return -1;
@@ -663,7 +676,7 @@ UpcomingAwardsOverview.prototype.sortLists = function() {
  * and only if this module is attached.
  */
 UpcomingAwardsOverview.prototype.getIconFactory = function() {
-    var unhideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
+    var unhideIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
         'AQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW' +
         '1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjR' +
         'uqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/2' +
@@ -675,7 +688,7 @@ UpcomingAwardsOverview.prototype.getIconFactory = function() {
         'ZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzS' +
         'CwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTk' +
         'SuQmCC',
-        hideIconData = 'data:text/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAK' +
+        hideIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAK' +
         'CAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1h' +
         'Z2VSZWFkeXHJZTwAAADtSURBVHjajFC7DkFREJy9iXg0t+EHRKJDJSqRuIVaJT7AF+jR' +
         '+xuNRiJyS8WlRaHWeOU+kBy7eyKhs8lkJrOzZ3OWzMAD15gxYhB+yzAm0ndez+eYMYLn' +
@@ -758,7 +771,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
 
     $('#icm_award_html_container, #ua_toggle_link_container').remove();
 
-    if (location.href.indexOf('progress') !== -1) {
+    if (this.matchesPageType('progress')) {
         $('#listOrdering').before(allHtml);
     } else {
         $('#itemContainer').before(allHtml);
@@ -889,7 +902,8 @@ ListCustomColors.prototype.settings = {
     desc: 'Changes entry colors on lists to visually separate ' +
           'your favorites/watchlist/dislikes',
     index: 'list_colors',
-    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch'],
+    enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
+        'listsGeneral', 'listsSpecial'],
     options: [getDefState(true), {
         name: 'colors.favorite',
         desc: 'Favorites',
@@ -930,9 +944,6 @@ ListCrossCheck.prototype.init = function() {
 
     // array of top list jQuery elements
     this.$toplists = [];
-
-    // number of total toplists
-    this.numToplists = 0;
 
     // cross-referencing in progress
     this.inProgress = false;
@@ -1049,7 +1060,6 @@ ListCrossCheck.prototype.check = function() {
     // get selected top lists
     var $toplists = $toplistCont.children('li.icme_listcc');
 
-    this.numToplists = $toplists.length;
     this.inProgress = true;
 
     // sort selected top lists in ascending order by number of unchecked films
@@ -1251,7 +1261,8 @@ ListCrossCheck.prototype.outputMovies = function() {
             e.preventDefault();
 
             var data = '"found_toplists","title","year","official_toplists","imdb"\n',
-                $items = $('#itemListMovies').children('li');
+                // target only the list below the button (in case there are several)
+                $items = $(this).parents('.tabMenu').next('.itemList').children('li');
 
             $items.each(function() {
                 var $item = $(this),
@@ -1636,33 +1647,39 @@ LargeList.prototype.load = function() {
 
     this.loaded = true;
 
-    var style =
-        '#itemListMovies > .listItem ' +
-            '{ float:left; height: 330px; width: 255px; } ' +
-        '.listItem .listImage ' +
+    // make sure normal view is enabled
+    this.enableNormalView();
+
+    var root = '#itemListMovies.listViewNormal',
+        style =
+        root + ' > .listItem ' +
+            '{ float:left; width: 255px; } ' +
+        root + ' .listItem .listImage ' +
             '{ float:none; width: 230px; height: 305px; left:-18px; top:-18px; margin:0; } ' +
-        '.listImage a ' +
+        root + ' .listImage a ' +
             '{ width:100%; height:100%; background: url("/images/dvdCover.png") ' +
             'no-repeat scroll center center transparent; } ' +
-        '.listImage .coverImage ' +
+        root + ' .listImage .coverImage ' +
             '{ width:190px; height:258px; top:21px; left: 19px; right:auto; } ' +
-        '.listItem .rank ' +
+        root + ' .listItem .rank ' +
             '{ top: 15px; position:absolute; height:auto; width:65px; ' +
             'right:0; margin:0; font-size:30px; } ' +
-        '.listItem .rank .positiondifference span ' +
+        root + ' .listItem .rank .positiondifference span ' +
             '{ font-size: 12px; } ' +
-        '.listItem h2 ' +
+        root + ' .listItem h2 ' +
             '{ z-index:11; font-size:14px; width:100%; margin:-30px 0 0 0; } ' +
-        '.listItem .info ' +
+        root + ' .listItem .info ' +
             '{ font-size:12px; width:100%; height:auto; line-height:16px; margin-top:4px; } ' +
-        '.checkbox ' +
+        root + ' .checkbox ' +
             '{ top:85px; right:12px; } ' +
-        '#itemListMovies .optionIconMenu ' +
+        root + ' .optionIconMenu ' +
             '{ top:120px; right:20px; } ' +
-        '#itemListMovies .optionIconMenu li ' +
+        root + ' .optionIconMenu li ' +
             '{ display: block; } ' +
-        '#itemListMovies .optionIconMenuCheckbox ' +
-            '{ right:20px; }';
+        root + ' .optionIconMenuCheckbox ' +
+            '{ right:20px; }' +
+        '#itemListMovies.listViewCompact > .listItem' +
+            '{ height: auto; }';
 
     style = style.replace(/;/g, ' !important;');
 
@@ -1687,6 +1704,29 @@ LargeList.prototype.load = function() {
     }
 
     $('img.coverImage').lazyload({ threshold: 200 });
+    this.adjustHeights(); // tags and long titles can increase item's height
+};
+
+LargeList.prototype.enableNormalView = function() {
+    var $normalViewSwitch = $('#listViewNormal').find('a');
+    if (!$normalViewSwitch.hasClass('active')) {
+        // copied from ICM source code
+        $('#listViewCompact').find('a').removeClass('active');
+        $normalViewSwitch.addClass('active');
+        $('ol.itemList')
+            .removeClass('listViewCompact')
+            .addClass('listViewNormal');
+    }
+};
+
+LargeList.prototype.adjustHeights = function() {
+    $('.listItemMovie:nth-child(3n-2)').each(function() {
+        var $t = $(this),
+            $t2 = $t.next(),
+            $t3 = $t2.next(),
+            maxHeight = Math.max($t.height(), $t2.height(), $t3.height());
+        $t.add($t2).add($t3).height(maxHeight);
+    });
 };
 
 LargeList.prototype.settings = {
@@ -1862,56 +1902,69 @@ function ListsTabDisplay(config) {
 }
 
 ListsTabDisplay.prototype.attach = function() {
-    var isOnMoviePage = reICM.movieRankings.test(window.location.href),
+    if (this.matchesPageType('movieRankings')) {
+        this.sortLists();
+    } else if (this.config.redirect) {
+        // cross-referencing adds new blocks that must also be fixed
+        var onListOfLists = this.matchesPageType(['listsGeneral', 'listsSpecial']);
+        if (onListOfLists && this.globalConfig.cfg.list_cross_ref.enabled) {
+            var observer = new MutationObserver(mutations => {
+                for (var mutation of mutations) {
+                    // Array.from is not needed in FF, but NodeList is not iterable in Chrome:
+                    // https://code.google.com/p/chromium/issues/detail?id=401699
+                    for (var el of Array.from(mutation.addedNodes)) {
+                        if (el.id === 'itemListMovies') {
+                            this.fixLinks($(el));
+                        }
+                    }
+                }
+            });
+            observer.observe($('#crActions').parent()[0], { childList: true });
+        } else { // most common case
+            this.fixLinks();
+        }
+    }
+};
+
+ListsTabDisplay.prototype.sortLists = function() {
+    var lists = this.$block.children(),
         _c = this.config;
 
-    if (isOnMoviePage) {
-        var lists = this.$block.children();
-
-        if (_c.sort_official) {
-            var officialLists = lists
-                .has('ul.tagList a[href$="user%3Aicheckmovies"]')
-                .filter(function() {
-                    // icm bug: deleted lists reset to icheckmovies user
-                    return !$(this).find('.title').attr('href').endsWith('//');
-                });
-            this.move(officialLists);
-        }
-
-        if (_c.sort_groups) {
-            for (var group of ['group1', 'group2']) {
-                var stored = _c[group];
-                if (typeof stored === 'string') {
-                    // Parse textarea content
-                    console.log('Parsing ListsTabDisplay group', group);
-                    stored = stored.trim().replace(this.reURL, '$1').split('\n');
-                    _c[group] = stored;
-                    this.globalConfig.save();
-                }
-
-                var $personal = this.getLists(stored);
-                this.move($personal);
-            }
-        }
-
-        if (_c.sort_filmos) {
-            var $filmos = lists.filter(function() {
-                return $(this).text().toLowerCase().indexOf('filmography') >= 0;
+    if (_c.sort_official) {
+        var officialLists = lists
+            .has('ul.tagList a[href$="user%3Aicheckmovies"]')
+            .filter(function() {
+                // icm bug: deleted lists reset to icheckmovies user
+                return !$(this).find('.title').attr('href').endsWith('//');
             });
-            this.move($filmos);
-        }
-
-        // visual fix for edge cases when all lists are moved
-        lists.last().filter('.groupSeparator').hide();
-    } else if (_c.redirect) { // = if on a list page
-        var $linksToLists = $('.listItemMovie > .info > a:nth-of-type(2)');
-
-        $linksToLists.each(function() {
-            var $link = $(this),
-                url = $link.attr('href').replace('?tags=user:icheckmovies', '');
-            $link.attr('href', url);
-        });
+        this.move(officialLists);
     }
+
+    if (_c.sort_groups) {
+        for (var group of ['group1', 'group2']) {
+            var stored = _c[group];
+            if (typeof stored === 'string') {
+                // Parse textarea content
+                console.log('Parsing ListsTabDisplay group', group);
+                stored = stored.trim().replace(this.reURL, '$1').split('\n');
+                _c[group] = stored;
+                this.globalConfig.save();
+            }
+
+            var $personal = this.getLists(stored);
+            this.move($personal);
+        }
+    }
+
+    if (_c.sort_filmos) {
+        var $filmos = lists.filter(function() {
+            return $(this).text().toLowerCase().indexOf('filmography') >= 0;
+        });
+        this.move($filmos);
+    }
+
+    // visual fix for edge cases when all lists are moved
+    lists.last().filter('.groupSeparator').hide();
 };
 
 ListsTabDisplay.prototype.move = function(lists) {
@@ -1939,13 +1992,29 @@ ListsTabDisplay.prototype.getLists = function(listIDs) {
     return $selected;
 };
 
+/**
+ * @param {jQuery} [$container] - Optional target that contains links to be fixed
+ */
+ListsTabDisplay.prototype.fixLinks = function($container) {
+    if ($container === undefined) {
+        $container = $('body');
+    }
+
+    var $linksToLists = $container.find('.listItemMovie > .info > a:nth-of-type(2)');
+    $linksToLists.each(function() {
+        var $link = $(this),
+            url = $link.attr('href').replace('?tags=user:icheckmovies', '');
+        $link.attr('href', url);
+    });
+};
+
 ListsTabDisplay.prototype.settings = {
     title: 'Lists tab display',
     desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
           '<a href="/movies/pulp+fiction/rankings/">example</a>)',
     index: 'lists_tab_display',
     enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
-        'movieRankings', 'movieSearch'],
+        'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
     options: [getDefState(true), {
         name: 'redirect',
         desc: 'Redirect "in # lists" movie links to "All" lists tab',
