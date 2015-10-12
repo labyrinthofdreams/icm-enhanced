@@ -12,15 +12,16 @@
     // "requirePaddingNewLinesBeforeLineComments": null,
     // "requireVarDeclFirst": null,
     // "validateNewlineAfterArrayElements": null,
+    // "disallowArrayDestructuringReturn": true,
 
     // --- Settings to revisit later
-    // "disallowKeywords": ["with"],
-    // "disallowParenthesesAroundArrowParam": true,
-    // "requireShorthandArrowFunctions": true,
+    // "requireTrailingComma": null, // airbnb suggests it for better diffs
     // "requireTemplateStrings": { "allExcept": ["stringConcatenation"] },
-    // "requireTrailingComma": null,
-
+    // "disallowVar": true,
+    // "requireEarlyReturn": true,
+    
     "esnext": true,
+    "requireArrayDestructuring": true,
     "requireBlocksOnNewline": true,
     "requireCurlyBraces": [
         "if",
@@ -31,12 +32,19 @@
         "try",
         "catch"
     ],
-    "requireCamelCaseOrUpperCaseIdentifiers": "ignoreProperties", // only for configs
+    "requireCamelCaseOrUpperCaseIdentifiers": {
+        "ignoreProperties": true // only for configs
+    },
     "requireCapitalizedConstructors": true,
+    "requireCapitalizedConstructorsNew": {
+        "allExcept": ["String"]
+    },
     "requireCommaBeforeLineBreak": true,
     "requireDollarBeforejQueryAssignment": true,
     "requireDotNotation": true,
     "disallowEmptyBlocks": true,
+    "requireEnhancedObjectLiterals": true,
+    "disallowIdenticalDestructuringNames": true,
     "disallowKeywords": ["with"],
     "disallowKeywordsOnNewLine": [
         "else",
@@ -48,18 +56,23 @@
     "disallowMixedSpacesAndTabs": true,
     "disallowMultipleLineBreaks": true,
     "disallowMultipleLineStrings": true,
+    "disallowNestedTernaries": { "maxLevel": 2 },
     "disallowNewlineBeforeBlockStatements": true,
     "disallowNodeTypes": ["LabeledStatement"],
+    "requireObjectDestructuring": true,
     "disallowOperatorBeforeLineBreak": ["."],
     "requireOperatorBeforeLineBreak": true,
     "requirePaddingNewLinesAfterBlocks": {
-        "allExcept": ["inCallExpressions"]
+        "allExcept": ["inCallExpressions", "inProperties"]
     },
     "disallowPaddingNewlinesInBlocks": true,
+    "disallowParenthesesAroundArrowParam": true,
     "requireParenthesesAroundIIFE": true,
     "disallowQuotedKeysInObjects": true,
     "requireSemicolons": true,
+    "requireShorthandArrowFunctions": true,
     "requireSpaceAfterBinaryOperators": true,
+    "requireSpaceAfterComma": true,
     "requireSpaceAfterKeywords": [
         "if",
         "else",
@@ -79,15 +92,15 @@
     "disallowSpaceBeforeBinaryOperators": [","],
     "requireSpaceBeforeBinaryOperators": true,
     "requireSpaceBeforeBlockStatements": true,
-    "disallowSpaceBeforeComma": true,
-    "requireSpaceBeforeKeywords": [
-        "else",
-        "while",
-        "catch",
-        "finally"
-    ],
-    "disallowSpaceBeforePostfixUnaryOperators": true,
+    "disallowSpaceBeforeComma": {
+        "allExcept": ["sparseArrays"]
+    },
+    "requireSpaceBeforeDestructuredValues": true,
+    "requireSpaceBeforeKeywords": {
+        "allExcept": ["function", "typeof"]
+    },
     "requireSpaceBeforeObjectValues": true,
+    "disallowSpaceBeforePostfixUnaryOperators": true,
     "disallowSpaceBeforeSemicolon": true,
     "requireSpaceBetweenArguments": true,
     "disallowSpacesInCallExpression": true,
@@ -115,6 +128,7 @@
     "requireSpacesInsideObjectBrackets": "all",
     "disallowSpacesInsideParentheses": true,
     "disallowSpacesInsideParenthesizedExpression": true,
+    "disallowSpacesInsideTemplateStringPlaceholders": true,
     "disallowTrailingWhitespace": true,
     "disallowYodaConditions": true,
 
@@ -131,6 +145,7 @@
 
     "jsDoc": {
         "checkAnnotations": "jsdoc3",
+        "checkParamExistence": true,
         "checkParamNames": true,
         "requireParamTypes": true,
         "checkRedundantParams": true,
@@ -142,6 +157,7 @@
         "leadingUnderscoreAccess": true,
         "requireHyphenBeforeDescription": true,
         "requireNewlineAfterDescription": true,
-        "requireDescriptionCompleteSentence": true
+        "requireDescriptionCompleteSentence": true,
+        "requireReturnDescription": true
     }
 }

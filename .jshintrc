@@ -14,6 +14,8 @@
                            //   true     : all variables, last function parameter
                            //   "vars"   : all variables only
                            //   "strict" : all variables, all function parameters
+    "esversion"   : 6,     // Allow ES6 syntax (ex: `const`)
+    // "strict"      : "global", // Require a "use strict"; directive at global level
 
     // Enforcing - deprecated (should be removed after v3.*)
     "camelcase"   : false, // Identifiers must be in camelCase
@@ -24,7 +26,6 @@
     "noempty"     : true,  // Prohibit use of empty blocks
 
     // Relaxing (set to true to produce fewer warnings)
-    "esnext"      : true,  // Allow ES.next (ES6) syntax (ex: `const`)
 
     // Environments
     "browser"     : true,  // Web Browser (window, document, etc)

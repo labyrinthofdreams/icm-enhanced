@@ -337,7 +337,7 @@ ConfigWindow.prototype.initColorPickers = function() {
         var $t = $(this);
         $t.spectrum({
             color: $t.prev().val(),
-            change: function(color) {
+            change(color) {
                 var $prev = $t.prev();
                 $prev.val(color.toHexString());
                 $prev.trigger('change');
@@ -636,13 +636,13 @@ UpcomingAwardsOverview.prototype.populateLists = function() {
             listTitle  = $t.attr('title').replace(/^View the | top list$/g, ''),
             listUrl    = $t.attr('href');
 
-        for (var award of awardTypes) {
-            var neededForAward = Math.ceil(totalItems * award[1]) - checks;
+        for (var [awardType, threshold] of awardTypes) {
+            var neededForAward = Math.ceil(totalItems * threshold) - checks;
             if (neededForAward <= 0) {
                 break; // the order of awardTypes array is important!
             }
 
-            that.lists.push({ neededForAward, listTitle, listUrl, awardType: award[0] });
+            that.lists.push({ neededForAward, listTitle, listUrl, awardType });
         }
     });
 };
@@ -835,7 +835,7 @@ UpcomingAwardsOverview.prototype.htmlOut = function() {
     $('#award_display_links').on('click', 'a.display_award', function(e) {
         e.preventDefault();
 
-        var awardType = $(this).attr('id').split('_')[1];
+        var [, awardType] = $(this).attr('id').split('_');
         $lists.hide().filter(function() {
             return !$(this).hasClass('hidden-list') &&
                     $(this).data('award-type').toLowerCase() === awardType;
@@ -934,7 +934,7 @@ function ListCrossCheck(config) {
 }
 
 /**
- * Initialize object variables
+ * Initialize object variables.
  */
 ListCrossCheck.prototype.init = function() {
     this.activated = false;
@@ -1047,7 +1047,7 @@ ListCrossCheck.prototype.deactivate = function() {
 };
 
 /**
- * Check through every selected top list
+ * Check through every selected top list.
  */
 ListCrossCheck.prototype.check = function() {
     var $toplistCont = $('ol#itemListToplists');
@@ -1704,9 +1704,9 @@ LargeList.prototype.load = function() {
     }
 
     $('img.coverImage').lazyload({ threshold: 200 });
-    
+
     if (this.config.noinfo) {
-        $("#itemListMovies > li").css("height", "270px").children("h2, span.info").remove();
+        $('#itemListMovies > li').css('height', '270px').children('h2, span.info').remove();
     } else {
         // tags and long titles can increase item's height
         // only needs to be done if titles are shown
@@ -1772,7 +1772,7 @@ ListOverviewSort.prototype.attach = function() {
 
     var that = this;
     $('#progressFilter a').not('#progressFilter-all').one('click', function() {
-        var section = $(this).attr('id').split('-')[1];
+        var [, section] = $(this).attr('id').split('-');
         that.rearrange(order, section);
     });
 };
@@ -2206,29 +2206,29 @@ FastReorderLists.prototype.constructor = FastReorderLists;
 
 function FastReorderLists(config) {
     BaseFeature.call(this, config);
-    
-    this.active = null;
+
+    this.$active = null;
 }
 
 FastReorderLists.prototype.attach = function() {
     gmAddStyle('#rankInput { width: 40px; position: absolute; }');
-    
+
     var that = this;
-    $("#itemListToplists").on("dblclick", "li", function(){
+    $('#itemListToplists').on('dblclick', 'li', function() {
         that.addRankInput(this);
     });
 };
 
 FastReorderLists.prototype.addRankInput = function(elem) {
-    this.active = $(elem);
-    $("#rankInput").remove();
-    var $input = $("<input>").attr("type", "text").attr("id", "rankInput");
-    $input.css("top", this.active.offset().top);
-    $input.css("left", this.active.offset().left - 45);
-    $("body").append($input);
-    $("#rankInput").focus();
+    this.$active = $(elem);
+    $('#rankInput').remove();
+    var $input = $('<input>').attr('type', 'text').attr('id', 'rankInput');
+    $input.css('top', this.$active.offset().top);
+    $input.css('left', this.$active.offset().left - 45);
+    $('body').append($input);
+    $('#rankInput').focus();
     var that = this;
-    $("#rankInput").on("keydown", function(e){
+    $('#rankInput').on('keydown', function(e) {
         if (e.which === 13) {
             that.moveList();
         }
@@ -2236,39 +2236,39 @@ FastReorderLists.prototype.addRankInput = function(elem) {
 };
 
 FastReorderLists.prototype.moveList = function() {
-    if (this.active === null) { 
-        return; 
-    }
-        
-    var currentRank = parseInt(this.active.find(".rank").text());
-    var newRank = parseInt($("#rankInput").val());
-    
-    var isSameRank = newRank === currentRank;
-    if (isSameRank) {
-        $("#rankInput").remove();
-        this.active = null;
+    if (this.$active === null) {
         return;
-    } 
-    
-    var outOfBounds = newRank > $("#itemListToplists > li").length || 
-                      newRank < 1;
-    if (isNaN(newRank) || outOfBounds) {
-        alert("Invalid position");
-        return;
-    }
-    
-    var directionUp = newRank < currentRank;        
-    if (directionUp) {
-        this.active.insertBefore($("#itemListToplists > li").eq(newRank - 1));
-    }
-    else {
-        this.active.insertAfter($("#itemListToplists > li").eq(newRank - 1));
     }
 
-    unsafeWindow.$.iCheckMovies.reOrderTypeSerializedItems.itemListToplists = unsafeWindow.jQuery("#itemListToplists").sortable("serialize");
-    unsafeWindow.$.iCheckMovies.reOrder("itemListToplists");
-    $("#rankInput").remove();
-    this.active = null;
+    var currentRank = parseInt(this.$active.find('.rank').text());
+    var newRank = parseInt($('#rankInput').val());
+
+    var isSameRank = newRank === currentRank;
+    if (isSameRank) {
+        $('#rankInput').remove();
+        this.$active = null;
+        return;
+    }
+
+    var outOfBounds = newRank > $('#itemListToplists > li').length ||
+                      newRank < 1;
+    if (isNaN(newRank) || outOfBounds) {
+        alert('Invalid position');
+        return;
+    }
+
+    var directionUp = newRank < currentRank;
+    if (directionUp) {
+        this.$active.insertBefore($('#itemListToplists > li').eq(newRank - 1));
+    } else {
+        this.$active.insertAfter($('#itemListToplists > li').eq(newRank - 1));
+    }
+
+    unsafeWindow.$.iCheckMovies.reOrderTypeSerializedItems.itemListToplists =
+        unsafeWindow.jQuery('#itemListToplists').sortable('serialize');
+    unsafeWindow.$.iCheckMovies.reOrder('itemListToplists');
+    $('#rankInput').remove();
+    this.$active = null;
 };
 
 FastReorderLists.prototype.settings = {
@@ -2276,13 +2276,14 @@ FastReorderLists.prototype.settings = {
     desc: 'Double-click a list to display an input field where you can input ' +
           'a new position and hit Enter key to move the list to that position',
     index: 'fast_reorder_lists',
-    enableOn: ['listsSpecial'], 
+    enableOn: ['listsSpecial'],
     options: [getDefState(true)]
 };
 
 /**
- * Main application
- * Initialize, register and load modules
+ * Main application; initializes, registers and loads modules.
+ *
+ * @param {Config} globalConfig
  */
 function Enhanced(globalConfig) {
     this.modules = [];
