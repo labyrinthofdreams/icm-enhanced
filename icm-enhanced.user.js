@@ -1453,127 +1453,42 @@ HideTags.prototype.settings = {
 };
 
 // Inherit methods from BaseFeature
-WatchlistTab.prototype = Object.create(BaseFeature.prototype);
-WatchlistTab.prototype.constructor = WatchlistTab;
+NewTabs.prototype = Object.create(BaseFeature.prototype);
+NewTabs.prototype.constructor = NewTabs;
 
-function WatchlistTab(config) {
+function NewTabs(config) {
     BaseFeature.call(this, config);
 }
 
-WatchlistTab.prototype.attach = function() {
-    var $movies = $('#itemListMovies');
-    if ($movies.length === 0) {
+NewTabs.prototype.attach = function() {
+    if (this.config.watchlist_tab && this.matchesPageType('movieList')) {
+        this.addNewTab('watch', 'watchlist');
+    }
+
+    var $markOwned = $('.optionMarkOwned');
+    if (this.config.owned_tab && $markOwned.length) {
+        if (this.config.free_account) {
+            this.trackOwned($markOwned);
+        }
+
+        this.addNewTab('owned', 'owned');
+    }
+};
+
+// Add a new tab to a movie list (modified from ICM source)
+NewTabs.prototype.addNewTab = function addNewTab(itemClass, title) {
+    var $movielist = $('#itemListMovies');
+    if (!$movielist.length) {
         return;
     }
 
-    var watchCount = $movies.children('li.watch').length;
-    var tabHtml = '<li id="listFilterWatch" class="topListMoviesFilter">' +
-        '<a id="linkListFilterWatch" href="#" title="View all your watchlist movies">Watchlist ' +
-        '<span id="topListMoviesWatchCount">(' + watchCount + ')</span></a>' +
+    title = title.toLowerCase();
+    var titleCap = title.charAt(0).toUpperCase() + title.slice(1),
+        count = $movielist.children('li.' + itemClass).length,
+        tabHtml = `<li id="listFilter${titleCap}" class="topListMoviesFilter">` +
+            `<a id="linkListFilter${titleCap}" title="View all your ${title} movies" href="#">` +
+            `${titleCap} <span id="topListMovies${titleCap}Count">(${count})</span></a>` +
         '</li>';
-
-    $('#listFilterUnchecked').after(tabHtml);
-
-    var $first = $('#listFilterMovies').find('a');
-    $first.text($first.text().replace(' movies', ''));
-
-    // move the order by and views to filter box
-    if ($('#orderByAndView').length === 0) {
-        $('#topList').append('<div id="orderByAndView" ' +
-            'style="z-index:200; position:absolute; top:30px; right:0; width:300px; height:20px">');
-        $('#listOrdering').detach().appendTo('#orderByAndView');
-        $('#listViewswitch').detach().appendTo('#orderByAndView');
-    }
-
-    $('#linkListFilterWatch').on('click', function() {
-        $movies = $('#itemListMovies');
-        $movies.children('li').hide();
-        $movies.children('li.watch').show();
-
-        $('.tabMenu', '#itemContainer').children('li').removeClass('active');
-        $(this).parent('li').addClass('active');
-
-        return false;
-    });
-};
-
-WatchlistTab.prototype.settings = {
-    title: 'Watchlist tab',
-    desc: 'Creates a tab on lists that shows watchlist entries.',
-    index: 'watchlist_tab',
-    enableOn: ['movieList'],
-    options: [getDefState(false)]
-};
-
-// Inherit methods from BaseFeature
-Owned.prototype = Object.create(BaseFeature.prototype);
-Owned.prototype.constructor = Owned;
-
-function Owned(config) {
-    BaseFeature.call(this, config);
-}
-
-Owned.prototype.attach = function() {
-    var $movielist = $('#itemListMovies'),
-        $markOwned = $('.optionMarkOwned');
-    // Check if 'owned' button exists
-    if (!$markOwned.length) {
-        return;
-    }
-
-    if (this.config.free_account) {
-        var owned = evalOrParse(gmGetValue('owned_movies', '[]')),
-            onListPage = $movielist.length !== 0;
-
-        // mark owned movies as owned
-        $markOwned.each(function() {
-            var $checkbox = $(this).closest('.optionIconMenu').prev('.checkbox'),
-                $movie = $checkbox.parent(),
-                movieId = $checkbox.attr('id').replace('check', 'movie'),
-                ind = owned.indexOf(movieId);
-
-            // if movie id is found in cached owned movies
-            if (ind !== -1) {
-                $movie.toggleClass('notowned owned');
-            }
-
-            // remove paid feature crap
-            $(this).removeClass('paidFeature');
-        });
-
-        $('.optionMarkOwned').on('click', function() {
-            owned = evalOrParse(gmGetValue('owned_movies', '[]'));
-
-            var $checkbox = $(this).closest('.optionIconMenu').prev('.checkbox'),
-                $movie = $checkbox.parent(),
-                movieId = $checkbox.attr('id').replace('check', 'movie'),
-                ind = owned.indexOf(movieId);
-
-            // if movie id is found in cached owned movies
-            console.log((ind !== -1 ? 'removing' : 'storing') + ' ' + movieId);
-            if (ind !== -1) {
-                owned.splice(ind, 1);
-            } else {
-                owned.push(movieId);
-            }
-
-            $movie.toggleClass('notowned owned');
-
-            if (onListPage) {
-                var ownedCount = $movielist.children('li.owned').length;
-                $('#topListMoviesOwnedCount').text('(' + ownedCount + ')');
-            }
-
-            gmSetValue('owned_movies', JSON.stringify(owned));
-
-            return false;
-        });
-    }
-
-    var ownedCount = $movielist.children('li.owned').length;
-    var tabHtml = '<li id="listFilterOwned" class="topListMoviesFilter">' +
-        '<a id="linkListFilterOwned" href="#" title="View all your owned movies">Owned ' +
-        '<span id="topListMoviesOwnedCount">(' + ownedCount + ')</span></a>' + '</li>';
 
     $('#listFilterNew').before(tabHtml);
 
@@ -1588,27 +1503,93 @@ Owned.prototype.attach = function() {
         $('#listViewswitch').detach().appendTo('#orderByAndView');
     }
 
-    $('#linkListFilterOwned, #listFilterOwned').on('click', function() {
-        $movielist = $('#itemListMovies');
-        $movielist.children('li').hide();
-        $movielist.children('li.owned').show();
+    $('#linkListFilter' + titleCap).on('click', function() {
+        $movielist.children('li.listItem').hide();
+        $movielist.children('li.' + itemClass).show();
+        $('#topListAllMovies').hide();
 
-        $('.tabMenu', '#itemContainer').children('li').removeClass('active');
-        $(this).parent('li').addClass('active');
+        var $tab = $(this).closest('li');
+        $tab.siblings().removeClass('active');
+        $tab.addClass('active');
 
         return false;
     });
 };
 
-Owned.prototype.settings = {
-    title: 'Owned tab',
-    desc: 'Creates a tab on lists that shows owned entries. Emulates the paid feature',
-    index: 'owned_tab',
+NewTabs.prototype.movieData = function($markOwnedBtn, owned) {
+    var $checkbox = $markOwnedBtn.closest('.optionIconMenu').prev('.checkbox'),
+        $movie = $checkbox.parent(),
+        movieId = $checkbox.attr('id').replace('check', 'movie'),
+        posInStorage = owned.indexOf(movieId);
+    return { $movie, movieId, posInStorage };
+};
+
+NewTabs.prototype.trackOwned = function($markOwned) {
+    var owned = evalOrParse(gmGetValue('owned_movies', '[]')),
+        $movielist = $('#itemListMovies'),
+        onListPage = $movielist.length !== 0,
+        that = this;
+
+    // mark owned movies as owned
+    $markOwned.each(function() {
+        var { $movie, posInStorage } = that.movieData($(this), owned);
+
+        // if movie id is found in cached owned movies
+        if (posInStorage !== -1) {
+            $movie.toggleClass('notowned owned');
+        }
+
+        // remove paid feature pop-up
+        $(this).removeClass('paidFeature');
+    });
+
+    $markOwned.on('click', function() {
+        owned = evalOrParse(gmGetValue('owned_movies', '[]')); // reload storage
+        var { $movie, movieId, posInStorage } = that.movieData($(this), owned);
+
+        // remove if movie id is found in cached owned movies, else store
+        if (posInStorage !== -1) {
+            owned.splice(posInStorage, 1);
+        } else {
+            owned.push(movieId);
+        }
+
+        $movie.toggleClass('notowned owned');
+
+        if (onListPage) {
+            var ownedCount = $movielist.children('li.owned').length;
+            $('#topListMoviesOwnedCount').text('(' + ownedCount + ')');
+        }
+
+        gmSetValue('owned_movies', JSON.stringify(owned));
+
+        return false;
+    });
+};
+
+NewTabs.prototype.settings = {
+    title: 'New tabs',
+    desc: 'Adds additional tabs on movie lists',
+    index: 'new_tabs',
     enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
         'movie', 'movieRankings'],
     options: [getDefState(false), {
+        name: 'owned_tab',
+        frontDesc: 'Create tabs for: ',
+        desc: 'owned movies',
+        type: 'checkbox',
+        inline: true,
+        default: false
+    }, {
+        name: 'watchlist_tab',
+        desc: 'watchlisted movies',
+        type: 'checkbox',
+        inline: true,
+        default: false
+    }, {
         name: 'free_account',
-        desc: 'I have a free account (must uncheck if you have a paid account)',
+        desc: 'Store owned movies (emulates the paid feature, ' +
+            'enable only if you have a free account)',
         type: 'checkbox',
         default: false
     }]
@@ -2325,8 +2306,7 @@ var useModules = [
     ListCustomColors,
     UpcomingAwardsOverview,
     ListCrossCheck,
-    WatchlistTab,
-    Owned,
+    NewTabs,
     LargeList,
     ListOverviewSort,
     ListsTabDisplay,
