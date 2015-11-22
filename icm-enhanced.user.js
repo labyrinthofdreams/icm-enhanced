@@ -301,12 +301,13 @@ ConfigWindow.prototype.loadOptions = function(idx) {
             indexAttr = ' data-cfg-index="' + index + '"';
 
         if (opt.type === 'checkbox') {
+            var checkbox = '<label><input type="checkbox"' + indexAttr +
+                           (optValue ? ' checked="checked"' : '') + ' title="default: ' +
+                           (opt.default ? 'yes' : 'no') + '">' + opt.desc + '</label>';
             str += '<p' + (opt.inline ? ' class="inline-opt"' : '') + '>' +
-                   (opt.frontDesc || '') + '<input type="checkbox"' + indexAttr +
-                   (optValue ? ' checked="checked"' : '') + ' title="default: ' +
-                   (opt.default ? 'yes' : 'no') + '">' + opt.desc + '</p>';
+                   (opt.frontDesc || '') + checkbox + '</p>';
         } else if (opt.type === 'textinput') {
-            str += '<p>' + opt.desc + ': <input type="text"' + indexAttr +
+            str += '<p>' + opt.desc + ':<input type="text"' + indexAttr +
                    ' value="' + optValue + '" title="default: ' + opt.default + '"></p>';
         } else if (opt.type === 'textarea') {
             // optValue can be a string (until a module parses it) or an array (after)
@@ -318,7 +319,7 @@ ConfigWindow.prototype.loadOptions = function(idx) {
                    ':</span><textarea rows="4" cols="70"' + indexAttr +
                    '>' + optValue + '</textarea></p>';
         } else if (opt.type === 'textinputcolor') {
-            str += '<p>' + opt.desc + ': <input type="text" class="colorpickertext"' +
+            str += '<p>' + opt.desc + ':<input type="text" class="colorpickertext"' +
                    indexAttr + ' value="' + optValue + '" title="default: ' +
                    opt.default + '">' + ' <input type="text" class="colorpicker"></p>';
             needsExtraInit = true;
@@ -365,7 +366,9 @@ ConfigWindow.prototype.build = function() {
     var customCSS =
         '.jqmWindow { ' +
             'display: none; position: absolute; font-family: verdana, arial, sans-serif; ' +
-        'background-color:#fff; color:#000; padding: 12px 30px;}' +
+            'background-color:#fff; color:#000; padding: 12px 30px; }' +
+        '.jqmWindow hr { ' +
+            'border:0; height:1px; width:100%; background-color:#aaa; margin: 7px 0px;}' +
         '.jqmOverlay { background-color:#000 }' +
         'div.icme_cfg_feature { margin-bottom: 15px; }' +
         'span.has_settings:hover { text-decoration: underline; }' +
@@ -376,8 +379,8 @@ ConfigWindow.prototype.build = function() {
         '#module_settings { margin:10px 0; }' +
         '#module_settings > p { margin-bottom: 0.5em; }' +
         '#module_settings > p.inline-opt { display: inline-block; margin-right: 5px }' +
-        '#configSave { position: absolute; bottom:15px; left: 30px }' +
-        'hr { border:0; height:1px; width:100%; background-color:#aaa; }';
+        '#module_settings input { margin: 0px 3px; }' +
+        '#configSave { position: absolute; bottom:15px; left: 30px }';
 
     gmAddStyle(customCSS);
 
