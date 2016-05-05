@@ -1540,7 +1540,12 @@ NewTabs.prototype.trackOwned = function($markOwned) {
         }
 
         // remove paid feature pop-up
-        $(this).removeClass('paidFeature');
+        //   (Page script binds events with its own jQuery before TM loads the script,
+        //    can't find a way to unbind them without unsafeWindow.
+        //    And only in FF (46) does removing the class also unbind events, but not in Chrome.)
+        unsafeWindow.$(this)
+            .unbind('mouseenter mouseleave')
+            .removeClass('paidFeature');
     });
 
     $markOwned.on('click', function() {
