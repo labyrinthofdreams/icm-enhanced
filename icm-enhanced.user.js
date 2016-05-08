@@ -1704,7 +1704,14 @@ LargeList.prototype.load = function() {
     }
 
     $('img.coverImage').lazyload({ threshold: 200 });
-    this.adjustHeights(); // tags and long titles can increase item's height
+    
+    if (this.config.noinfo) {
+        $("#itemListMovies > li").css("height", "270px").children("h2, span.info").remove();
+    } else {
+        // tags and long titles can increase item's height
+        // only needs to be done if titles are shown
+        this.adjustHeights();
+    }
 };
 
 LargeList.prototype.enableNormalView = function() {
@@ -1737,6 +1744,11 @@ LargeList.prototype.settings = {
     options: [getDefState(true), {
         name: 'autoload',
         desc: 'Autoload',
+        type: 'checkbox',
+        default: false
+    }, {
+        name: 'noinfo',
+        desc: 'Hide info (title, year, lists)',
         type: 'checkbox',
         default: false
     }]
