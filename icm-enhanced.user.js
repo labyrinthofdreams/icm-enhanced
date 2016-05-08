@@ -2200,6 +2200,86 @@ ProgressTopX.prototype.settings = {
     }]
 };
 
+// Inherit methods from BaseFeature
+FastReorderLists.prototype = Object.create(BaseFeature.prototype);
+FastReorderLists.prototype.constructor = FastReorderLists;
+
+function FastReorderLists(config) {
+    BaseFeature.call(this, config);
+    
+    this.active = null;
+}
+
+FastReorderLists.prototype.attach = function() {
+    gmAddStyle('#rankInput { width: 40px; position: absolute; }');
+    
+    var that = this;
+    $("#itemListToplists").on("dblclick", "li", function(){
+        that.addRankInput(this);
+    });
+};
+
+FastReorderLists.prototype.addRankInput = function(elem) {
+    this.active = $(elem);
+    $("#rankInput").remove();
+    var $input = $("<input>").attr("type", "text").attr("id", "rankInput");
+    $input.css("top", this.active.offset().top);
+    $input.css("left", this.active.offset().left - 45);
+    $("body").append($input);
+    $("#rankInput").focus();
+    var that = this;
+    $("#rankInput").on("keydown", function(e){
+        if (e.which === 13) {
+            that.moveList();
+        }
+    });
+};
+
+FastReorderLists.prototype.moveList = function() {
+    if (this.active === null) { 
+        return; 
+    }
+        
+    var currentRank = parseInt(this.active.find(".rank").text());
+    var newRank = parseInt($("#rankInput").val());
+    
+    var isSameRank = newRank === currentRank;
+    if (isSameRank) {
+        $("#rankInput").remove();
+        this.active = null;
+        return;
+    } 
+    
+    var outOfBounds = newRank > $("#itemListToplists > li").length || 
+                      newRank < 1;
+    if (isNaN(newRank) || outOfBounds) {
+        alert("Invalid position");
+        return;
+    }
+    
+    var directionUp = newRank < currentRank;        
+    if (directionUp) {
+        this.active.insertBefore($("#itemListToplists > li").eq(newRank - 1));
+    }
+    else {
+        this.active.insertAfter($("#itemListToplists > li").eq(newRank - 1));
+    }
+
+    unsafeWindow.$.iCheckMovies.reOrderTypeSerializedItems.itemListToplists = unsafeWindow.jQuery("#itemListToplists").sortable("serialize");
+    unsafeWindow.$.iCheckMovies.reOrder("itemListToplists");
+    $("#rankInput").remove();
+    this.active = null;
+};
+
+FastReorderLists.prototype.settings = {
+    title: 'Fast reorder lists',
+    desc: 'Double-click a list to display an input field where you can input ' +
+          'a new position and hit Enter key to move the list to that position',
+    index: 'fast_reorder_lists',
+    enableOn: ['listsSpecial'], 
+    options: [getDefState(true)]
+};
+
 /**
  * Main application
  * Initialize, register and load modules
@@ -2247,7 +2327,8 @@ var useModules = [
     ListOverviewSort,
     ListsTabDisplay,
     ExportLists,
-    ProgressTopX
+    ProgressTopX,
+    FastReorderLists
 ];
 
 var app = new Enhanced(config);
