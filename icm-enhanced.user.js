@@ -2,7 +2,7 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.7.9
+// @version        1.8.0
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
