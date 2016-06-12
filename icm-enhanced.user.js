@@ -7,7 +7,7 @@
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
-// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js
+// @require        https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jquery_lazyload/1.9.5/jquery.lazyload.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jqModal/1.3.0/jqModal.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.js
