@@ -130,8 +130,8 @@ const addToMovieListBar = htmlStr => {
 
 // ----- Base classes and config windows -----
 
-class BaseFeature {
-    constructor(config) {
+class BaseModule {
+    constructor(globalCfg) {
         this.settings = {
             // in general use enableOn, (in|ex)cludes are for special cases and exceptions
             enableOn: [], // string keys of reICM
@@ -139,7 +139,7 @@ class BaseFeature {
             excludes: [], // additional regexes (str or objects) to exclude
         };
 
-        this.updateConfig(config);
+        this.updateGlobalCfg(globalCfg);
     }
 
     /**
@@ -149,7 +149,7 @@ class BaseFeature {
      * @returns {boolean} true if current page matches any of specified regexes
      */
     static matchesPageType(keys) {
-        return BaseFeature.getRegexes(Array.isArray(keys) ? keys : [keys]).some(BaseFeature.testRe);
+        return BaseModule.getRegexes(Array.isArray(keys) ? keys : [keys]).some(BaseModule.testRe);
     }
 
     static testRe(strOrRe) {
@@ -173,22 +173,22 @@ class BaseFeature {
     matchesUrl() {
         const s = this.settings;
         // if an array is not specified, [].some(...) is always false
-        const matchesPageType = BaseFeature.matchesPageType(s.enableOn || []);
-        const isIncluded = (s.includes || []).some(BaseFeature.testRe);
-        const isExcluded = (s.excludes || []).some(BaseFeature.testRe);
+        const matchesPageType = BaseModule.matchesPageType(s.enableOn || []);
+        const isIncluded = (s.includes || []).some(BaseModule.testRe);
+        const isExcluded = (s.excludes || []).some(BaseModule.testRe);
 
         return (matchesPageType || isIncluded) && !isExcluded;
     }
 
     // Add module options to the global config;
-    // Keeps loaded values, excludes outdated options, adds new options
-    updateConfig(config) {
-        const module = this.settings.index;
+    // Keep loaded values, delete outdated options, add new options
+    updateGlobalCfg(globalCfg) {
+        const { module } = this.settings;
         const cur = {};
 
         for (const option of this.settings.options) {
             const idx = option.name;
-            const oldValue = config.get(`${module}.${idx}`);
+            const oldValue = globalCfg.get(`${module}.${idx}`);
             const newValue = oldValue !== undefined ? oldValue : option.default;
 
             setProperty(idx, cur, newValue);
@@ -196,8 +196,8 @@ class BaseFeature {
 
         // save references to the module and global configs in a module
         this.config = cur;
-        config.cfg[module] = cur;
-        this.globalConfig = config; // allows modules to use Save/Set/Get
+        globalCfg.cfg[module] = cur;
+        this.globalConfig = globalCfg; // allows modules to use Save/Set/Get
     }
 }
 
@@ -238,17 +238,17 @@ class Config {
         gmSetValue('icm_enhanced_cfg', JSON.stringify(this.cfg));
     }
 
-    get(index) {
-        return getProperty(index, this.cfg);
+    get(path) {
+        return getProperty(path, this.cfg);
     }
 
-    set(index, value) {
-        setProperty(index, this.cfg, value);
+    set(path, value) {
+        setProperty(path, this.cfg, value);
     }
 
     // Set false to true and vice versa
-    toggle(index) {
-        const val = this.get(index);
+    toggle(path) {
+        const val = this.get(path);
         let changeVal;
 
         if (val === true || val === false) {
@@ -259,14 +259,14 @@ class Config {
             return false; // Couldn't toggle a value
         }
 
-        this.set(index, changeVal);
+        this.set(path, changeVal);
         return true; // Value toggled
     }
 }
 
 class ConfigWindow {
-    constructor() {
-        this.config = new Config();
+    constructor(globalCfg) {
+        this.config = globalCfg;
         this.modules = [];
     }
 
@@ -283,21 +283,21 @@ class ConfigWindow {
         let needsExtraInit = false;
 
         for (const opt of m.options) {
-            const index = `${m.index}.${opt.name}`;
-            let optValue = this.config.get(index); // always up to date
-            const indexAttr = `data-cfg-index="${index}"`;
+            const path = `${m.module}.${opt.name}`;
+            let optValue = this.config.get(path); // always up to date
+            const pathAttr = `data-cfg-path="${path}"`;
 
             if (opt.type === 'checkbox') {
                 const checkbox = `
                     <label>
-                        <input type="checkbox" ${indexAttr}
+                        <input type="checkbox" ${pathAttr}
                             ${optValue ? 'checked="checked"' : ''}
                             title="default: ${opt.default ? 'yes' : 'no'}">
                         ${opt.desc}
                     </label>`;
                 str += `<p${opt.inline ? ' class="inline-opt"' : ''}>${opt.frontDesc || ''}${checkbox}</p>`;
             } else if (opt.type === 'textinput') {
-                str += `<p>${opt.desc}:<input type="text" ${indexAttr} value="${optValue}"
+                str += `<p>${opt.desc}:<input type="text" ${pathAttr} value="${optValue}"
                                             title="default: ${opt.default}"></p>`;
             } else if (opt.type === 'textarea') {
                 // optValue can be a string (until a module parses it) or an array (after)
@@ -308,10 +308,10 @@ class ConfigWindow {
                 str += `
                     <p>
                         <span style="vertical-align: top; margin-right: 5px">${opt.desc}:</span>
-                        <textarea rows="4" cols="70" ${indexAttr}>${optValue}</textarea>
+                        <textarea rows="4" cols="70" ${pathAttr}>${optValue}</textarea>
                     </p>`;
             } else if (opt.type === 'textinputcolor') {
-                str += `<p>${opt.desc}:<input type="text" class="colorpickertext" ${indexAttr}
+                str += `<p>${opt.desc}:<input type="text" class="colorpickertext" ${pathAttr}
                                             value="${optValue}" title="default: ${opt.default}">
                                     <input type="text" class="colorpicker"></p>`;
                 needsExtraInit = true;
@@ -419,13 +419,13 @@ class ConfigWindow {
         const that = this;
 
         $('div#cfgModal').on('change', 'input, textarea', function () {
-            const index = $(this).data('cfg-index');
-            if (index === undefined) {
+            const path = $(this).data('cfg-path');
+            if (path === undefined) {
                 return;
             }
 
-            if (!that.config.toggle(index)) {
-                that.config.set(index, $(this).val());
+            if (!that.config.toggle(path)) {
+                that.config.set(path, $(this).val());
             }
 
             $('button#configSave').prop('disabled', false);
@@ -454,15 +454,15 @@ class ConfigWindow {
 
 // ----- Features -----
 
-class RandomFilmLink extends BaseFeature {
-    constructor(config) {
-        super(config);
+class RandomFilmLink extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Random film link',
             desc: 'Displays "Help me pick a film" link on movie lists (if they have unchecked movies).' +
                 '<br>Click on a list tab\'s label to return to full list.',
-            index: 'random_film',
+            module: 'random_film',
             enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
             options: [getDefState(true), {
                 name: 'unique',
@@ -538,14 +538,14 @@ class RandomFilmLink extends BaseFeature {
     }
 }
 
-class UpcomingAwardsList extends BaseFeature {
-    constructor(config) {
-        super(config);
+class UpcomingAwardsList extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Upcoming awards (individual lists)',
             desc: 'Displays upcoming awards on individual lists',
-            index: 'ua_list',
+            module: 'ua_list',
             enableOn: ['movieList'],
             options: [getDefState(true), {
                 name: 'show_absolute',
@@ -582,14 +582,14 @@ class UpcomingAwardsList extends BaseFeature {
     }
 }
 
-class UpcomingAwardsOverview extends BaseFeature {
-    constructor(config) {
-        super(config);
+class UpcomingAwardsOverview extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Upcoming awards overview',
             desc: 'Displays upcoming awards on progress page',
-            index: 'ua',
+            module: 'ua',
             enableOn: ['listsSpecial', 'progress'],
             options: [getDefState(true), {
                 name: 'autoload',
@@ -894,15 +894,15 @@ class UpcomingAwardsOverview extends BaseFeature {
     }
 }
 
-class ListCustomColors extends BaseFeature {
-    constructor(config) {
-        super(config);
+class ListCustomColors extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Custom list colors',
             desc: 'Changes entry colors on lists to visually separate ' +
                 'your favorites/watchlist/dislikes',
-            index: 'list_colors',
+            module: 'list_colors',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'listsGeneral', 'listsSpecial'],
             options: [getDefState(true), {
@@ -943,14 +943,14 @@ class ListCustomColors extends BaseFeature {
     }
 }
 
-class ListCrossCheck extends BaseFeature {
-    constructor(config) {
-        super(config);
+class ListCrossCheck extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'List cross-reference',
             desc: 'Cross-reference lists to find what films they share',
-            index: 'list_cross_ref',
+            module: 'list_cross_ref',
             enableOn: ['listsGeneral', 'listsSpecial'],
             options: [getDefState(true), {
                 name: 'match_all',
@@ -1408,14 +1408,14 @@ class ListCrossCheck extends BaseFeature {
     }
 }
 
-class HideTags extends BaseFeature {
-    constructor(config) {
-        super(config);
+class HideTags extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Hide tags',
             desc: 'Hides tags on movie lists and lists of lists',
-            index: 'hide_tags',
+            module: 'hide_tags',
             // ICM bug: movieListGeneral and movieSearch never have tags
             enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
                 'movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch', 'movieRankings'],
@@ -1472,14 +1472,14 @@ class HideTags extends BaseFeature {
     }
 }
 
-class NewTabs extends BaseFeature {
-    constructor(config) {
-        super(config);
+class NewTabs extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'New tabs',
             desc: 'Adds additional tabs on movie lists',
-            index: 'new_tabs',
+            module: 'new_tabs',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'movie', 'movieRankings'],
             options: [getDefState(false), {
@@ -1617,14 +1617,14 @@ class NewTabs extends BaseFeature {
     }
 }
 
-class LargeList extends BaseFeature {
-    constructor(config) {
-        super(config);
+class LargeList extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Large posters',
             desc: 'Display large posters on individual lists (large posters are lazy loaded)',
-            index: 'large_lists',
+            module: 'large_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
             options: [getDefState(true), {
                 name: 'autoload',
@@ -1785,14 +1785,14 @@ class LargeList extends BaseFeature {
     }
 }
 
-class ListOverviewSort extends BaseFeature {
-    constructor(config) {
-        super(config);
+class ListOverviewSort extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Progress page',
             desc: 'Change the order of lists on the progress page',
-            index: 'toplists_sort',
+            module: 'toplists_sort',
             enableOn: ['progress'],
             options: [getDefState(false), {
                 name: 'autosort',
@@ -1922,15 +1922,15 @@ class ListOverviewSort extends BaseFeature {
     test(a) && test(b) */
 }
 
-class ListsTabDisplay extends BaseFeature {
-    constructor(config) {
-        super(config);
+class ListsTabDisplay extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Lists tab display',
             desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
                 '<a href="/movies/pulp+fiction/rankings/">example</a>)',
-            index: 'lists_tab_display',
+            module: 'lists_tab_display',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
             options: [getDefState(true), {
@@ -2082,15 +2082,15 @@ class ListsTabDisplay extends BaseFeature {
     }
 }
 
-class ExportLists extends BaseFeature {
-    constructor(config) {
-        super(config);
+class ExportLists extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Export lists',
             desc: 'Download any list as .csv (doesn\'t support search results). ' +
                 'Emulates the paid feature, so don\'t enable it if you have a paid account',
-            index: 'export_lists',
+            module: 'export_lists',
             enableOn: ['movieList', 'movieListSpecial'],
             options: [getDefState(false), {
                 name: 'delimiter',
@@ -2154,14 +2154,14 @@ class ExportLists extends BaseFeature {
     }
 }
 
-class ProgressTopX extends BaseFeature {
-    constructor(config) {
-        super(config);
+class ProgressTopX extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Progress top X',
             desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
-            index: 'progress_top_x',
+            module: 'progress_top_x',
             enableOn: ['progress'],
             options: [getDefState(true), {
                 name: 'target_page',
@@ -2213,15 +2213,15 @@ class ProgressTopX extends BaseFeature {
     }
 }
 
-class FastReorderLists extends BaseFeature {
-    constructor(config) {
-        super(config);
+class FastReorderLists extends BaseModule {
+    constructor(globalCfg) {
+        super(globalCfg);
 
         this.settings = {
             title: 'Fast reorder lists',
             desc: 'Double-click a list to display an input field where you can input ' +
                 'a new position and hit Enter key to move the list to that position',
-            index: 'fast_reorder_lists',
+            module: 'fast_reorder_lists',
             enableOn: ['listsSpecial'],
             options: [getDefState(true)],
         };
