@@ -41,27 +41,6 @@ const shuffle = array => {
     return array;
 };
 
-// Get object property by a dot-separated path
-const getProperty = (path, obj) => [obj].concat(path.split('.'))
-    .reduce((prev, curr) => prev && prev[curr]);
-
-// Set object property by a dot-separated path
-const setProperty = (path, obj, val) => {
-    const parts = path.split('.');
-    const last = parts.pop();
-    let part;
-
-    // eslint-disable-next-line no-cond-assign
-    while (part = parts.shift()) { // assignment
-        // rewrite property if it exists but is not an object
-        // eslint-disable-next-line no-multi-assign
-        obj = obj[part] = obj[part] instanceof Object ?
-            obj[part] : {};
-    }
-
-    obj[last] = val;
-};
-
 // Compatibility fix for pre-1.6.1 versions
 // ff+gm: uneval for obj: ({a:5})
 // gc+tm: uneval for obj: $1 = {"a":5};
@@ -75,11 +54,11 @@ const evalOrParse = str => {
     }
 };
 
-// Create a necessary BaseFeature-settings-options item that defines
+// Create a necessary BaseFeature module config item that defines
 // whether or not a module should be loaded by default.
-// (Should be a BaseFeature method, but the way settings are defined makes it hard.)
+// (Should be a BaseFeature method, but the way configs are defined makes it hard.)
 const getDefState = isEnabled => ({
-    name: 'enabled',
+    id: 'enabled',
     desc: 'Enabled',
     type: 'checkbox',
     default: isEnabled,
@@ -132,14 +111,15 @@ const addToMovieListBar = htmlStr => {
 
 class BaseModule {
     constructor(globalCfg) {
-        this.settings = {
+        this.metadata = {
             // in general use enableOn, (in|ex)cludes are for special cases and exceptions
             enableOn: [], // string keys of reICM
             includes: [], // additional regexes (str or objects) to include
             excludes: [], // additional regexes (str or objects) to exclude
         };
 
-        this.updateGlobalCfg(globalCfg);
+        this.globalCfg = globalCfg; // allows modules to use Save/Set/Get
+        this.config = null; // will be created after the module has been registered
     }
 
     /**
@@ -171,37 +151,30 @@ class BaseModule {
     }
 
     matchesUrl() {
-        const s = this.settings;
+        const m = this.metadata;
         // if an array is not specified, [].some(...) is always false
-        const matchesPageType = BaseModule.matchesPageType(s.enableOn || []);
-        const isIncluded = (s.includes || []).some(BaseModule.testRe);
-        const isExcluded = (s.excludes || []).some(BaseModule.testRe);
+        const matchesPageType = BaseModule.matchesPageType(m.enableOn || []);
+        const isIncluded = (m.includes || []).some(BaseModule.testRe);
+        const isExcluded = (m.excludes || []).some(BaseModule.testRe);
 
         return (matchesPageType || isIncluded) && !isExcluded;
     }
 
     // Add module options to the global config;
     // Keep loaded values, delete outdated options, add new options
-    updateGlobalCfg(globalCfg) {
-        const { module } = this.settings;
-        const cur = {};
-
-        for (const option of this.settings.options) {
-            const idx = option.name;
-            const oldValue = globalCfg.get(`${module}.${idx}`);
-            const newValue = oldValue !== undefined ? oldValue : option.default;
-
-            setProperty(idx, cur, newValue);
+    syncGlobalCfg() {
+        const { id } = this.metadata;
+        const options = {};
+        for (const opt of this.metadata.options) {
+            options[opt.id] = this.globalCfg.get(`${id}.${opt.id}`) ?? opt.default;
         }
 
-        // save references to the module and global configs in a module
-        this.config = cur;
-        globalCfg.cfg[module] = cur;
-        this.globalConfig = globalCfg; // allows modules to use Save/Set/Get
+        this.config = options;
+        this.globalCfg.cfg[id] = options;
     }
 }
 
-class Config {
+class GlobalCfg {
     constructor() {
         // test:
         // ['1', '1.7', '1.7.1', '1.7.1.1', '1.7.1.1.1'].map(verToNumber) ===
@@ -238,12 +211,22 @@ class Config {
         gmSetValue('icm_enhanced_cfg', JSON.stringify(this.cfg));
     }
 
+    // Get a config value by a dot-separated path
     get(path) {
-        return getProperty(path, this.cfg);
+        return path.split('.').reduce((prev, curr) => prev && prev[curr], this.cfg);
     }
 
+    // Set object property by a dot-separated path
     set(path, value) {
-        setProperty(path, this.cfg, value);
+        const parts = path.split('.');
+        const last = parts.pop();
+        let obj = this.cfg;
+        for (const part of parts) {
+            obj[part] = obj[part] ?? {};
+            obj = obj[part];
+        }
+
+        obj[last] = value;
     }
 
     // Set false to true and vice versa
@@ -266,13 +249,13 @@ class Config {
 
 class ConfigWindow {
     constructor(globalCfg) {
-        this.config = globalCfg;
+        this.globalCfg = globalCfg;
         this.modules = [];
     }
 
-    addModule(module) {
-        if (!this.modules.some(m => m.title === module.title)) {
-            this.modules.push(module);
+    addModule(metadata) {
+        if (!this.modules.some(m => m.title === metadata.title)) {
+            this.modules.push(metadata);
         }
     }
 
@@ -283,8 +266,8 @@ class ConfigWindow {
         let needsExtraInit = false;
 
         for (const opt of m.options) {
-            const path = `${m.module}.${opt.name}`;
-            let optValue = this.config.get(path); // always up to date
+            const path = `${m.id}.${opt.id}`;
+            let optValue = this.globalCfg.get(path); // always up to date
             const pathAttr = `data-cfg-path="${path}"`;
 
             if (opt.type === 'checkbox') {
@@ -400,7 +383,7 @@ class ConfigWindow {
         moduleList += '</select>';
 
         // HTML for the main jqmodal window
-        const ver = this.config.cfg.script_config.version;
+        const ver = this.globalCfg.cfg.script_config.version;
         const cfgMainHtml = `
             <div class="jqmWindow" id="cfgModal">
                 <h3 style="color:#bbb">iCheckMovies Enhanced ${ver} configuration</h3>
@@ -424,15 +407,15 @@ class ConfigWindow {
                 return;
             }
 
-            if (!that.config.toggle(path)) {
-                that.config.set(path, $(this).val());
+            if (!that.globalCfg.toggle(path)) {
+                that.globalCfg.set(path, $(this).val());
             }
 
             $('button#configSave').prop('disabled', false);
         });
 
         $('div#cfgModal').on('click', 'button#configSave', function () {
-            that.config.save();
+            that.globalCfg.save();
 
             $(this).prop('disabled', true);
         });
@@ -458,14 +441,14 @@ class RandomFilmLink extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Random film link',
             desc: 'Displays "Help me pick a film" link on movie lists (if they have unchecked movies).' +
                 '<br>Click on a list tab\'s label to return to full list.',
-            module: 'random_film',
+            id: 'random_film',
             enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
             options: [getDefState(true), {
-                name: 'unique',
+                id: 'unique',
                 desc: 'Unique suggestions (shows each entry only once ' +
                     'until every entry has been shown once)',
                 type: 'checkbox',
@@ -542,13 +525,13 @@ class UpcomingAwardsList extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Upcoming awards (individual lists)',
             desc: 'Displays upcoming awards on individual lists',
-            module: 'ua_list',
+            id: 'ua_list',
             enableOn: ['movieList'],
             options: [getDefState(true), {
-                name: 'show_absolute',
+                id: 'show_absolute',
                 desc: 'Display negative values',
                 type: 'checkbox',
                 default: true,
@@ -586,13 +569,13 @@ class UpcomingAwardsOverview extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Upcoming awards overview',
             desc: 'Displays upcoming awards on progress page',
-            module: 'ua',
+            id: 'ua',
             enableOn: ['listsSpecial', 'progress'],
             options: [getDefState(true), {
-                name: 'autoload',
+                id: 'autoload',
                 desc: 'Autoload',
                 type: 'checkbox',
                 default: true,
@@ -898,25 +881,25 @@ class ListCustomColors extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Custom list colors',
             desc: 'Changes entry colors on lists to visually separate ' +
                 'your favorites/watchlist/dislikes',
-            module: 'list_colors',
+            id: 'list_colors',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'listsGeneral', 'listsSpecial'],
             options: [getDefState(true), {
-                name: 'colors.favorite',
+                id: 'colors.favorite',
                 desc: 'Favorites',
                 type: 'textinputcolor',
                 default: '#ffdda9',
             }, {
-                name: 'colors.watchlist',
+                id: 'colors.watchlist',
                 desc: 'Watchlist',
                 type: 'textinputcolor',
                 default: '#ffffd6',
             }, {
-                name: 'colors.disliked',
+                id: 'colors.disliked',
                 desc: 'Disliked',
                 type: 'textinputcolor',
                 default: '#ffad99',
@@ -947,23 +930,23 @@ class ListCrossCheck extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'List cross-reference',
             desc: 'Cross-reference lists to find what films they share',
-            module: 'list_cross_ref',
+            id: 'list_cross_ref',
             enableOn: ['listsGeneral', 'listsSpecial'],
             options: [getDefState(true), {
-                name: 'match_all',
+                id: 'match_all',
                 desc: 'Find films that appear on all selected lists',
                 type: 'checkbox',
                 default: true,
             }, {
-                name: 'match_min',
+                id: 'match_min',
                 desc: 'If the above checkbox is unchecked, find films that appear on this many lists',
                 type: 'textinput',
                 default: 2,
             }, {
-                name: 'checks',
+                id: 'checks',
                 desc: 'Include your checks in results (full intersection)',
                 type: 'checkbox',
                 default: false,
@@ -1412,28 +1395,28 @@ class HideTags extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Hide tags',
             desc: 'Hides tags on movie lists and lists of lists',
-            module: 'hide_tags',
+            id: 'hide_tags',
             // ICM bug: movieListGeneral and movieSearch never have tags
             enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
                 'movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch', 'movieRankings'],
             options: [getDefState(false), {
-                name: 'list_tags',
+                id: 'list_tags',
                 frontDesc: 'Hide on: ',
                 desc: 'lists',
                 type: 'checkbox',
                 inline: true,
                 default: true,
             }, {
-                name: 'movie_tags',
+                id: 'movie_tags',
                 desc: 'movies',
                 type: 'checkbox',
                 inline: true,
                 default: true,
             }, {
-                name: 'show_hover',
+                id: 'show_hover',
                 desc: 'Show tags when moving the cursor over a movie or a list',
                 type: 'checkbox',
                 default: false,
@@ -1476,27 +1459,27 @@ class NewTabs extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'New tabs',
             desc: 'Adds additional tabs on movie lists',
-            module: 'new_tabs',
+            id: 'new_tabs',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'movie', 'movieRankings'],
             options: [getDefState(false), {
-                name: 'owned_tab',
+                id: 'owned_tab',
                 frontDesc: 'Create tabs for: ',
                 desc: 'owned movies',
                 type: 'checkbox',
                 inline: true,
                 default: false,
             }, {
-                name: 'watchlist_tab',
+                id: 'watchlist_tab',
                 desc: 'watchlisted movies',
                 type: 'checkbox',
                 inline: true,
                 default: false,
             }, {
-                name: 'free_account',
+                id: 'free_account',
                 desc: 'Store owned movies (emulates the paid feature, ' +
                     'enable only if you have a free account)',
                 type: 'checkbox',
@@ -1621,18 +1604,18 @@ class LargeList extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Large posters',
             desc: 'Display large posters on individual lists (large posters are lazy loaded)',
-            module: 'large_lists',
+            id: 'large_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
             options: [getDefState(true), {
-                name: 'autoload',
+                id: 'autoload',
                 desc: 'Autoload',
                 type: 'checkbox',
                 default: false,
             }, {
-                name: 'noinfo',
+                id: 'noinfo',
                 desc: 'Hide info (title, year, lists)',
                 type: 'checkbox',
                 default: false,
@@ -1789,33 +1772,33 @@ class ListOverviewSort extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Progress page',
             desc: 'Change the order of lists on the progress page',
-            module: 'toplists_sort',
+            id: 'toplists_sort',
             enableOn: ['progress'],
             options: [getDefState(false), {
-                name: 'autosort',
+                id: 'autosort',
                 desc: 'Sort lists by completion rate',
                 type: 'checkbox',
                 default: true,
             }, {
-                name: 'order',
+                id: 'order',
                 desc: 'Descending',
                 type: 'checkbox',
                 default: true,
             }, {
-                name: 'single_col',
+                id: 'single_col',
                 desc: 'Single column',
                 type: 'checkbox',
                 default: false,
             }, {
-                name: 'icebergs',
+                id: 'icebergs',
                 desc: 'Fill columns from left to right',
                 type: 'checkbox',
                 default: false,
             }, {
-                name: 'hide_imdb',
+                id: 'hide_imdb',
                 desc: 'Hide IMDb lists from "All" tab',
                 type: 'checkbox',
                 default: false,
@@ -1926,44 +1909,44 @@ class ListsTabDisplay extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Lists tab display',
             desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
                 '<a href="/movies/pulp+fiction/rankings/">example</a>)',
-            module: 'lists_tab_display',
+            id: 'lists_tab_display',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
             options: [getDefState(true), {
-                name: 'redirect',
+                id: 'redirect',
                 desc: 'Redirect "in # lists" movie links to "All" lists tab',
                 type: 'checkbox',
                 default: true,
             }, {
-                name: 'sort_official',
+                id: 'sort_official',
                 frontDesc: 'Auto-sort (move to the top): ',
                 desc: 'official lists',
                 type: 'checkbox',
                 inline: true,
                 default: true,
             }, {
-                name: 'sort_filmos',
+                id: 'sort_filmos',
                 desc: 'filmographies',
                 type: 'checkbox',
                 inline: true,
                 default: true,
             }, {
-                name: 'sort_groups',
+                id: 'sort_groups',
                 desc: 'lists from user defined groups',
                 type: 'checkbox',
                 inline: true,
                 default: true,
             }, {
-                name: 'group1',
+                id: 'group1',
                 desc: 'Group 1',
                 type: 'textarea',
                 default: [],
             }, {
-                name: 'group2',
+                id: 'group2',
                 desc: 'Group 2',
                 type: 'textarea',
                 default: [],
@@ -1982,7 +1965,7 @@ class ListsTabDisplay extends BaseModule {
         } else if (this.config.redirect) {
             // cross-referencing adds new blocks that must also be fixed
             const onListOfLists = ListsTabDisplay.matchesPageType(['listsGeneral', 'listsSpecial']);
-            if (onListOfLists && this.globalConfig.cfg.list_cross_ref.enabled) {
+            if (onListOfLists && this.globalCfg.cfg.list_cross_ref.enabled) {
                 const observer = new MutationObserver(mutations => {
                     for (const mutation of mutations) {
                         // Array.from is not needed in FF, but NodeList is not iterable in Chrome:
@@ -2023,7 +2006,7 @@ class ListsTabDisplay extends BaseModule {
                     console.log('Parsing ListsTabDisplay group', group);
                     stored = stored.trim().replace(this.reURL, '$1').split('\n');
                     cfg[group] = stored;
-                    this.globalConfig.save();
+                    this.globalCfg.save();
                 }
 
                 const $personal = this.getLists(stored);
@@ -2086,19 +2069,19 @@ class ExportLists extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Export lists',
             desc: 'Download any list as .csv (doesn\'t support search results). ' +
                 'Emulates the paid feature, so don\'t enable it if you have a paid account',
-            module: 'export_lists',
+            id: 'export_lists',
             enableOn: ['movieList', 'movieListSpecial'],
             options: [getDefState(false), {
-                name: 'delimiter',
+                id: 'delimiter',
                 desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
                 type: 'textinput',
                 default: ';',
             }, {
-                name: 'bom',
+                id: 'bom',
                 desc: 'Include BOM (required for Excel)',
                 type: 'checkbox',
                 default: true,
@@ -2158,13 +2141,13 @@ class ProgressTopX extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Progress top X',
             desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
-            module: 'progress_top_x',
+            id: 'progress_top_x',
             enableOn: ['progress'],
             options: [getDefState(true), {
-                name: 'target_page',
+                id: 'target_page',
                 desc: 'Ranking page you want to be on (page x 25 = rank)',
                 type: 'textinput',
                 default: '40',
@@ -2217,11 +2200,11 @@ class FastReorderLists extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
-        this.settings = {
+        this.metadata = {
             title: 'Fast reorder lists',
             desc: 'Double-click a list to display an input field where you can input ' +
                 'a new position and hit Enter key to move the list to that position',
-            module: 'fast_reorder_lists',
+            id: 'fast_reorder_lists',
             enableOn: ['listsSpecial'],
             options: [getDefState(true)],
         };
@@ -2304,7 +2287,8 @@ class App {
     register(Module) {
         const module = new Module(this.globalCfg);
         this.modules.push(module);
-        this.configWindow.addModule(module.settings);
+        module.syncGlobalCfg();
+        this.configWindow.addModule(module.metadata);
     }
 
     load() {
@@ -2323,7 +2307,7 @@ class App {
     }
 }
 
-const globalCfg = new Config();
+const globalCfg = new GlobalCfg();
 
 const useModules = [
     RandomFilmLink,
