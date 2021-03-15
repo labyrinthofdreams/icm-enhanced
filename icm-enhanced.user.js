@@ -31,16 +31,6 @@ const gmAddStyle = GM_addStyle;
 const gmGetResourceText = GM_getResourceText;
 /* eslint-enable camelcase */
 
-// https://stackoverflow.com/a/12646864/6270692
-const shuffle = array => {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-
-    return array;
-};
-
 // Compatibility fix for pre-1.6.1 versions
 // ff+gm: uneval for obj: ({a:5})
 // gc+tm: uneval for obj: $1 = {"a":5};
@@ -53,16 +43,6 @@ const evalOrParse = str => {
         return eval(str);
     }
 };
-
-// Create a necessary BaseFeature module config item that defines
-// whether or not a module should be loaded by default.
-// (Should be a BaseFeature method, but the way configs are defined makes it hard.)
-const getDefState = isEnabled => ({
-    id: 'enabled',
-    desc: 'Enabled',
-    type: 'checkbox',
-    default: isEnabled,
-});
 
 // ----- Interacting with ICM -----
 
@@ -111,33 +91,31 @@ const addToMovieListBar = htmlStr => {
 
 class BaseModule {
     constructor(globalCfg) {
-        this.metadata = {
-            // in general use enableOn, (in|ex)cludes are for special cases and exceptions
-            enableOn: [], // string keys of reICM
-            includes: [], // additional regexes (str or objects) to include
-            excludes: [], // additional regexes (str or objects) to exclude
-        };
-
-        this.globalCfg = globalCfg; // allows modules to use Save/Set/Get
+        this.metadata = null; // check any module for required fields
         this.config = null; // will be created after the module has been registered
+        this.globalCfg = globalCfg; // allows modules to use Save/Set/Get
+    }
+
+    // Create a necessary metadata.options item for if a module should be loaded by default.
+    static getStatus(isEnabled) {
+        return {
+            id: 'enabled',
+            desc: 'Enabled',
+            type: 'checkbox',
+            default: isEnabled,
+        };
     }
 
     /**
-     * Basic function for checking current page type.
+     * Check if the current page matches at least one of given page types.
      *
      * @param {(string|string[])} keys - A key of reICM, or an array of keys
-     * @returns {boolean} true if current page matches any of specified regexes
+     * @returns {boolean} true if the current page matches any of specified regexes
      */
     static matchesPageType(keys) {
-        return BaseModule.getRegexes(Array.isArray(keys) ? keys : [keys]).some(BaseModule.testRe);
-    }
-
-    static testRe(strOrRe) {
-        if (typeof strOrRe === 'string') {
-            strOrRe = new RegExp(strOrRe);
-        }
-
-        return strOrRe.test(window.location.href);
+        if (!Array.isArray(keys)) keys = [keys];
+        const matchUrl = regex => regex.test(window.location.href);
+        return BaseModule.getRegexes(keys).some(matchUrl);
     }
 
     static getRegexes(arrOfKeys) {
@@ -150,27 +128,21 @@ class BaseModule {
         });
     }
 
-    matchesUrl() {
-        const m = this.metadata;
-        // if an array is not specified, [].some(...) is always false
-        const matchesPageType = BaseModule.matchesPageType(m.enableOn || []);
-        const isIncluded = (m.includes || []).some(BaseModule.testRe);
-        const isExcluded = (m.excludes || []).some(BaseModule.testRe);
-
-        return (matchesPageType || isIncluded) && !isExcluded;
+    isOnSupportedPage() {
+        return BaseModule.matchesPageType(this.metadata.enableOn);
     }
 
     // Add module options to the global config;
     // Keep loaded values, delete outdated options, add new options
     syncGlobalCfg() {
         const { id } = this.metadata;
-        const options = {};
+        const config = {};
         for (const opt of this.metadata.options) {
-            options[opt.id] = this.globalCfg.get(`${id}.${opt.id}`) ?? opt.default;
+            config[opt.id] = this.globalCfg.get(`${id}.${opt.id}`) ?? opt.default;
         }
 
-        this.config = options;
-        this.globalCfg.cfg[id] = options;
+        this.config = config;
+        this.globalCfg.data[id] = config;
     }
 }
 
@@ -181,8 +153,8 @@ class GlobalCfg {
         // [1000, 1700, 1710, 1711, 1711]
         const verToNumber = str => Number(`${str.replace(/\./g, '')}0000`.slice(0, 4));
 
-        this.cfg = {
-            script_config: { // script config
+        this.data = {
+            script_info: { // script config
                 version: gmInfo.script.version, // dot-separated string
                 revision: verToNumber(gmInfo.script.version), // 4-digit number
             },
@@ -193,12 +165,12 @@ class GlobalCfg {
             return;
         }
 
-        const o = oldcfg.script_config;
-        const n = this.cfg.script_config;
+        const o = oldcfg.script_info;
+        const n = this.data.script_info;
         const isUpdated = o.revision !== n.revision;
-        // Rewrite script_config (no need to keep outdated values)
-        oldcfg.script_config = n;
-        this.cfg = oldcfg;
+        // Rewrite script_info (no need to keep outdated values)
+        oldcfg.script_info = n;
+        this.data = oldcfg;
 
         if (isUpdated) {
             console.log(`Updating to ${n.revision}`);
@@ -207,20 +179,20 @@ class GlobalCfg {
     }
 
     save() {
-        // console.log('Saving config', this.cfg); // debug
-        gmSetValue('icm_enhanced_cfg', JSON.stringify(this.cfg));
+        // console.log('Saving config', this.data); // debug
+        gmSetValue('icm_enhanced_cfg', JSON.stringify(this.data));
     }
 
     // Get a config value by a dot-separated path
     get(path) {
-        return path.split('.').reduce((prev, curr) => prev && prev[curr], this.cfg);
+        return path.split('.').reduce((prev, curr) => prev && prev[curr], this.data);
     }
 
-    // Set object property by a dot-separated path
+    // Set a config value by a dot-separated path
     set(path, value) {
         const parts = path.split('.');
         const last = parts.pop();
-        let obj = this.cfg;
+        let obj = this.data;
         for (const part of parts) {
             obj[part] = obj[part] ?? {};
             obj = obj[part];
@@ -383,7 +355,7 @@ class ConfigWindow {
         moduleList += '</select>';
 
         // HTML for the main jqmodal window
-        const ver = this.globalCfg.cfg.script_config.version;
+        const ver = this.globalCfg.data.script_info.version;
         const cfgMainHtml = `
             <div class="jqmWindow" id="cfgModal">
                 <h3 style="color:#bbb">iCheckMovies Enhanced ${ver} configuration</h3>
@@ -435,7 +407,7 @@ class ConfigWindow {
     }
 }
 
-// ----- Features -----
+// ----- Modules -----
 
 class RandomFilmLink extends BaseModule {
     constructor(globalCfg) {
@@ -447,7 +419,7 @@ class RandomFilmLink extends BaseModule {
                 '<br>Click on a list tab\'s label to return to full list.',
             id: 'random_film',
             enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'unique',
                 desc: 'Unique suggestions (shows each entry only once ' +
                     'until every entry has been shown once)',
@@ -508,7 +480,7 @@ class RandomFilmLink extends BaseModule {
                 }
 
                 // Shuffle the results for randomness in-place
-                shuffle(this.randomNums);
+                RandomFilmLink.shuffle(this.randomNums);
             }
 
             randNum = this.randomNums.pop();
@@ -518,6 +490,16 @@ class RandomFilmLink extends BaseModule {
 
         $('ol#itemListMovies > li').hide();
         $($unchecked[randNum]).show();
+    }
+
+    // https://stackoverflow.com/a/12646864/6270692
+    static shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+
+        return array;
     }
 }
 
@@ -530,7 +512,7 @@ class UpcomingAwardsList extends BaseModule {
             desc: 'Displays upcoming awards on individual lists',
             id: 'ua_list',
             enableOn: ['movieList'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'show_absolute',
                 desc: 'Display negative values',
                 type: 'checkbox',
@@ -574,7 +556,7 @@ class UpcomingAwardsOverview extends BaseModule {
             desc: 'Displays upcoming awards on progress page',
             id: 'ua',
             enableOn: ['listsSpecial', 'progress'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'autoload',
                 desc: 'Autoload',
                 type: 'checkbox',
@@ -888,7 +870,7 @@ class ListCustomColors extends BaseModule {
             id: 'list_colors',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'listsGeneral', 'listsSpecial'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'colors.favorite',
                 desc: 'Favorites',
                 type: 'textinputcolor',
@@ -935,7 +917,7 @@ class ListCrossCheck extends BaseModule {
             desc: 'Cross-reference lists to find what films they share',
             id: 'list_cross_ref',
             enableOn: ['listsGeneral', 'listsSpecial'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'match_all',
                 desc: 'Find films that appear on all selected lists',
                 type: 'checkbox',
@@ -1402,7 +1384,7 @@ class HideTags extends BaseModule {
             // ICM bug: movieListGeneral and movieSearch never have tags
             enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
                 'movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch', 'movieRankings'],
-            options: [getDefState(false), {
+            options: [BaseModule.getStatus(false), {
                 id: 'list_tags',
                 frontDesc: 'Hide on: ',
                 desc: 'lists',
@@ -1465,7 +1447,7 @@ class NewTabs extends BaseModule {
             id: 'new_tabs',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'movie', 'movieRankings'],
-            options: [getDefState(false), {
+            options: [BaseModule.getStatus(false), {
                 id: 'owned_tab',
                 frontDesc: 'Create tabs for: ',
                 desc: 'owned movies',
@@ -1609,7 +1591,7 @@ class LargeList extends BaseModule {
             desc: 'Display large posters on individual lists (large posters are lazy loaded)',
             id: 'large_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'autoload',
                 desc: 'Autoload',
                 type: 'checkbox',
@@ -1777,7 +1759,7 @@ class ListOverviewSort extends BaseModule {
             desc: 'Change the order of lists on the progress page',
             id: 'toplists_sort',
             enableOn: ['progress'],
-            options: [getDefState(false), {
+            options: [BaseModule.getStatus(false), {
                 id: 'autosort',
                 desc: 'Sort lists by completion rate',
                 type: 'checkbox',
@@ -1916,7 +1898,7 @@ class ListsTabDisplay extends BaseModule {
             id: 'lists_tab_display',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'redirect',
                 desc: 'Redirect "in # lists" movie links to "All" lists tab',
                 type: 'checkbox',
@@ -1965,7 +1947,7 @@ class ListsTabDisplay extends BaseModule {
         } else if (this.config.redirect) {
             // cross-referencing adds new blocks that must also be fixed
             const onListOfLists = ListsTabDisplay.matchesPageType(['listsGeneral', 'listsSpecial']);
-            if (onListOfLists && this.globalCfg.cfg.list_cross_ref.enabled) {
+            if (onListOfLists && this.globalCfg.data.list_cross_ref.enabled) {
                 const observer = new MutationObserver(mutations => {
                     for (const mutation of mutations) {
                         // Array.from is not needed in FF, but NodeList is not iterable in Chrome:
@@ -2075,7 +2057,7 @@ class ExportLists extends BaseModule {
                 'Emulates the paid feature, so don\'t enable it if you have a paid account',
             id: 'export_lists',
             enableOn: ['movieList', 'movieListSpecial'],
-            options: [getDefState(false), {
+            options: [BaseModule.getStatus(false), {
                 id: 'delimiter',
                 desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
                 type: 'textinput',
@@ -2146,7 +2128,7 @@ class ProgressTopX extends BaseModule {
             desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
             id: 'progress_top_x',
             enableOn: ['progress'],
-            options: [getDefState(true), {
+            options: [BaseModule.getStatus(true), {
                 id: 'target_page',
                 desc: 'Ranking page you want to be on (page x 25 = rank)',
                 type: 'textinput',
@@ -2206,7 +2188,7 @@ class FastReorderLists extends BaseModule {
                 'a new position and hit Enter key to move the list to that position',
             id: 'fast_reorder_lists',
             enableOn: ['listsSpecial'],
-            options: [getDefState(true)],
+            options: [BaseModule.getStatus(true)],
         };
 
         this.$active = null;
@@ -2293,7 +2275,7 @@ class App {
 
     load() {
         for (const m of this.modules) {
-            if (m.matchesUrl()) {
+            if (m.isOnSupportedPage()) {
                 if (m.config.enabled) {
                     console.log(`Attaching ${m.constructor.name}`);
                     m.attach();
@@ -2326,9 +2308,6 @@ const useModules = [
 ];
 
 const app = new App(globalCfg);
-for (const m of useModules) {
-    app.register(m);
-}
-
+useModules.forEach(app.register);
 app.load();
 console.log('ICM Enhanced is ready.');
