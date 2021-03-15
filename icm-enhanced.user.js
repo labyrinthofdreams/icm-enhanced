@@ -31,19 +31,6 @@ const gmAddStyle = GM_addStyle;
 const gmGetResourceText = GM_getResourceText;
 /* eslint-enable camelcase */
 
-// Compatibility fix for pre-1.6.1 versions
-// ff+gm: uneval for obj: ({a:5})
-// gc+tm: uneval for obj: $1 = {"a":5};
-const evalOrParse = str => {
-    try {
-        return JSON.parse(str);
-    } catch (e) {
-        console.log('Converting from old storage mode with spooky eval');
-        // eslint-disable-next-line no-eval
-        return eval(str);
-    }
-};
-
 // ----- Interacting with ICM -----
 
 // mutually exclusive regexes for matching page type
@@ -160,20 +147,18 @@ class GlobalCfg {
             },
         };
 
-        const oldcfg = evalOrParse(gmGetValue('icm_enhanced_cfg'));
-        if (!oldcfg) {
-            return;
-        }
+        const oldcfg = JSON.parse(gmGetValue('icm_enhanced_cfg'));
+        if (!oldcfg) return;
 
-        const o = oldcfg.script_info;
-        const n = this.data.script_info;
-        const isUpdated = o.revision !== n.revision;
-        // Rewrite script_info (no need to keep outdated values)
-        oldcfg.script_info = n;
+        const oldInfo = oldcfg.script_info;
+        const newInfo = this.data.script_info;
+        const isUpdated = oldInfo.revision !== newInfo.revision;
+        // Rewrite script_info in the loaded config (no need to keep outdated values)
+        oldcfg.script_info = newInfo;
         this.data = oldcfg;
 
         if (isUpdated) {
-            console.log(`Updating to ${n.revision}`);
+            console.log(`Updating to ${newInfo.revision}`);
             this.save();
         }
     }
@@ -595,7 +580,7 @@ class UpcomingAwardsOverview extends BaseModule {
 
     loadAwardData() {
         this.lists = [];
-        this.hiddenLists = evalOrParse(gmGetValue('hidden_lists', '[]'));
+        this.hiddenLists = JSON.parse(gmGetValue('hidden_lists', '[]'));
 
         this.populateLists();
         this.sortLists();
@@ -1153,7 +1138,7 @@ class ListCrossCheck extends BaseModule {
                 const itemid = $movie.attr('id');
 
                 // check if owned
-                const owned = evalOrParse(gmGetValue('owned_movies', '[]'));
+                const owned = JSON.parse(gmGetValue('owned_movies', '[]'));
                 if (owned.indexOf(itemid) !== -1) {
                     $movie.removeClass('notowned').addClass('owned');
                 }
@@ -1535,7 +1520,7 @@ class NewTabs extends BaseModule {
     }
 
     static trackOwned($markOwned) {
-        let owned = evalOrParse(gmGetValue('owned_movies', '[]'));
+        let owned = JSON.parse(gmGetValue('owned_movies', '[]'));
         const $movielist = $('#itemListMovies');
         const onListPage = $movielist.length !== 0;
 
@@ -1558,7 +1543,7 @@ class NewTabs extends BaseModule {
         });
 
         $markOwned.on('click', function () {
-            owned = evalOrParse(gmGetValue('owned_movies', '[]')); // reload storage
+            owned = JSON.parse(gmGetValue('owned_movies', '[]')); // reload storage
             const { $movie, movieId, posInStorage } = NewTabs.movieData($(this), owned);
 
             // remove if movie id is found in cached owned movies, else store
