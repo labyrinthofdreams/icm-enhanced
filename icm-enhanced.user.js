@@ -12,24 +12,22 @@
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jqModal/1.3.0/jqModal.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.js
 // @resource       spectrumCss https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.css
-// @grant          GM_setValue
-// @grant          GM_getValue
-// @grant          GM_addStyle
 // @grant          GM_getResourceText
 // @grant          unsafeWindow
 // ==/UserScript==
 
 'use strict';
 
+const VERSION = '1.8.0';
+
 // ----- Utils -----
 
-/* eslint-disable camelcase */
-const gmInfo = GM_info;
-const gmSetValue = GM_setValue;
-const gmGetValue = GM_getValue;
-const gmAddStyle = GM_addStyle;
+// eslint-disable-next-line camelcase
 const gmGetResourceText = GM_getResourceText;
-/* eslint-enable camelcase */
+
+const save = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+const load = key => JSON.parse(localStorage.getItem(key));
+const addCSS = css => document.head.insertAdjacentHTML('beforeend', `<style>${css}</style>`);
 
 // ----- Interacting with ICM -----
 
@@ -141,14 +139,14 @@ class GlobalCfg {
         const verToNumber = str => Number(`${str.replace(/\./g, '')}0000`.slice(0, 4));
 
         this.data = {
-            script_info: { // script config
-                version: gmInfo.script.version, // dot-separated string
-                revision: verToNumber(gmInfo.script.version), // 4-digit number
+            script_info: {
+                version: VERSION, // dot-separated string
+                revision: verToNumber(VERSION), // 4-digit number
             },
         };
 
-        const oldcfg = JSON.parse(gmGetValue('icm_enhanced_cfg'));
-        if (!oldcfg) return;
+        const oldcfg = load('icm_enhanced');
+        if (!oldcfg || !oldcfg.script_info) return;
 
         const oldInfo = oldcfg.script_info;
         const newInfo = this.data.script_info;
@@ -165,7 +163,7 @@ class GlobalCfg {
 
     save() {
         // console.log('Saving config', this.data); // debug
-        gmSetValue('icm_enhanced_cfg', JSON.stringify(this.data));
+        save('icm_enhanced', this.data);
     }
 
     // Get a config value by a dot-separated path
@@ -179,7 +177,7 @@ class GlobalCfg {
         const last = parts.pop();
         let obj = this.data;
         for (const part of parts) {
-            obj[part] = obj[part] ?? {};
+            if (!(obj[part] instanceof Object)) obj[part] = {};
             obj = obj[part];
         }
 
@@ -330,7 +328,7 @@ class ConfigWindow {
             }
         `;
 
-        gmAddStyle(customCSS);
+        addCSS(customCSS);
 
         let moduleList = '<select id="modulelist" name="modulelist">';
         for (const m of this.modules) {
@@ -388,7 +386,7 @@ class ConfigWindow {
         $('#cfgModal').jqm({ trigger: 'a#icm_enhanced_cfg' });
 
         // Initialize spectrum plugin
-        gmAddStyle(gmGetResourceText('spectrumCss'));
+        addCSS(gmGetResourceText('spectrumCss'));
     }
 }
 
@@ -580,7 +578,7 @@ class UpcomingAwardsOverview extends BaseModule {
 
     loadAwardData() {
         this.lists = [];
-        this.hiddenLists = JSON.parse(gmGetValue('hidden_lists', '[]'));
+        this.hiddenLists = load('hidden_lists') ?? [];
 
         this.populateLists();
         this.sortLists();
@@ -794,7 +792,7 @@ class UpcomingAwardsOverview extends BaseModule {
                 .replaceWith(getIcon(!hide, listTitle));
 
             // save hidden lists
-            gmSetValue('hidden_lists', JSON.stringify(that.hiddenLists));
+            save('hidden_lists', that.hiddenLists);
         });
 
         $('#toggle_hidden_list').on('click', e => {
@@ -889,7 +887,7 @@ class ListCustomColors extends BaseModule {
             buildCSS('watch', this.config.colors.watchlist) +
             buildCSS('hated', this.config.colors.disliked);
 
-        gmAddStyle(listColorsCss);
+        addCSS(listColorsCss);
     }
 }
 
@@ -1138,7 +1136,7 @@ class ListCrossCheck extends BaseModule {
                 const itemid = $movie.attr('id');
 
                 // check if owned
-                const owned = JSON.parse(gmGetValue('owned_movies', '[]'));
+                const owned = load('owned_movies') ?? [];
                 if (owned.indexOf(itemid) !== -1) {
                     $movie.removeClass('notowned').addClass('owned');
                 }
@@ -1394,7 +1392,7 @@ class HideTags extends BaseModule {
     attach() {
         if (this.config.list_tags) {
             // /lists/ and /movies/<title>/rankings/ have different structure
-            gmAddStyle(`
+            addCSS(`
                 ol#itemListToplists.listViewNormal > li > .info:last-child,
                 ol#itemListToplists > li > .tagList {
                     display: none !important;
@@ -1403,7 +1401,7 @@ class HideTags extends BaseModule {
         }
 
         if (this.config.movie_tags) {
-            gmAddStyle(`
+            addCSS(`
                 ol#itemListMovies.listViewNormal > li > .tagList {
                     display: none !important;
                 }
@@ -1411,7 +1409,7 @@ class HideTags extends BaseModule {
         }
 
         if (this.config.show_hover) {
-            gmAddStyle(`
+            addCSS(`
                 ol#itemListToplists.listViewNormal > li:hover > .info:last-child,
                 ol#itemListToplists > li:hover > .tagList,
                 ol#itemListMovies.listViewNormal > li:hover > .tagList {
@@ -1520,7 +1518,7 @@ class NewTabs extends BaseModule {
     }
 
     static trackOwned($markOwned) {
-        let owned = JSON.parse(gmGetValue('owned_movies', '[]'));
+        let owned = load('owned_movies') ?? [];
         const $movielist = $('#itemListMovies');
         const onListPage = $movielist.length !== 0;
 
@@ -1543,7 +1541,7 @@ class NewTabs extends BaseModule {
         });
 
         $markOwned.on('click', function () {
-            owned = JSON.parse(gmGetValue('owned_movies', '[]')); // reload storage
+            owned = load('owned_movies') ?? []; // reload storage
             const { $movie, movieId, posInStorage } = NewTabs.movieData($(this), owned);
 
             // remove if movie id is found in cached owned movies, else store
@@ -1560,7 +1558,7 @@ class NewTabs extends BaseModule {
                 $('#topListMoviesOwnedCount').text(`(${ownedCount})`);
             }
 
-            gmSetValue('owned_movies', JSON.stringify(owned));
+            save('owned_movies', owned);
 
             return false;
         });
@@ -1681,7 +1679,7 @@ class LargeList extends BaseModule {
 
         style = style.replace(/;/g, ' !important;');
 
-        gmAddStyle(style);
+        addCSS(style);
 
         const $c = $('#itemListMovies').find('div.coverImage').hide();
         for (let i = 0; i < $c.length; i++) {
@@ -1775,7 +1773,7 @@ class ListOverviewSort extends BaseModule {
 
     attach() {
         if (this.config.single_col) {
-            gmAddStyle('.itemList .listItem.listItemProgress { float: none !important; }');
+            addCSS('.itemList .listItem.listItemProgress { float: none !important; }');
         }
 
         const order = this.config.order === true ? 'desc' : 'asc';
@@ -2180,7 +2178,7 @@ class FastReorderLists extends BaseModule {
     }
 
     attach() {
-        gmAddStyle('#rankInput { width: 40px; position: absolute; }');
+        addCSS('#rankInput { width: 40px; position: absolute; }');
 
         const that = this;
         $('#itemListToplists').on('dblclick', 'li', function () {
