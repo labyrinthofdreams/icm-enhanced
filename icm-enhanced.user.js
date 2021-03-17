@@ -10,9 +10,6 @@
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jquery_lazyload/1.9.5/jquery.lazyload.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jqModal/1.3.0/jqModal.min.js
-// @require        https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.js
-// @resource       spectrumCss https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.7.1/spectrum.min.css
-// @grant          GM_getResourceText
 // @grant          unsafeWindow
 // ==/UserScript==
 
@@ -21,9 +18,6 @@
 const VERSION = '1.8.0';
 
 // ----- Utils -----
-
-// eslint-disable-next-line camelcase
-const gmGetResourceText = GM_getResourceText;
 
 const save = (key, val) => localStorage.setItem(key, JSON.stringify(val));
 const load = key => JSON.parse(localStorage.getItem(key));
@@ -209,7 +203,7 @@ class ConfigWindow {
     }
 
     addModule(metadata) {
-        if (!this.modules.some(m => m.title === metadata.title)) {
+        if (!this.modules.some(m => m.id === metadata.id)) {
             this.modules.push(metadata);
         }
     }
@@ -239,7 +233,7 @@ class ConfigWindow {
                                             title="default: ${opt.default}"></p>`;
             } else if (opt.type === 'textarea') {
                 // optValue can be a string (until a module parses it) or an array (after)
-                if ($.isArray(optValue)) {
+                if (Array.isArray(optValue)) {
                     optValue = optValue.join('\n');
                 }
 
@@ -249,9 +243,14 @@ class ConfigWindow {
                         <textarea rows="4" cols="70" ${pathAttr}>${optValue}</textarea>
                     </p>`;
             } else if (opt.type === 'textinputcolor') {
-                str += `<p>${opt.desc}:<input type="text" class="colorpickertext" ${pathAttr}
-                                            value="${optValue}" title="default: ${opt.default}">
-                                    <input type="text" class="colorpicker"></p>`;
+                str += `
+                    <p>
+                        ${opt.desc}:
+                        <input type="text" class="colorpickertext" ${pathAttr}
+                               value="${optValue}" title="default: ${opt.default}">
+                        <input type="color" class="colorpicker" ${pathAttr}
+                               value="${optValue}" title="default: ${opt.default}">
+                    </p>`;
                 needsExtraInit = true;
             }
         }
@@ -264,19 +263,16 @@ class ConfigWindow {
     }
 
     static initColorPickers() {
-        $('.colorpicker').each(function () {
-            const $t = $(this);
-            $t.spectrum({
-                color: $t.prev().val(),
-                change(color) {
-                    const $prev = $t.prev();
-                    $prev.val(color.toHexString());
-                    $prev.trigger('change');
-                },
+        document.querySelectorAll('.colorpicker').forEach(el => {
+            el.addEventListener('change', () => {
+                el.previousElementSibling.value = el.value;
             });
         });
-        $('.colorpickertext').on('change input paste', function () {
-            $(this).next().spectrum('set', $(this).val());
+
+        document.querySelectorAll('.colorpickertext').forEach(el => {
+            el.addEventListener('change', () => {
+                el.nextElementSibling.value = el.value;
+            });
         });
     }
 
@@ -384,9 +380,6 @@ class ConfigWindow {
 
         // initialize config window
         $('#cfgModal').jqm({ trigger: 'a#icm_enhanced_cfg' });
-
-        // Initialize spectrum plugin
-        addCSS(gmGetResourceText('spectrumCss'));
     }
 }
 
@@ -854,17 +847,17 @@ class ListCustomColors extends BaseModule {
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
-                id: 'colors.favorite',
+                id: 'favorite',
                 desc: 'Favorites',
                 type: 'textinputcolor',
                 default: '#ffdda9',
             }, {
-                id: 'colors.watchlist',
+                id: 'watchlist',
                 desc: 'Watchlist',
                 type: 'textinputcolor',
                 default: '#ffffd6',
             }, {
-                id: 'colors.disliked',
+                id: 'disliked',
                 desc: 'Disliked',
                 type: 'textinputcolor',
                 default: '#ffad99',
@@ -883,9 +876,9 @@ class ListCustomColors extends BaseModule {
         };
 
         const listColorsCss =
-            buildCSS('favorite', this.config.colors.favorite) +
-            buildCSS('watch', this.config.colors.watchlist) +
-            buildCSS('hated', this.config.colors.disliked);
+            buildCSS('favorite', this.config.favorite) +
+            buildCSS('watch', this.config.watchlist) +
+            buildCSS('hated', this.config.disliked);
 
         addCSS(listColorsCss);
     }
@@ -2291,6 +2284,6 @@ const useModules = [
 ];
 
 const app = new App(globalCfg);
-useModules.forEach(app.register);
+useModules.forEach(m => app.register(m));
 app.load();
 console.log('ICM Enhanced is ready.');
