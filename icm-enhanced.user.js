@@ -144,11 +144,10 @@ class GlobalCfg {
 
         const oldInfo = oldcfg.script_info;
         const newInfo = this.data.script_info;
-        const isUpdated = oldInfo.revision !== newInfo.revision;
-        // Rewrite script_info in the loaded config (no need to keep outdated values)
-        oldcfg.script_info = newInfo;
-        this.data = oldcfg;
+        // Rewrite script_info in the loaded config
+        this.data = { ...oldcfg, script_info: newInfo };
 
+        const isUpdated = oldInfo.revision !== newInfo.revision;
         if (isUpdated) {
             console.log(`Updating to ${newInfo.revision}`);
             this.save();
@@ -156,7 +155,6 @@ class GlobalCfg {
     }
 
     save() {
-        // console.log('Saving config', this.data); // debug
         save('icm_enhanced', this.data);
     }
 
@@ -208,178 +206,164 @@ class ConfigWindow {
         }
     }
 
-    // eslint-disable-next-line complexity
-    loadOptions(idx) {
-        const m = this.modules[idx];
-        let str = `<p>${m.desc}</p>`;
-        let needsExtraInit = false;
-
-        for (const opt of m.options) {
-            const path = `${m.id}.${opt.id}`;
-            let optValue = this.globalCfg.get(path); // always up to date
-            const pathAttr = `data-cfg-path="${path}"`;
-
-            if (opt.type === 'checkbox') {
-                const checkbox = `
-                    <label>
-                        <input type="checkbox" ${pathAttr}
-                            ${optValue ? 'checked="checked"' : ''}
-                            title="default: ${opt.default ? 'yes' : 'no'}">
-                        ${opt.desc}
-                    </label>`;
-                str += `<p${opt.inline ? ' class="inline-opt"' : ''}>${opt.frontDesc || ''}${checkbox}</p>`;
-            } else if (opt.type === 'textinput') {
-                str += `<p>${opt.desc}:<input type="text" ${pathAttr} value="${optValue}"
-                                            title="default: ${opt.default}"></p>`;
-            } else if (opt.type === 'textarea') {
-                // optValue can be a string (until a module parses it) or an array (after)
-                if (Array.isArray(optValue)) {
-                    optValue = optValue.join('\n');
-                }
-
-                str += `
-                    <p>
-                        <span style="vertical-align: top; margin-right: 5px">${opt.desc}:</span>
-                        <textarea rows="4" cols="70" ${pathAttr}>${optValue}</textarea>
-                    </p>`;
-            } else if (opt.type === 'textinputcolor') {
-                str += `
-                    <p>
-                        ${opt.desc}:
-                        <input type="text" class="colorpickertext" ${pathAttr}
-                               value="${optValue}" title="default: ${opt.default}">
-                        <input type="color" class="colorpicker" ${pathAttr}
-                               value="${optValue}" title="default: ${opt.default}">
-                    </p>`;
-                needsExtraInit = true;
-            }
+    buildOptionHTML(path, opt) {
+        let value = this.globalCfg.get(path); // always up to date
+        // optValue can be a string (until a module parses it) or an array (after)
+        if (Array.isArray(value)) {
+            value = value.join('\n');
         }
 
-        $('#module_settings').html(str);
+        const attrPath = `data-cfg-path="${path}"`;
+        const checkbox = () => `
+            <p${opt.inline ? ' class="icmeCfgInlineOpt"' : ''}>
+                ${opt.frontDesc ?? ''}
+                <label>
+                    <input type="checkbox" ${attrPath} ${value ? 'checked="checked"' : ''}
+                        title="default: ${opt.default ? 'yes' : 'no'}">
+                    ${opt.desc}
+                </label>
+            </p>`;
+        const textinput = () => `
+            <p>
+                ${opt.desc}:
+                <input type="text" ${attrPath} value="${value}" title="default: ${opt.default}">
+            </p>`;
+        const textarea = () => `
+            <p>
+                <span class="icmeCfgTextareaDesc">${opt.desc}:</span>
+                <textarea rows="4" cols="70" ${attrPath}>${value}</textarea>
+            </p>`;
+        const textinputcolor = () => `
+            <p>
+                ${opt.desc}:
+                <input type="text" class="icmeColorPickerText" ${attrPath}
+                    value="${value}" title="default: ${opt.default}">
+                <input type="color" class="icmeColorPicker" ${attrPath}
+                    value="${value}" title="default: ${opt.default}">
+            </p>`;
 
-        if (needsExtraInit) {
-            ConfigWindow.initColorPickers();
-        }
+        const htmlByType = { checkbox, textinput, textarea, textinputcolor };
+        return htmlByType[opt.type]();
+    }
+
+    loadOptions(index) {
+        const { id, desc, options } = this.modules[index];
+        const buildHTML = opt => this.buildOptionHTML(`${id}.${opt.id}`, opt);
+        const html = `<p>${desc}</p> ${options.map(buildHTML).join('')}`;
+
+        document.querySelector('#icmeCfgModule').innerHTML = html;
+        ConfigWindow.initColorPickers();
     }
 
     static initColorPickers() {
-        document.querySelectorAll('.colorpicker').forEach(el => {
+        document.querySelectorAll('.icmeColorPicker').forEach(el => {
             el.addEventListener('change', () => {
                 el.previousElementSibling.value = el.value;
             });
         });
 
-        document.querySelectorAll('.colorpickertext').forEach(el => {
+        document.querySelectorAll('.icmeColorPickerText').forEach(el => {
             el.addEventListener('change', () => {
                 el.nextElementSibling.value = el.value;
             });
         });
     }
 
-    build() {
-        // Sort module list by title
-        this.modules.sort((a, b) => (a.title > b.title ? 1 : -1));
-
-        // Create and append a new item in the drop down menu under your username
-        const cfgLink = '<li><a id="icm_enhanced_cfg" href="#"' +
-            'title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a></li>';
-
-        $('ul#profileOptions').append(cfgLink);
-
-        // Custom CSS for jqmodal
-        const customCSS = `
-            .jqmWindow {
-                display: none;
-                position: absolute;
+    static css() {
+        addCSS(`
+            .jqmOverlay { background-color: #000; }
+            #icmeCfgModal {
                 font-family: verdana, arial, sans-serif;
                 background-color: #fff;
                 color: #000;
                 padding: 12px 30px;
+
+                display: none;
+                position: absolute;
+                top: 17%;
+                left: 50%;
+                margin-left: -400px;
+                width: 800px;
+                height: 450px;
             }
-            .jqmWindow hr {
+            #icmeCfgModal hr {
                 border: 0;
                 height: 1px;
                 width: 100%;
                 background-color: #aaa;
                 margin: 7px 0px;
             }
-            .jqmOverlay { background-color: #000; }
-            div.icme_cfg_feature { margin-bottom: 15px; }
-            span.has_settings:hover { text-decoration: underline; }
-            div.icme_cfg_feature > div.icme_cfg_settings {
-                display: none;
-                margin-left: 22px;
-                margin-top: 10px;
-            }
-            span.icme_feature_title { font-weight: bold; }
-            input[type=text] { font-family: monospace }
-            #module_settings { margin: 10px 0; }
-            #module_settings > p { margin-bottom: 0.5em; }
-            #module_settings > p.inline-opt { display: inline-block; margin-right: 5px }
-            #module_settings input { margin: 0px 3px; }
-            #configSave {
+            #icmeCfgModal h3 { color: #bbb; }
+            #icmeCfgModule { margin: 10px 0; }
+            #icmeCfgModule > p { margin-bottom: 0.5em; }
+            #icmeCfgModule > p.icmeCfgInlineOpt { display: inline-block; margin-right: 5px }
+            #icmeCfgModule input { margin: 0px 3px; }
+            #icmeCfgModule input[type=text] { font-family: monospace }
+            #icmeCfgModule .icmeCfgTextareaDesc { vertical-align: top; margin-right: 5px }
+            #icmeCfgSave {
                 position: absolute;
                 bottom:15px;
                 left: 30px
             }
-        `;
+        `);
+    }
 
-        addCSS(customCSS);
+    load() {
+        ConfigWindow.css();
 
-        let moduleList = '<select id="modulelist" name="modulelist">';
-        for (const m of this.modules) {
-            moduleList += `<option>${m.title}</option>`;
-        }
+        // Create and append a new item in the drop down menu under your username
+        const cfgLink = `
+            <li>
+                <a id="icmeCfgLink" href="#"
+                   title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a>
+            </li>`;
 
-        moduleList += '</select>';
+        document.querySelector('ul#profileOptions').insertAdjacentHTML('beforeend', cfgLink);
 
-        // HTML for the main jqmodal window
+        this.modules.sort((a, b) => (a.title > b.title ? 1 : -1));
+        const options = this.modules.map(m => `<option>${m.title}</option>`);
         const ver = this.globalCfg.data.script_info.version;
+
         const cfgMainHtml = `
-            <div class="jqmWindow" id="cfgModal">
-                <h3 style="color:#bbb">iCheckMovies Enhanced ${ver} configuration</h3>
-            ${moduleList}
-            <hr>
-            <div id="module_settings"></div>
-            <button id="configSave">Save settings</button>
+            <div class="jqmWindow" id="icmeCfgModal">
+                <h3>iCheckMovies Enhanced ${ver} configuration</h3>
+                <select id="icmeCfgModuleList" name="modulelist">${options}</select>
+                <hr>
+                <div id="icmeCfgModule"></div>
+                <button id="icmeCfgSave">Save settings</button>
             </div>
         `;
 
-        // style & append config window
-        $(cfgMainHtml).css({
-            top: '17%', left: '50%', marginLeft: '-400px', width: '800px', height: '450px',
-        }).appendTo('body');
+        document.body.insertAdjacentHTML('beforeend', cfgMainHtml);
+        const elCfgModal = document.querySelector('#icmeCfgModal');
+        const elSaveBtn = elCfgModal.querySelector('#icmeCfgSave');
+        const elModuleList = elCfgModal.querySelector('#icmeCfgModuleList');
 
-        const that = this;
+        elCfgModal.addEventListener('change', e => {
+            if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+            const path = e.target.dataset.cfgPath;
+            if (!path) return;
 
-        $('div#cfgModal').on('change', 'input, textarea', function () {
-            const path = $(this).data('cfg-path');
-            if (path === undefined) {
-                return;
+            if (!this.globalCfg.toggle(path)) {
+                this.globalCfg.set(path, e.target.value);
             }
 
-            if (!that.globalCfg.toggle(path)) {
-                that.globalCfg.set(path, $(this).val());
-            }
-
-            $('button#configSave').prop('disabled', false);
+            elSaveBtn.disabled = false;
         });
 
-        $('div#cfgModal').on('click', 'button#configSave', function () {
-            that.globalCfg.save();
-
-            $(this).prop('disabled', true);
+        elSaveBtn.addEventListener('click', () => {
+            this.globalCfg.save();
+            elSaveBtn.disabled = true;
         });
 
-        $('#modulelist').on('change', () => {
-            const idx = document.getElementById('modulelist').selectedIndex;
-            that.loadOptions(idx);
+        elModuleList.addEventListener('change', () => {
+            this.loadOptions(elModuleList.selectedIndex);
         });
 
-        $('#modulelist').trigger('change');
+        elModuleList.dispatchEvent(new Event('change'));
 
         // initialize config window
-        $('#cfgModal').jqm({ trigger: 'a#icm_enhanced_cfg' });
+        $('#icmeCfgModal').jqm({ trigger: 'a#icmeCfgLink' });
     }
 }
 
@@ -2261,7 +2245,7 @@ class App {
             }
         }
 
-        this.configWindow.build();
+        this.configWindow.load();
     }
 }
 
