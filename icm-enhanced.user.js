@@ -25,27 +25,51 @@ const addCSS = css => document.head.insertAdjacentHTML('beforeend', `<style>${cs
 
 // ----- Interacting with ICM -----
 
-// mutually exclusive regexes for matching page type
+// Mutually exclusive regexes for matching page type
 const reICM = Object.freeze({
     movie: // movie pages only, not /movies/ or /movies/checked/ etc. or /rankings/
+        // https://www.icheckmovies.com/movies/inception/
+        // https://www.icheckmovies.com/movies/inception/comments/
         /icheckmovies\.com\/movies\/(?!$|\?|(?:(un)?checked|favorited|disliked|watchlist|owned|recommended)\/)[^/]+\/(?!rankings\/)/,
     movieList: // personal user list
+        // https://www.icheckmovies.com/lists/imdbs+2010s+top+50/
+        // https://www.icheckmovies.com/lists/imdbs+2010s+top+50/?sort=title
+        // https://www.icheckmovies.com/lists/alfred+hitchcock+filmography/fritz/
+        // https://www.icheckmovies.com/lists/alfred+hitchcock+filmography/fritz/?sort=title
+        // https://www.icheckmovies.com/lists/watchlist+2015/juliske/
         /icheckmovies\.com\/lists\/(?!$|\?|(?:favorited|disliked|watchlist)\/)/,
     movieListGeneral: // /movies/ only
+        // https://www.icheckmovies.com/movies/
+        // https://www.icheckmovies.com/movies/?sort=title
         /icheckmovies\.com\/movies\/(?:$|\?)/,
     movieListSpecial: // /movies/checked/ etc.
+        // https://www.icheckmovies.com/movies/favorited/
+        // https://www.icheckmovies.com/movies/favorited/?sort=title
+        // https://www.icheckmovies.com/movies/checked/
+        // https://www.icheckmovies.com/movies/checked/?sort=title
+        // https://www.icheckmovies.com/movies/unchecked/
+        // https://www.icheckmovies.com/movies/owned/
         /icheckmovies\.com\/movies\/(?:((un)?checked|favorited|disliked|watchlist|owned|recommended)\/)/,
     movieSearch:
+        // https://www.icheckmovies.com/search/movies/?query=inception
         /icheckmovies\.com\/search\/movies\//,
     movieRankings:
+        // https://www.icheckmovies.com/movies/inception/rankings/
+        // https://www.icheckmovies.com/movies/inception/rankings/?excludetags=user:icheckmovies
         /icheckmovies\.com\/movies\/[^/]+\/rankings\//,
     listsGeneral: // /lists/ only
+        // https://www.icheckmovies.com/lists/
+        // https://www.icheckmovies.com/lists/?sort=dateadded
         /icheckmovies\.com\/lists\/(?:$|\?)/,
     listsSpecial: // /lists/favorited/ etc.
+        // https://www.icheckmovies.com/lists/favorited/
+        // https://www.icheckmovies.com/lists/favorited/?sort=name
         /icheckmovies\.com\/lists\/(?:favorited|disliked|watchlist)\//,
     listsSearch:
+        // https://www.icheckmovies.com/search/lists/?query=nolan
         /icheckmovies\.com\/search\/lists\//,
     progress:
+        // https://www.icheckmovies.com/profiles/progress/
         /icheckmovies.com\/profiles\/progress\//,
 });
 
