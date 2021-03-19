@@ -135,8 +135,8 @@ class BaseModule {
         return BaseModule.matchesPageType(this.metadata.enableOn);
     }
 
-    // Add module options to the global config;
-    // Keep loaded values, delete outdated options, add new options
+    // Synchronize the loaded config with the module's options (delete outdated, add new)
+    // and make it accessible to the module.
     syncGlobalCfg() {
         const { id } = this.metadata;
         const config = {};
@@ -203,18 +203,18 @@ class GlobalCfg {
     // Set false to true and vice versa
     toggle(path) {
         const val = this.get(path);
-        let changeVal;
+        let toggled;
 
         if (val === true || val === false) {
-            changeVal = !val;
+            toggled = !val;
         } else if (val === 'asc' || val === 'desc') {
-            changeVal = val === 'asc' ? 'desc' : 'asc';
+            toggled = val === 'asc' ? 'desc' : 'asc';
         } else {
-            return false; // Couldn't toggle a value
+            return false; // couldn't toggle the value
         }
 
-        this.set(path, changeVal);
-        return true; // Value toggled
+        this.set(path, toggled);
+        return true; // value has been toggled
     }
 }
 
