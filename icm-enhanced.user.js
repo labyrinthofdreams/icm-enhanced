@@ -399,81 +399,60 @@ class RandomFilmLink extends BaseModule {
 
         this.metadata = {
             title: 'Random film link',
-            desc: 'Displays "Help me pick a film" link on movie lists (if they have unchecked movies).' +
-                '<br>Click on a list tab\'s label to return to full list.',
+            desc: 'Show a "Help me pick a film" link on movie lists with unchecked movies.' +
+                '<br>Suggestions don\'t repeat until all have been shown once. ' +
+                'Click on the list tab\'s label to return to the full list.',
             id: 'random_film',
             enableOn: ['movieList', 'movieListSpecial'], // movieListGeneral doesn't make sense here
-            options: [BaseModule.getStatus(true), {
-                id: 'unique',
-                desc: 'Unique suggestions (shows each entry only once ' +
-                    'until every entry has been shown once)',
-                type: 'checkbox',
-                default: true,
-            }],
+            options: [BaseModule.getStatus(true)],
         };
 
-        this.randomNums = [];
+        this.randomIndices = [];
     }
 
-    // Creates an element and inserts it into the DOM
     attach() {
         // Disable on completed lists and list of checked/favs.
-        // If a user unchecks smth., the link will show up only after reloading,
-        // but it's a rare case.
-        if (!$('ol#itemListMovies > li.unchecked').length) {
-            return;
-        }
+        // If a user unchecks a movie, it will show up only after reloading
+        if (!document.querySelectorAll('#itemListMovies > li.unchecked').length) return;
 
-        const randomFilm =
-            '<span style="float:right; margin-left: 15px">' +
-            '<a href="#" id="icme_random_film">Help me pick a film!</a></span>';
+        const html =
+            `<span style="float: right; margin-left: 15px">
+                <a href="#" id="icmeRandomFilm">Help me pick a film!</a>
+            </span>`;
 
-        addToMovieListBar(randomFilm);
+        addToMovieListBar(html);
 
-        const that = this;
-        $('#icme_random_film').on('click', e => {
+        document.querySelector('#icmeRandomFilm').addEventListener('click', e => {
             e.preventDefault();
-            that.pickRandomFilm();
+            this.pickRandomFilm();
         });
 
         // Allow resetting visible movies on /movies/watchlist/ etc. by clicking on tab's label
-        const $activeTab = $('.tabMenu > .active');
-        if (!$activeTab.find('a').length) {
-            $activeTab.on('click', () => {
-                $('ol#itemListMovies > li').show();
+        const elActiveTab = document.querySelector('.tabMenu > .active');
+        if (!elActiveTab.querySelector('a')) {
+            elActiveTab.addEventListener('click', () => {
+                document.querySelectorAll('#itemListMovies > li').forEach(el => {
+                    el.style.display = 'list-item';
+                });
             });
         }
     }
 
-    // Displays a random film on a list
     pickRandomFilm() {
-        // Recalc in case user has checked smth. while on a page
-        const $unchecked = $('ol#itemListMovies > li.unchecked');
-        let randNum;
+        const elUnchecked = document.querySelectorAll('#itemListMovies > li.unchecked');
+        if (!elUnchecked.length) return;
 
-        if (!$unchecked.length) {
-            return;
+        if (!this.randomIndices.length) {
+            this.randomIndices = [...Array(elUnchecked.length).keys()];
+            RandomFilmLink.shuffle(this.randomIndices);
         }
 
-        if (this.config.unique) {
-            // Generate random numbers
-            if (!this.randomNums.length) {
-                // Populate randomNums
-                for (let i = 0; i < $unchecked.length; i++) {
-                    this.randomNums.push(i);
-                }
+        const selectedIndex = this.randomIndices.pop();
 
-                // Shuffle the results for randomness in-place
-                RandomFilmLink.shuffle(this.randomNums);
-            }
-
-            randNum = this.randomNums.pop();
-        } else {
-            randNum = Math.floor(Math.random() * $unchecked.length);
-        }
-
-        $('ol#itemListMovies > li').hide();
-        $($unchecked[randNum]).show();
+        document.querySelectorAll('#itemListMovies > li').forEach(el => {
+            el.style.display = 'none';
+        });
+        elUnchecked[selectedIndex].style.display = 'list-item';
     }
 
     // https://stackoverflow.com/a/12646864/6270692
