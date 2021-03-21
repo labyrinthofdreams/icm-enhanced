@@ -512,15 +512,10 @@ class UpcomingAwardsOverview extends BaseModule {
 
         this.metadata = {
             title: 'Upcoming awards overview',
-            desc: 'Displays upcoming awards on progress page',
+            desc: 'Show a summary of upcoming awards on the progress page and watchlisted/fav. lists',
             id: 'ua',
             enableOn: ['listsSpecial', 'progress'],
-            options: [BaseModule.getStatus(true), {
-                id: 'autoload',
-                desc: 'Autoload',
-                type: 'checkbox',
-                default: true,
-            }],
+            options: [BaseModule.getStatus(true)],
         };
 
         this.lists = [];
@@ -528,105 +523,56 @@ class UpcomingAwardsOverview extends BaseModule {
     }
 
     attach() {
-        if (!$('.listItemToplist').length) {
-            return;
-        }
+        if (!document.querySelector('.listItemToplist')) return;
 
-        if (this.config.autoload) {
-            this.loadAwardData();
-            return;
-        }
-
-        const loadLink = `
-            <p id="lad_container">
-                <a id="load_award_data" href="#">Load upcoming awards for this user</a>
-            </p>`;
-
-        $('#listOrdering').before(loadLink);
-
-        const that = this;
-        $('p#lad_container').on('click', 'a#load_award_data', e => {
-            e.preventDefault();
-            $(e.target).remove();
-            that.loadAwardData();
-        });
-    }
-
-    loadAwardData() {
         this.lists = [];
-        this.hiddenLists = load('hidden_lists') ?? [];
+        this.hiddenLists = load('icme_hidden_lists') ?? [];
 
-        this.populateLists();
+        this.lists = UpcomingAwardsOverview.parseLists();
         this.sortLists();
-        this.htmlOut();
+        UpcomingAwardsOverview.css();
+        this.loadHtml();
+        this.addListeners();
     }
 
-    populateLists() {
-        const $allLists = $('ol#progressall, ol#itemListToplists').children('li');
+    static parseLists() {
+        // Use different selectors depending on the page
         const sel = {
             progress: { rank: 'span.rank', title: 'h3 > a' },
-            lists: { rank: 'span.info > strong:first', title: 'h2 > a.title' },
+            lists: { rank: 'span.info > strong:first-of-type', title: 'h2 > a.title' },
         };
-        // use different selectors depending on page
         const curSel = UpcomingAwardsOverview.matchesPageType('progress') ? sel.progress : sel.lists;
         const awardTypes = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
-        const that = this;
-        $allLists.each(function () {
-            const $el = $(this);
-            const countArr = $el.find(curSel.rank).text().match(/\d+/g);
+        const elLists = document.querySelectorAll('#progressall > li, #itemListToplists > li');
+        return [...elLists].flatMap(el => {
+            const counts = el.querySelector(curSel.rank).textContent.match(/\d+/g);
+            if (!counts) return [];
 
-            if (!countArr) {
-                return;
-            }
+            const [checks, totalItems] = counts.map(Number);
+            const elTitle = el.querySelector(curSel.title);
+            const listTitle = elTitle.title.replace(/^View the | top list$/g, '');
+            const listUrl = elTitle.href;
 
-            const checks = parseInt(countArr[0], 10);
-            const totalItems = parseInt(countArr[1], 10);
-            const $t = $el.find(curSel.title);
-            const listTitle = $t.attr('title').replace(/^View the | top list$/g, '');
-            const listUrl = $t.attr('href');
-
-            for (const [awardType, threshold] of awardTypes) {
-                const neededForAward = Math.ceil(totalItems * threshold) - checks;
-                if (neededForAward <= 0) {
-                    break; // the order of awardTypes array is important!
-                }
-
-                that.lists.push({ neededForAward, listTitle, listUrl, awardType });
-            }
+            const apply = cutoff => Math.ceil(totalItems * cutoff) - checks;
+            return awardTypes
+                .map(([awardType, cutoff]) => ({ awardType, neededForAward: apply(cutoff) }))
+                .filter(({ neededForAward }) => neededForAward > 0)
+                .map(obj => ({ ...obj, listTitle, listUrl }));
         });
     }
 
     sortLists() {
-        // sort lists array by least required checks ASC,
-        // then by award type if checks are equal DESC, then by list title ASC
+        // By least required checks ASC, then by award type DESC, then by list title ASC
         const awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
-        this.lists.sort((a, b) => {
-            /* eslint-disable no-else-return */
-            if (a.neededForAward < b.neededForAward) {
-                return -1;
-            } else if (a.neededForAward > b.neededForAward) {
-                return 1;
-            } else if (awardOrder[a.awardType] > awardOrder[b.awardType]) {
-                return -1;
-            } else if (awardOrder[a.awardType] < awardOrder[b.awardType]) {
-                return 1;
-            } else if (a.listTitle < b.listTitle) {
-                return -1;
-            } else if (a.listTitle > b.listTitle) {
-                return 1;
-            }
-            /* eslint-enable no-else-return */
-
-            return 0;
-        });
+        this.lists.sort((a, b) =>
+            a.neededForAward - b.neededForAward ||
+            awardOrder[b.awardType] - awardOrder[a.awardType] ||
+            a.listTitle.localeCompare(b.listTitle));
     }
 
-    // Create a function that generates <img> for a hide/unhide button.
-    // Using a factory allows to do costly line concat only once
-    // and only if this module is attached.
-    static getIconFactory() {
-        const unhideIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
+    static css() {
+        const unhideIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
             'AQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW' +
             '1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjR' +
             'uqp61Wq0NKDMelGGqOxBSUIBKXWtWGZxAvobr8lWjChRgSF//dv9be+9trCwAI/vIE/2' +
@@ -638,182 +584,188 @@ class UpcomingAwardsOverview extends BaseModule {
             'ZaUrCSIi6X+jJIBBYtW5Cge7cd7sgoHDfDaAvKQGAlRZYc6ltJlMxX03UzlaRlBdQrzS' +
             'CwksLRbOpHUSb7pcsnxCCwngvM2Rm/ugUCi84fycr4l2t8Bb6iqTxSCgNIAAAAAElFTk' +
             'SuQmCC';
-        const hideIconData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAK' +
-            'CAYAAACNMs+9AAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1h' +
-            'Z2VSZWFkeXHJZTwAAADtSURBVHjajFC7DkFREJy9iXg0t+EHRKJDJSqRuIVaJT7AF+jR' +
-            '+xuNRiJyS8WlRaHWeOU+kBy7eyKhs8lkJrOzZ3OWzMAD15gxYhB+yzAm0ndez+eYMYLn' +
-            'gdkIf2vpSYbCfsNkOx07n8kgWa1UpptNII5VR/M56Nyt6Qq33bbhQsHy6aR0WSyEyEmi' +
-            'CG6vR2ffB65X4HCwYC2e9CTjJGGok4/7Hcjl+ImLBWv1uCRDu3peV5eGQ2C5/P1zq4X9' +
-            'dGpXP+LYhmYz4HbDMQgUosWTnmQoKKf0htVKBZvtFsx6S9bm48ktaV3EXwd/CzAAVjt+' +
-            'gHT5me0AAAAASUVORK5CYII=';
+        const hideIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQC' +
+            'AYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AA' +
+            'IDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAE+SURBVHja1JO/SsNwEMc/P7Fos2TqE1joL' +
+            'B3EpRQaobsUAj6AL9C9ce8L+ACOTlkKUiglIA5iHqAdOndpk9Ik/QXO4SeSSAShkwdf7' +
+            'nf3uzvurxIRjqETjqSjA5yWpPsbAA8YAeqHrQAPgMfjS3UGudZervUIxyHXWnAciu9c6' +
+            '1GutVf0UcUmJnfXUu/3jXB+TjafA3DW6UCaGpvJhPrTq6oMsL29BBC71zOKRsPw9dr8T' +
+            '6cAyn7+qC4hSxJs11WbIIAoguXSIIrYBAG266osSX6fQrbfA3DY7cCyYLs1sCyjK9hUl' +
+            'rC4agBIcziE2aw8g26XxXgMoJpv6+oMDmlqnH0f4phVGLIKQ4hj8H2awyGHNC2vroh8I' +
+            '2zVvLBVExm05YsjgzZFXdiqeUWfUgnvF+pPi9ReSnUP/ucxfQ4ASu+wNb1N4vcAAAAAS' +
+            'UVORK5CYII=';
 
-        // Generate <img> for a hide/unhide button.
-        const getIcon = (hide, listTitle) =>
-            `<img src="${hide ? hideIconData : unhideIconData}"
-                alt="${hide ? 'Hide' : 'Unhide'} icon"
-                title="${hide ? 'Hide' : 'Unhide'} ${listTitle}">`;
-
-        return getIcon;
+        addCSS(`
+            #icmeUAO {
+                z-index: 0;
+                position: relative;
+                margin-top: 0;
+                margin-bottom: 20px;
+            }
+            #icmeUAOTableContainer {
+                position: relative;
+                top: 0;
+                width: 830px;
+                height: 240px;
+                overflow: scroll;
+            }
+            #icmeUAOTableToggleContainer {
+                position: relative;
+                left: 0;
+                top: 0;
+                width: 200px;
+            }
+            #icmeUAOLinks {
+                position: absolute;
+                right: 0;
+                top: 0;
+                font-weight: bold;
+            }
+            .icmeAward td:nth-child(1) { width: 65px; }
+            .icmeAward td:nth-child(2) { width: 65px; }
+            .icmeAward td:nth-child(3) div { height: 28px; overflow: hidden; }
+            .icmeAward td:nth-child(4) { width: 70px; }
+            .icmeAward.icmeHidden { display: none; }
+            .icmeToggleList {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            .icmeAward.icmeHidden .icmeToggleList { background-image: url(${unhideIcon}); }
+            .icmeAward:not(.icmeHidden) .icmeToggleList { background-image: url(${hideIcon}); }
+        `);
     }
 
-    htmlOut() {
-        const getIcon = UpcomingAwardsOverview.getIconFactory();
-        let listTable = `
-            <table id="award_table">
-                <thead>
-                    <tr id="award_table_head">
-                        <th>Awards</th>
-                        <th>Checks</th>
-                        <th>List title</th>
-                        <th>(Un)Hide</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+    loadHtml() {
+        const html = `
+            <div id="icmeUAO">
+                <p id="icmeUAOTableToggleContainer">
+                    <a id="icmeUAOTableToggle" href="#">
+                        <span style="display: none">Show upcoming awards</span>
+                        <span>Hide upcoming awards</span>
+                    </a>
+                </p>
+                <p id="icmeUAOLinks">
+                    Display: <a id="icmeShowAll" href="#">All</a>,
+                    <a class="icmeShowAward" href="#">Bronze</a>,
+                    <a class="icmeShowAward" href="#">Silver</a>,
+                    <a class="icmeShowAward" href="#">Gold</a>,
+                    <a class="icmeShowAward" href="#">Platinum</a>,
+                    <a id="icmeShowHidden" href="#">Hidden</a>,
+                    <a id="icmeToggleSize" href="#">
+                        <span style="display: none">Minimize full list</span>
+                        <span>Show full list</span>
+                    </a>
+                </p>
+                <div id="icmeUAOTableContainer" class="container">
+                    <table id="icmeAwardTable">
+                        <thead>
+                            <tr>
+                                <th>Awards</th>
+                                <th>Checks</th>
+                                <th>List title</th>
+                                <th>(Un)Hide</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
 
-        for (const el of this.lists) {
-            const isHidden = this.hiddenLists.indexOf(el.listUrl) !== -1;
-            const icon = getIcon(!isHidden, el.listTitle);
+        const sel = UpcomingAwardsOverview.matchesPageType('progress') ? '#listOrdering' : '#itemContainer';
+        document.querySelector(sel).insertAdjacentHTML('beforebegin', html);
 
-            listTable += `
-                <tr class="${isHidden ? 'hidden-list' : ''}" data-award-type="${el.awardType}"
-                        data-list-url="${el.listUrl}">
-                    <td style="width: 65px">${el.awardType}</td>
-                    <td style="width: 65px">${el.neededForAward}</td>
+        const htmlAwards = this.lists.map(el => {
+            const isHidden = this.hiddenLists.includes(el.listUrl);
+
+            return `
+                <tr class="icmeAward ${isHidden ? 'icmeHidden' : ''}"
+                        data-award-type="${el.awardType}" data-list-url="${el.listUrl}">
+                    <td>${el.awardType}</td>
+                    <td>${el.neededForAward}</td>
                     <td>
-                        <div style="height: 28px; overflow: hidden">
-                            <a class="list-title" href="${el.listUrl}">${el.listTitle}</a>
+                        <div>
+                            <a class="icmeListTitle" href="${el.listUrl}">${el.listTitle}</a>
                         </div>
                     </td>
-                    <td style="width: 70px">
-                        <a href="#" class="icm_toggle_list">${icon}</a>
+                    <td>
+                        <div class="icmeToggleList" title="Toggle the list's visibility"></div>
                     </td>
                 </tr>`;
-        }
+        }).join('');
 
-        listTable += '</tbody></table>';
+        document.querySelector('#icmeAwardTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
+    }
 
-        const toggleUpcomingLink = `
-            <p id="ua_toggle_link_container" style="position: relative; left: 0; top: 0; width: 200px">
-                <a id="toggle_upcoming_awards" href="#">
-                    <span class="_show" style="display: none">Show upcoming awards</span>
-                    <span class="_hide">Hide upcoming awards</span>
-                </a>
-            </p>`;
-        const toggleFullLink = `
-            <a id="toggle_full_list" href="#">
-                <span class="_show">Show full list</span>
-                <span class="_hide" style="display: none">Minimize full list</span>
-            </a>`;
-        const toggleHiddenLink = '<a id="toggle_hidden_list" href="#">Show hidden</a>';
+    addListeners() {
+        const elAwards = [...document.querySelectorAll('.icmeAward')];
 
-        const links = `
-            <p id="award_display_links" style="position: absolute; right: 0; top: 0; font-weight: bold">
-                Display: <a id="display_all" href="#">All</a>,
-                <a id="display_bronze"   class="display_award" href="#">Bronze</a>,
-                <a id="display_silver"   class="display_award" href="#">Silver</a>,
-                <a id="display_gold"     class="display_award" href="#">Gold</a>,
-                <a id="display_platinum" class="display_award" href="#">Platinum</a>,
-                ${toggleFullLink}, ${toggleHiddenLink}
-            </p>`;
-
-        const awardContainer = `
-            <div id="award_container" class="container"
-                 style="position: relative; top: 0; width: 830px; height: 240px; overflow: scroll">
-                ${listTable}
-            </div>`;
-
-        const allHtml = `
-            <div id="icm_award_html_container"
-                 style="z-index: 0; position: relative; margin-top: 0; margin-bottom: 20px">
-                ${toggleUpcomingLink}${links}${awardContainer}
-            </div>`;
-
-        $('#icm_award_html_container, #ua_toggle_link_container').remove();
-
-        if (UpcomingAwardsOverview.matchesPageType('progress')) {
-            $('#listOrdering').before(allHtml);
-        } else {
-            $('#itemContainer').before(allHtml);
-        }
-
-        const $lists = $('#award_table > tbody > tr');
-
-        // hide hidden
-        $lists.filter('.hidden-list').hide();
-
-        const that = this;
-
-        $('a.icm_toggle_list').on('click', function (e) {
+        document.querySelector('#icmeAwardTable tbody').addEventListener('click', e => {
+            if (!e.target.classList.contains('icmeToggleList')) return;
             e.preventDefault();
 
-            const $parent = $(this).parent().parent();
-            const listTitle = $parent.find('.list-title').text().trim();
-            const listUrl = $parent.data('list-url');
-            const ind = that.hiddenLists.indexOf(listUrl);
-            const hide = ind === -1;
+            const { listUrl } = e.target.closest('.icmeAward').dataset;
+            const index = this.hiddenLists.indexOf(listUrl);
+            const isVisible = index === -1;
 
-            if (hide) { // hide list
-                that.hiddenLists.push(listUrl);
-            } else { // unhide list
-                that.hiddenLists.splice(ind, 1);
+            if (isVisible) {
+                this.hiddenLists.push(listUrl);
+            } else {
+                this.hiddenLists.splice(index, 1);
             }
 
-            $lists.filter(hide ? 'tr' : 'tr.hidden-list')
-                .filter(function () { // get all awards with the same url
-                    return $(this).data('list-url') === listUrl;
-                })
-                .toggleClass('hidden-list', hide)
-                .hide() // = don't show in the current listing
-                .find('.icm_toggle_list > img')
-                .replaceWith(getIcon(!hide, listTitle));
+            elAwards
+                .filter(el => el.dataset.listUrl === listUrl)
+                .forEach(el => { el.classList.toggle('icmeHidden'); });
 
-            // save hidden lists
-            save('hidden_lists', that.hiddenLists);
+            save('icme_hidden_lists', this.hiddenLists);
         });
 
-        $('#toggle_hidden_list').on('click', e => {
+        document.querySelector('#icmeShowHidden').addEventListener('click', e => {
             e.preventDefault();
-
-            $lists.hide();
-            $lists.filter('.hidden-list').show();
+            elAwards.forEach(el => {
+                el.style.display = el.classList.contains('icmeHidden') ? 'table-row' : 'none';
+            });
         });
 
-        $('#ua_toggle_link_container').on('click', 'a#toggle_upcoming_awards span', e => {
+        const elToggle = document.querySelector('#icmeUAOTableToggle');
+        elToggle.addEventListener('click', e => {
             e.preventDefault();
 
-            $('#award_display_links, #award_container').toggle();
-            $('a#toggle_upcoming_awards span').toggle();
+            const els = document.querySelectorAll('#icmeUAOLinks, #icmeUAOTableContainer');
+            [...els, ...elToggle.children].forEach(el => {
+                el.style.display = el.style.display === 'none' ? '' : 'none';
+            });
         });
 
-        $('#award_display_links').on('click', 'a#display_all', e => {
+        document.querySelector('#icmeShowAll').addEventListener('click', e => {
             e.preventDefault();
-
-            $lists.hide();
-            $lists.not('.hidden-list').show();
+            elAwards.forEach(aw => {
+                aw.style.display = '';
+            });
         });
 
-        $('#award_display_links').on('click', 'a.display_award', function (e) {
+        document.querySelectorAll('.icmeShowAward').forEach(el => el.addEventListener('click', e => {
             e.preventDefault();
 
-            const [, awardType] = $(this).attr('id').split('_');
-            $lists.hide().filter(function () {
-                return !$(this).hasClass('hidden-list') &&
-                    $(this).data('award-type').toLowerCase() === awardType;
-            }).show();
-        });
+            const awardType = el.textContent.trim();
+            elAwards.forEach(aw => {
+                const isVisible = !aw.classList.contains('icmeHidden');
+                const matchesType = aw.dataset.awardType === awardType;
+                aw.style.display = isVisible && matchesType ? '' : 'none';
+            });
+        }));
 
-        $('#award_display_links').on('click', 'a#toggle_full_list span._show', e => {
+        const elToggleSize = document.querySelector('#icmeToggleSize');
+        const elContainer = document.querySelector('#icmeUAOTableContainer');
+        elToggleSize.addEventListener('click', e => {
             e.preventDefault();
 
-            $('a#toggle_full_list span').toggle();
-            $('div#award_container').css('height', 'auto');
-        });
-
-        $('#award_display_links').on('click', 'a#toggle_full_list span._hide', e => {
-            e.preventDefault();
-
-            $('a#toggle_full_list span').toggle();
-            $('div#award_container').css('height', '240px');
+            elContainer.style.height = elContainer.style.height === 'auto' ? '240px' : 'auto';
+            [...elToggleSize.children].forEach(el => {
+                el.style.display = el.style.display === 'none' ? '' : 'none';
+            });
         });
     }
 }
