@@ -472,12 +472,12 @@ class UpcomingAwardsList extends BaseModule {
 
         this.metadata = {
             title: 'Upcoming awards (individual lists)',
-            desc: 'Displays upcoming awards on individual lists',
+            desc: 'Show numbers of checks needed for getting awards on individual lists',
             id: 'ua_list',
             enableOn: ['movieList'],
             options: [BaseModule.getStatus(true), {
-                id: 'show_absolute',
-                desc: 'Display negative values',
+                id: 'show_negative',
+                desc: 'Show negative values for received awards',
                 type: 'checkbox',
                 default: true,
             }],
@@ -485,28 +485,24 @@ class UpcomingAwardsList extends BaseModule {
     }
 
     attach() {
-        if (!$('#itemListMovies').length) {
-            return;
-        }
+        if (!document.querySelector('#itemListMovies')) return;
 
-        const totalItems = Number($('li#listFilterMovies').text().match(/\d+/));
-        const checks = Number($('#topListMoviesCheckedCount').text().match(/\d+/));
-        let statistics = '<span><b>Upcoming awards:</b>';
-        const abs = this.config.show_absolute;
+        const parseNum = sel => Number(document.querySelector(sel).textContent.match(/\d+/));
+        const totalItems = parseNum('#listFilterMovies');
+        const checks = parseNum('#topListMoviesCheckedCount');
 
-        const getSpan = function (award, cutoff) {
-            const num = Math.ceil(totalItems * cutoff) - checks;
-            if (!abs && num <= 0) {
+        const getSpan = ([award, cutoff]) => {
+            const neededForAward = Math.ceil(totalItems * cutoff) - checks;
+            if (!this.config.show_negative && neededForAward <= 0) {
                 return '';
             }
 
-            return `<span style="margin-left: 30px">${award}: <b>${num}</b></span>`;
+            return `<span style="margin-left: 30px">${award}: <b>${neededForAward}</b></span>`;
         };
 
-        statistics += getSpan('Bronze', 0.5) + getSpan('Silver', 0.75) +
-            getSpan('Gold', 0.9) + getSpan('Platinum', 1);
-
-        addToMovieListBar(statistics);
+        const awardTypes = [['Bronze', 0.5], ['Silver', 0.75], ['Gold', 0.9], ['Platinum', 1]];
+        const html = `<span><b>Upcoming awards:</b>${awardTypes.map(getSpan).join('')}`;
+        addToMovieListBar(html);
     }
 }
 
