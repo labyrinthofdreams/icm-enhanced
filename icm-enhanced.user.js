@@ -770,15 +770,14 @@ class UpcomingAwardsOverview extends BaseModule {
     }
 }
 
-class ListCustomColors extends BaseModule {
+class CustomMovieColors extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
         this.metadata = {
-            title: 'Custom list colors',
-            desc: 'Changes entry colors on lists to visually separate ' +
-                'your favorites/watchlist/dislikes',
-            id: 'list_colors',
+            title: 'Custom movie colors',
+            desc: 'Set movie colors on lists for your favs/watchlist/dislikes',
+            id: 'movie_colors',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
@@ -801,21 +800,17 @@ class ListCustomColors extends BaseModule {
     }
 
     attach() {
-        const buildCSS = (className, color) => {
-            if (!color.length) {
-                return '';
-            }
+        const colors = [
+            ['favorite', this.config.favorite],
+            ['watch', this.config.watchlist],
+            ['hated', this.config.disliked]];
 
-            const sel = `ol#itemListMovies li.${className}`;
+        const buildCSS = ([className, color]) => {
+            const sel = `#itemListMovies li.${className}`;
             return `${sel}, ${sel} ul.optionIconMenu { background-color: ${color} !important; }`;
         };
 
-        const listColorsCss =
-            buildCSS('favorite', this.config.favorite) +
-            buildCSS('watch', this.config.watchlist) +
-            buildCSS('hated', this.config.disliked);
-
-        addCSS(listColorsCss);
+        addCSS(colors.map(buildCSS).join(''));
     }
 }
 
@@ -2206,7 +2201,7 @@ const useModules = [
     RandomFilmLink,
     HideTags,
     UpcomingAwardsList,
-    ListCustomColors,
+    CustomMovieColors,
     UpcomingAwardsOverview,
     ListCrossCheck,
     NewTabs,
