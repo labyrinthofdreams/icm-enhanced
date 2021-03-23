@@ -83,20 +83,14 @@ const reICM = Object.freeze({
 });
 
 const addToMovieListBar = htmlStr => {
-    let $container = $('#icme_list_container');
-    if (!$container.length) {
-        const htmlWrapped = `
-            <div id="icme_list_container" style="height: 35px; position: relative">
-                ${htmlStr}
-            </div>`;
-        $container = $(htmlWrapped);
-
-        $('#topList, #listTitle') // movieList and movieListGeneral+Special use different headers
-            .nextAll('.container').last()
-            .before($container);
-    } else {
-        $container.append(htmlStr);
+    if (!document.querySelector('#icmeControls')) {
+        const html = '<div id="icmeControls" style="height: 35px; position: relative"></div>';
+        // movieList and movieListGeneral+Special use different headers
+        const elMain = document.querySelector(':is(#topList, #listTitle) ~ .container:last-of-type');
+        elMain.insertAdjacentHTML('beforebegin', html);
     }
+
+    document.querySelector('#icmeControls').insertAdjacentHTML('beforeend', htmlStr);
 };
 
 // ----- Base classes and config windows -----
