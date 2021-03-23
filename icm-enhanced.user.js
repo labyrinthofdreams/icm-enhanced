@@ -23,6 +23,15 @@ const save = (key, val) => localStorage.setItem(key, JSON.stringify(val));
 const load = key => JSON.parse(localStorage.getItem(key));
 const addCSS = css => document.head.insertAdjacentHTML('beforeend', `<style>${css}</style>`);
 
+const extractFrom = async (url, extractor) => {
+    const r = await fetch(url, { credentials: 'same-origin' });
+    const html = await r.text();
+    const el = new DOMParser().parseFromString(html, 'text/html');
+    return extractor(el);
+};
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 // ----- Interacting with ICM -----
 
 // Mutually exclusive regexes for matching page type
@@ -814,467 +823,246 @@ class CustomMovieColors extends BaseModule {
     }
 }
 
-class ListCrossCheck extends BaseModule {
+class ListCrossRef extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
         this.metadata = {
-            title: 'List cross-reference',
-            desc: 'Cross-reference lists to find what films they share',
+            title: 'Cross-reference lists',
+            desc: 'Cross-reference lists to find which movies they share',
             id: 'list_cross_ref',
             enableOn: ['listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
                 id: 'match_all',
-                desc: 'Find films that appear on all selected lists',
+                desc: 'Find movies that appear on all selected lists',
                 type: 'checkbox',
-                default: true,
+                default: false,
             }, {
                 id: 'match_min',
-                desc: 'If the above checkbox is unchecked, find films that appear on this many lists',
+                desc: 'Otherwise, find movies that appear on at least N lists (N > 1)',
                 type: 'textinput',
                 default: 2,
             }, {
-                id: 'checks',
-                desc: 'Include your checks in results (full intersection)',
+                id: 'unchecked_only',
+                desc: 'Find only unchecked movies',
                 type: 'checkbox',
-                default: false,
+                default: true,
             }],
         };
-
-        this.activatedOnce = false;
-        this.init();
-    }
-
-    init() {
-        this.activated = false;
-
-        // array of movie objects
-        this.movies = [];
-
-        // array of top list jQuery elements
-        this.$toplists = [];
-
-        // cross-referencing in progress
-        this.inProgress = false;
-
-        // current top list's number that is checked
-        this.sequenceNumber = 0;
     }
 
     attach() {
-        if (!$('#itemListToplists').length) {
-            return;
-        }
+        if (!document.querySelector('#itemListToplists')) return;
 
-        const actions = `
-            <div id="crActions" style="margin-bottom: 18px">
-                <button id="cfgListCCActivate">Activate CR</button>
+        const htmlActions = `
+            <div id="icmeCRActions">
+                Cross-reference lists:
+                <button id="icmeCRStartSel">Start selection</button>
+                <button id="icmeCRCancelSel">Cancel selection</button>
+                <button id="icmeCRRun">Run</button>
             </div>`;
+        document.querySelector('#itemContainer').insertAdjacentHTML('beforebegin', htmlActions);
 
-        $('#itemContainer').before(actions);
-        const that = this;
+        addCSS(`
+            #icmeCRActions { margin-bottom: 18px; }
+            #icmeCRCancelSel, #icmeCRRun { display: none; }
+            .icmeCRSelected, .icmeCRSelected .progress {
+                background-color: #bbbbbb !important;
+            }
+            .icmeCRHover, .icmeCRHover .progress {
+                background-color: #cccccc !important;
+            }
+            .icmeCRPending, .icmeCRPending .progress {
+                background-color: #ffffb2 !important;
+            }
+        `);
 
-        $('div#crActions').on('click', 'button#cfgListCCActivate', function () {
-            $(this).prop('disabled', true);
-            that.createTab();
-            that.activate();
+        this.selectionStarted = false;
+        this.attachSelectionHandlers();
+        const [elStart, elCancel, elRun] = document.querySelectorAll('#icmeCRActions button');
+        elStart.addEventListener('click', () => {
+            elStart.style.display = 'none';
+            elCancel.style.display = 'inline';
+            elRun.style.display = 'inline';
+            this.selectionStarted = true;
         });
 
-        const customCSS = `
-            <style type="text/css">
-                ol#itemListToplists li.icme_listcc_selected,
-                ol#itemListToplists li.icme_listcc_hover,
-                .icme_listcc_selected .progress,
-                .icme_listcc_hover .progress {
-                    background-color: #cccccc !important;
-                }
-                ol#itemListToplists li.icme_listcc_pending,
-                .icme_listcc_pending .progress {
-                    background-color: #ffffb2 !important;
-                }
-            </style>`;
+        elCancel.addEventListener('click', () => {
+            elStart.style.display = '';
+            elCancel.style.display = '';
+            elRun.style.display = '';
+            this.selectionStarted = false;
+            document.querySelectorAll('.icmeCRSelected, .icmeCRHover').forEach(el => {
+                el.classList.remove('icmeCRSelected', 'icmeCRHover');
+            });
+        });
 
-        $('head').append(customCSS);
+        elRun.addEventListener('click', () => {
+            elCancel.disabled = true;
+            elRun.disabled = true;
+            this.selectionStarted = false;
+            this.run().then(() => {
+                elCancel.disabled = false;
+                elRun.disabled = false;
+                elStart.style.display = '';
+                elCancel.style.display = '';
+                elRun.style.display = '';
+            });
+        });
     }
 
-    activate() {
-        this.init();
-        this.activated = true;
-        const that = this;
+    attachSelectionHandlers() {
+        const eventTypes = ['click', 'mouseover', 'mouseout'];
+        const elLists = document.querySelector('#itemListToplists');
+        for (const type of eventTypes) {
+            elLists.addEventListener(type, e => {
+                const elList = e.target.closest('.listItemToplist');
+                if (!this.selectionStarted || !elList) return;
 
-        $('button#cfgListCCActivate')
-            .after('<button id="cfgListCCDeactivate">Deactivate</button>');
+                if (e.type === 'mouseover') {
+                    elList.classList.add('icmeCRHover');
+                } else if (e.type === 'mouseout') {
+                    elList.classList.remove('icmeCRHover');
+                } else if (e.type === 'click') {
+                    elList.classList.toggle('icmeCRSelected');
+                }
+            });
+        }
+    }
 
-        $('div#crActions').on('click', 'button#cfgListCCDeactivate', () => {
-            that.deactivate();
-            $('button#cfgListCCActivate').prop('disabled', false);
-        });
+    async run() {
+        const elLists = [...document.querySelectorAll('.icmeCRSelected')];
+        const results = await this.fetchMovies(elLists);
 
-        // ff 3.6 compatibility (ff 3.6 fails to unbind the events in all possible ways)
-        if (this.activatedOnce) {
-            return;
+        const counter = {};
+        results.forEach(elMovies => ListCrossRef.updateCounter(elMovies, counter));
+
+        this.output(elLists, counter);
+    }
+
+    async fetchMovies(elLists) {
+        const sel = `#itemListMovies > li${this.config.unchecked_only ? '.unchecked' : ''}`;
+        const results = [];
+        for (const elList of elLists) {
+            const url = elList.querySelector('a.title').href;
+            elList.classList.add('icmeCRPending');
+
+            /* eslint-disable no-await-in-loop -- Load pages one by one to reduce the load */
+            const elMovies = await extractFrom(url, el => el.querySelectorAll(sel));
+            results.push(elMovies);
+            await sleep(500);
+            /* eslint-enable no-await-in-loop */
+
+            elList.classList.remove('icmeCRPending', 'icmeCRSelected');
         }
 
-        $('ol#itemListToplists li').on('click mouseover mouseout', function (e) {
-            const activeAndIdle = that.activated && !that.inProgress;
-            if (!activeAndIdle) { // ff 3.6 compatibility
+        return results;
+    }
+
+    static updateCounter(elMovies, counter) {
+        elMovies.forEach(elMovie => {
+            const { id } = elMovie;
+            if (counter[id]) {
+                counter[id].count += 1;
                 return;
             }
 
-            const $li = $(this);
-            // event actions must not work for cloned toplists under the selected tab
-            if ($li.hasClass('icme_listcc')) {
-                // eslint-disable-next-line consistent-return
-                return false; // ff 3.6 compatibility
+            // Compatibility with the NewTabs module
+            const owned = load('owned_movies') ?? [];
+            if (owned.includes(id)) {
+                elMovie.classList.remove('notowned');
+                elMovie.classList.add('owned');
             }
 
-            const wasSelected = $li.hasClass('icme_listcc_selected');
-            if (e.type === 'mouseover' && !wasSelected) {
-                $li.addClass('icme_listcc_hover').find('span.percentage').hide();
-            } else if (e.type === 'mouseout' && !wasSelected) {
-                $li.removeClass('icme_listcc_hover').find('span.percentage').show();
-            } else if (e.type === 'click') {
-                $li.removeClass('icme_listcc_hover');
-                $li.toggleClass('icme_listcc_selected');
+            const elTitle = elMovie.querySelector('h2 a');
+            const title = elTitle.textContent.trim();
+            const url = elTitle.href;
+            const year = elMovie.querySelector('.info > a:first-of-type').textContent;
 
-                if (wasSelected) { // before click
-                    $li.addClass('icme_listcc_hover');
-                }
-            }
-
-            // eslint-disable-next-line consistent-return
-            return false; // ff 3.6 compatibility
-        });
-
-        this.activatedOnce = true;
-    }
-
-    deactivate() {
-        const $selectedToplists = $('li.icme_listcc_selected', 'ul#topLists');
-
-        // if there's still selected top lists, change them back to normal
-        $selectedToplists.removeClass('icme_listcc_selected').find('span.percentage').show();
-
-        $('ol#itemListToplists').children('li')
-            .removeClass('icme_listcc_selected').removeClass('icme_listcc_hover');
-        $('button#icme_listcc_check, button#cfgListCCDeactivate').remove();
-        $('li#topListCategoryCCSelected').remove();
-        $('button#cfgListCCActivate').prop('disabled', false);
-
-        this.init();
-    }
-
-    // Check through every selected top list
-    check() {
-        const $toplistCont = $('ol#itemListToplists');
-
-        // make selected top lists normal under the regular tabs
-        $toplistCont.children('li.icme_listcc_selected')
-            .removeClass('icme_listcc_selected')
-            .find('span.percentage').show();
-
-        // get selected top lists
-        const $toplists = $toplistCont.children('li.icme_listcc');
-
-        this.inProgress = true;
-
-        // sort selected top lists in ascending order by number of unchecked films
-        const getUnchecked = x => {
-            const checks = $(x).find('span.info > strong:first').text().split('/');
-            return checks[1] - checks[0];
-        };
-
-        $toplists.sort((a, b) => (getUnchecked(a) < getUnchecked(b) ? -1 : 1));
-
-        // make selected toplists highlighted under the selected tab
-        $toplists.addClass('icme_listcc_selected').find('span.percentage').hide();
-
-        this.$toplists = $toplists;
-        this.getUncheckedFilms(this.$toplists.eq(this.sequenceNumber));
-    }
-
-    getUncheckedFilms($list) {
-        const url = $list.find('a').attr('href');
-        $list.addClass('icme_listcc_pending');
-
-        const that = this;
-        $.get(url, response => {
-            $list.removeClass('icme_listcc_selected icme_listcc_pending')
-                .find('span.percentage').show();
-
-            const filter = that.config.checks ? '' : 'li.unchecked';
-            // the site returns html with extra whitespace
-            const $unchecked = $($.parseHTML(response)).find('ol#itemListMovies').children(filter);
-
-            that.updateMovies($unchecked);
+            counter[id] = { count: 1, title, url, year, el: elMovie };
         });
     }
 
-    // eslint-disable-next-line valid-jsdoc
-    /**
-     * Update array of movies.
-     *
-     * @param {jQuery} $content - unchecked movies (<li> elements) on a top list page
-     */
-    updateMovies($content) {
-        this.sequenceNumber += 1;
-
-        // keeps track if at least one movie on the current top list is also found
-        //   on all previous top lists (if checking for movies found on all top lists).
-        // it's a major optimization that halts the script if there's a top list with 0 matches
-        //   especially early on and doesn't go on to check all the rest of the lists wasting time
-        let globalToplistMatch = false;
-
-        const showPerfectMatches = this.config.match_all;
-
-        const that = this;
-        $content.each(function () {
-            let found = false;
-            const $movie = $(this);
-            const $movieTitle = $movie.find('h2');
-            const title = $movieTitle.text().trim();
-            const url = $movieTitle.find('a').attr('href');
-            const year = $movieTitle.next('span.info').children('a:first').text();
-
-            for (const movieObj of that.movies) {
-                // compare urls as they're guaranteed to be unique
-                // in some cases movie title and release year are the same for different movies
-                // which results in incorrect top list values
-                if (url === movieObj.url) {
-                    movieObj.count += 1;
-                    movieObj.jq.find('.rank').html(movieObj.count);
-                    found = true;
-                    globalToplistMatch = true;
-                    break;
-                }
-            }
-
-            // if a movie wasn't found on previous top lists,
-            // add it to the main movies array
-            //   only if the script is not checking for matches on all top lists
-            //     OR if the script is     checking for matches on all top lists,
-            //        but this is just the first top list
-            if (!found && (!showPerfectMatches || that.sequenceNumber === 1)) {
-                $movie.find('.rank').html('0');
-                const itemid = $movie.attr('id');
-
-                // check if owned
-                const owned = load('owned_movies') ?? [];
-                if (owned.indexOf(itemid) !== -1) {
-                    $movie.removeClass('notowned').addClass('owned');
-                }
-
-                that.movies.push({ title, url, year, count: 1, jq: $movie });
-            }
-        });
-
-        let hasToplistsLeft = this.sequenceNumber < this.$toplists.length;
-
-        // if finding movies on all selected top lists
-        if (showPerfectMatches) {
-            // if one or more movies was found on all selected top lists
-            if (globalToplistMatch) {
-                // if not first top list, extract movies that have been found
-                // on all selected top lists
-                if (this.sequenceNumber > 1) {
-                    const cutoff = this.sequenceNumber;
-                    this.movies = $.grep(this.movies, el => el.count === cutoff);
-                }
-                // if didn't find a single match, abort if it's the last or not the first top list
-            } else if (this.sequenceNumber > 1 || !hasToplistsLeft) {
-                this.movies = [];
-                hasToplistsLeft = false; // force output
-            }
-        }
-
-        // if there's still more top lists
-        if (hasToplistsLeft) {
-            this.getUncheckedFilms(this.$toplists.eq(this.sequenceNumber));
-        } else {
-            this.outputMovies();
-        }
-    }
-
-    outputMovies() {
-        const showPerfectMatches = this.config.match_all;
-
-        if (!showPerfectMatches) {
-            const limit = this.config.match_min;
-
-            if (limit > 0) {
-                this.movies = $.grep(this.movies, el => el.count >= limit);
-            }
-        }
+    output(elLists, counter) {
+        let cutoff = this.config.match_all ? elLists.length : this.config.match_min;
+        cutoff = Math.max(2, cutoff); // doesn't make sense to have a cutoff lower than 2
+        const isOnEnoughLists = id => counter[id].count >= Math.max(2, cutoff);
+        const movies = Object.keys(counter).filter(isOnEnoughLists).map(k => counter[k]);
 
         // Sort by checks DESC, then by year ASC, then by title ASC
-        this.movies.sort((a, b) => {
-            /* eslint-disable no-else-return */
-            if (a.count > b.count) {
-                return -1;
-            } else if (a.count < b.count) {
-                return 1;
-            } else if (a.year < b.year) {
-                return -1;
-            } else if (a.year > b.year) {
-                return 1;
-            } else if (a.title < b.title) {
-                return -1;
-            } else if (a.title > b.title) {
-                return 1;
-            }
-            /* eslint-enable no-else-return */
+        movies.sort((a, b) =>
+            b.count - a.count || a.year - b.year || a.title.localeCompare(b.title));
 
-            return 0;
+        // Collapse visible lists from previous runs
+        document.querySelectorAll('.topListMoviesFilter.active a').forEach(el => el.click());
+
+        const listTitles = elLists.map(el => `
+            <li><b>${el.querySelector('h2').textContent.trim()}</b></li>
+        `);
+        document.querySelector('#itemContainer').insertAdjacentHTML('afterend', `
+            <div class="icmeCRResults">
+                ${movies.length} ${this.config.unchecked_only ? 'unchecked' : ''} movies
+                appear on ${this.config.match_all ? 'all' : `at least ${cutoff}`} of these lists:
+                <ul>${listTitles.join('')}</ul>
+            </div>
+        `);
+
+        if (!movies.length) return;
+
+        const elResults = document.querySelector('.icmeCRResults');
+        elResults.insertAdjacentHTML('beforeend', `
+            <ul class="tabMenu tabMenuPush">
+                <li class="topListMoviesFilter active">
+                    <a href="#" title="View all movies">All (${movies.length})</a>
+                </li>
+                <li class="icmeCRExport">
+                    <a href="#" title="Export all movies in CSV format">Export CSV</a>
+                </li>
+            </ul>
+            <ol id="itemListMovies" class="itemList listViewNormal"></ol>
+        `);
+
+        const elMovieList = elResults.querySelector('#itemListMovies');
+        for (const movie of movies) {
+            movie.el.querySelector('.rank').innerHTML = movie.count;
+            movie.el.style.display = ''; // movies from fetched lists might be hidden
+            elMovieList.append(movie.el);
+        }
+
+        // Make movie lists collapsible
+        elResults.querySelector('.topListMoviesFilter a').addEventListener('click', e => {
+            e.preventDefault();
+            const elMovieFilter = e.target.parentElement;
+            elMovieFilter.classList.toggle('active');
+            elMovieList.style.display = elMovieFilter.classList.contains('active') ? '' : 'none';
         });
 
-        if (this.movies.length) {
-            let menu = '<ul>';
-            this.$toplists.each(function () {
-                menu += `<li><b>${$(this).find('h2').text()}</b></li>`;
+        // Allow exporting results as a .csv file
+        // TODO: unify with ExportLists
+        elResults.querySelector('.icmeCRExport a').addEventListener('click', e => {
+            e.preventDefault();
+
+            const header = '"found_toplists","title","year","official_toplists","imdb"';
+            // Target only the list below the button (in case there are several)
+            const elMovies = e.target.closest('.icmeCRResults').querySelectorAll('#itemListMovies > li');
+            const wrap = s => `"${s}"`;
+            const rows = [...elMovies].map(el => {
+                const foundToplists = el.querySelector('.rank').textContent;
+                const title = el.querySelector('h2 a').textContent.trim();
+                const year = el.querySelector('.info > a:first-of-type').textContent;
+                const toplists = el.querySelector('.info > a:last-of-type').textContent.match(/\d+/)[0];
+                const imdbUrl = el.querySelector('.optionIMDB').href;
+                return [foundToplists, title, year, toplists, imdbUrl].map(wrap).join(',');
             });
+            const data = `${header}\n${rows.join('\n')}`;
 
-            menu += `</ul>
-                <ul class="tabMenu tabMenuPush">
-                    <li class="topListMoviesFilter active">
-                        <a href="#" title="View all movies">All (${this.movies.length})</a>
-                    </li>
-                    <li class="listFilterExportCSV">
-                        <a href="#" title="Export all movies in CSV format">Export CSV</a>
-                    </li>
-                '</ul>`;
-
-            // hide previous movie list
-            $('#itemListMovies').removeAttr('id').hide();
-
-            $('#itemContainer').after('<ol id="itemListMovies" class="itemList listViewNormal"></ol>');
-            $('#itemContainer').after(menu);
-            for (const movie of this.movies) {
-                $('#itemListMovies').append(movie.jq);
-            }
-
-            $('#itemListMovies').children('li').show();
-
-            $('.topListMoviesFilter a').on('click', function (e) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-
-                const $this = $(this);
-                const $movielist = $this.parent().parent().next();
-
-                if ($movielist.is(':visible')) {
-                    $this.parent().removeClass('active');
-                    $movielist.removeAttr('id').hide();
-                } else {
-                    $this.parent().addClass('active');
-                    $movielist.attr('id', 'itemListMovies').show();
-                }
-            });
-            $('.listFilterExportCSV a').on('click', function (e) {
-                e.preventDefault();
-
-                let data = '"found_toplists","title","year","official_toplists","imdb"\n';
-                // target only the list below the button (in case there are several)
-                const $items = $(this).parents('.tabMenu').next('.itemList').children('li');
-
-                $items.each(function () {
-                    const $item = $(this);
-                    const foundToplists = $item.find('.rank').text();
-                    const title = $item.find('h2').text().trim().replace('"', '""');
-                    const year = $item.find('.info a:first').text();
-                    const toplists = Number($item.find('.info a:last').text());
-                    const imdburl = $item.find('.optionIMDB').attr('href');
-                    const line = `"${foundToplists}","${title}","${year}","${toplists}","${imdburl}"\n`;
-
-                    data += line;
-                });
-
-                // This should use window instead of unsafeWindow, but
-                // FF 39.0.3 broke changing window.location in GM sandbox.
-                // When they fix that, either revert back to window
-                // or re-use code from ExportLists.
-                // https://bugzilla.mozilla.org/show_bug.cgi?id=1192821
-                // https://github.com/greasemonkey/greasemonkey/issues/2232
-                unsafeWindow.location.href = `data:text/csv;charset=utf-8,${encodeURIComponent(data)}`;
-            });
-        } else {
-            $('#icme-crossref-notfound').remove();
-            $('#itemContainer').after('<div id="icme-crossref-notfound">Found 0 movies.</div>');
-        }
-
-        this.deactivate();
-    }
-
-    createTab() {
-        if ($('#listFilterCRSelected').length) {
-            return;
-        }
-
-        const tab = `
-            <li id="listFilterCRSelected">
-                <a href="#" class="icme_listcc">Cross-reference</a>
-                <strong style="display: none">Cross-reference</strong>
-            </li>`;
-
-        const $tlfilter = $('ul.tabMenu', 'div#itemContainer');
-        $tlfilter.append(tab);
-
-        const that = this;
-
-        // Modified from ICM source. Make the tab work.
-        $('#listFilterCRSelected a').on('click', function () {
-            const a = $(this).attr('class');
-            let $b = $(this).closest('li');
-            $('.tabMenu').find('li').each(function () {
-                $(this).removeClass('active');
-            });
-            $b.addClass('active');
-
-            if (a === 'icme_listcc' && !that.inProgress) {
-                const $topListUl = $('ol#itemListToplists');
-                $topListUl.children('li.icme_listcc').remove();
-
-                const $topLists = $topListUl.children('li.icme_listcc_selected').clone();
-
-                $topLists
-                    .removeClass('imdb critics prizes website institute misc icme_listcc_selected')
-                    .addClass('icme_listcc').find('span.percentage').show();
-
-                $topListUl.append($topLists);
-
-                const selectedTwoOrMore = $('li.icme_listcc', 'ol#itemListToplists').length >= 2;
-                if (selectedTwoOrMore && $('button#icme_listcc_check').length === 0) {
-                    const btn = '<button id="icme_listcc_check">Cross-reference</button>';
-
-                    $('div#crActions').append(btn);
-
-                    $('button#icme_listcc_check').on('click', function () {
-                        $(this).prop('disabled', true);
-
-                        that.check();
-                    });
-
-                    // Make the current tab work if we want to return to it
-                    $('ul.tabMenu').children('li').each(function () {
-                        if (!$(this).children('a').length) {
-                            const $clicked = $(this);
-                            $clicked.on('click', () => {
-                                $('ol#itemListToplists').children('li').show();
-                                $('ul.tabMenu').children('li').removeClass('active');
-                                $clicked.addClass('active');
-                                $('ol#itemListToplists').children('li.icme_listcc').remove();
-                            });
-                        }
-                    });
-                } else if (!selectedTwoOrMore && $('button#icme_listcc_check').length === 1) {
-                    $('button#icme_listcc_check').remove();
-                }
-            }
-
-            $b = $('ol#itemListToplists');
-            $b.find('li').hide();
-            $b.find(`li.${a}`).show();
-
-            return false;
+            // This should use window instead of unsafeWindow, but
+            // FF 39.0.3 broke changing window.location in GM sandbox.
+            // When they fix that, either revert back to window
+            // or re-use code from ExportLists.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=1192821
+            // https://github.com/greasemonkey/greasemonkey/issues/2232
+            unsafeWindow.location.href = `data:text/csv;charset=utf-8,${encodeURIComponent(data)}`;
         });
     }
 }
@@ -1316,8 +1104,8 @@ class HideTags extends BaseModule {
         if (this.config.list_tags) {
             // /lists/ and /movies/<title>/rankings/ have different structure
             addCSS(`
-                ol#itemListToplists.listViewNormal > li > .info:last-child,
-                ol#itemListToplists > li > .tagList {
+                #itemListToplists.listViewNormal > li > .info:last-child,
+                #itemListToplists > li > .tagList {
                     display: none !important;
                 }
             `);
@@ -1333,8 +1121,8 @@ class HideTags extends BaseModule {
 
         if (this.config.show_hover) {
             addCSS(`
-                ol#itemListToplists.listViewNormal > li:hover > .info:last-child,
-                ol#itemListToplists > li:hover > .tagList,
+                #itemListToplists.listViewNormal > li:hover > .info:last-child,
+                #itemListToplists > li:hover > .tagList,
                 ol#itemListMovies.listViewNormal > li:hover > .tagList {
                     display: block !important;
                 }
@@ -1865,7 +1653,7 @@ class ListsTabDisplay extends BaseModule {
                         }
                     }
                 });
-                observer.observe($('#crActions').parent()[0], { childList: true });
+                observer.observe($('#icmeCRActions').parent()[0], { childList: true });
             } else { // most common case
                 ListsTabDisplay.fixLinks();
             }
@@ -2203,7 +1991,7 @@ const useModules = [
     UpcomingAwardsList,
     CustomMovieColors,
     UpcomingAwardsOverview,
-    ListCrossCheck,
+    ListCrossRef,
     NewTabs,
     LargeList,
     ListOverviewSort,
