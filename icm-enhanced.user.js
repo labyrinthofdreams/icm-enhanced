@@ -1073,7 +1073,7 @@ class HideTags extends BaseModule {
 
         this.metadata = {
             title: 'Hide tags',
-            desc: 'Hides tags on movie lists and lists of lists',
+            desc: 'Hide tags on movie lists and lists of lists in normal view',
             id: 'hide_tags',
             // ICM bug: movieListGeneral and movieSearch never have tags
             enableOn: ['listsGeneral', 'listsSpecial', 'listsSearch',
@@ -1092,7 +1092,7 @@ class HideTags extends BaseModule {
                 inline: true,
                 default: true,
             }, {
-                id: 'show_hover',
+                id: 'show_on_hover',
                 desc: 'Show tags when moving the cursor over a movie or a list',
                 type: 'checkbox',
                 default: false,
@@ -1113,17 +1113,16 @@ class HideTags extends BaseModule {
 
         if (this.config.movie_tags) {
             addCSS(`
-                ol#itemListMovies.listViewNormal > li > .tagList {
+                #itemListMovies.listViewNormal > li > .tagList {
                     display: none !important;
                 }
             `);
         }
 
-        if (this.config.show_hover) {
+        if (this.config.show_on_hover) {
             addCSS(`
                 #itemListToplists.listViewNormal > li:hover > .info:last-child,
-                #itemListToplists > li:hover > .tagList,
-                ol#itemListMovies.listViewNormal > li:hover > .tagList {
+                #itemListMovies.listViewNormal > li:hover > .tagList {
                     display: block !important;
                 }
             `);
