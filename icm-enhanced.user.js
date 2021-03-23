@@ -968,8 +968,8 @@ class ListCrossRef extends BaseModule {
             }
 
             // Compatibility with the NewTabs module
-            const owned = load('owned_movies') ?? [];
-            if (owned.includes(id)) {
+            const owned = load('icme_owned_movies') ?? {};
+            if (owned[id]) {
                 elMovie.classList.remove('notowned');
                 elMovie.classList.add('owned');
             }
@@ -1136,7 +1136,7 @@ class NewTabs extends BaseModule {
 
         this.metadata = {
             title: 'New tabs',
-            desc: 'Adds additional tabs on movie lists',
+            desc: 'Add additional tabs on movie lists',
             id: 'new_tabs',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial', 'movieSearch',
                 'movie', 'movieRankings'],
@@ -1148,14 +1148,14 @@ class NewTabs extends BaseModule {
                 inline: true,
                 default: false,
             }, {
-                id: 'watchlist_tab',
+                id: 'wlist_tab',
                 desc: 'watchlisted movies',
                 type: 'checkbox',
                 inline: true,
                 default: false,
             }, {
                 id: 'free_account',
-                desc: 'Store owned movies (emulates the paid feature, ' +
+                desc: 'Store owned movies (emulates the paid feature; ' +
                     'enable only if you have a free account)',
                 type: 'checkbox',
                 default: false,
@@ -1164,113 +1164,116 @@ class NewTabs extends BaseModule {
     }
 
     attach() {
-        if (this.config.watchlist_tab && NewTabs.matchesPageType('movieList')) {
-            NewTabs.addNewTab('watch', 'watchlist');
+        if (this.config.free_account) {
+            this.trackOwned();
         }
 
-        const $markOwned = $('.optionMarkOwned');
-        if (this.config.owned_tab && $markOwned.length) {
-            if (this.config.free_account) {
-                NewTabs.trackOwned($markOwned);
-            }
-
-            NewTabs.addNewTab('owned', 'owned');
+        if (NewTabs.matchesPageType('movieList') && (this.config.wlist_tab || this.config.owned_tab)) {
+            NewTabs.prepareTabBar();
+            if (this.config.wlist_tab) NewTabs.addNewTab('watch', 'watchlist');
+            if (this.config.owned_tab) NewTabs.addNewTab('owned', 'owned');
         }
     }
 
-    // Add a new tab to a movie list (modified from ICM source)
+    static prepareTabBar() {
+        // Gain some extra space in the tab bar
+        const elAllTab = document.querySelector('#listFilterMovies a');
+        elAllTab.textContent = elAllTab.textContent.replace(' movies', '');
+
+        // Move the 'order by' and view switch elements to the list title
+        document.querySelector('#topList').insertAdjacentHTML('beforeend', `
+            <div id="icmeOrderByAndView"></div>
+        `);
+        addCSS(`
+            #icmeOrderByAndView {
+                z-index: 200;
+                position: absolute;
+                top: 30px;
+                right: 0;
+                width: 300px;
+                height: 20px;
+            }
+        `);
+        const elOrderBy = document.querySelector('#listOrdering');
+        const elView = document.querySelector('#listViewswitch');
+        document.querySelector('#icmeOrderByAndView').append(elOrderBy, elView);
+    }
+
     static addNewTab(itemClass, title) {
-        const $movielist = $('#itemListMovies');
-        if (!$movielist.length) {
-            return;
-        }
-
+        const elMovieList = document.querySelector('#itemListMovies');
         title = title.toLowerCase();
-        const titleCap = title.charAt(0).toUpperCase() + title.slice(1);
-        const count = $movielist.children(`li.${itemClass}`).length;
-        const tabHtml = `<li id="listFilter${titleCap}" class="topListMoviesFilter">` +
-            `<a id="linkListFilter${titleCap}" title="View all your ${title} movies" href="#">` +
-            `${titleCap} <span id="topListMovies${titleCap}Count">(${count})</span></a>` +
-            '</li>';
+        const titleCap = title[0].toUpperCase() + title.slice(1);
+        const count = elMovieList.querySelectorAll(`:scope > li.${itemClass}`).length;
+        const tabHtml = `
+            <li id="listFilter${titleCap}" class="topListMoviesFilter">
+                <a title="View all your ${title} movies" href="#">
+                    ${titleCap}
+                    <span id="topListMovies${titleCap}Count">(${count})</span>
+                </a>
+            </li>`;
 
-        $('#listFilterNew').before(tabHtml);
+        document.querySelector('#listFilterNew').insertAdjacentHTML('beforebegin', tabHtml);
 
-        const $first = $('#listFilterMovies').find('a');
-        $first.text($first.text().replace(' movies', ''));
+        const elTabLink = document.querySelector(`#listFilter${titleCap} a`);
+        elTabLink.addEventListener('click', e => {
+            e.preventDefault();
+            elMovieList.querySelectorAll(':scope > li.listItem')
+                .forEach(el => { el.style.display = 'none'; });
+            elMovieList.querySelectorAll(`:scope > li.${itemClass}`)
+                .forEach(el => { el.style.display = ''; });
+            document.querySelector('#topListAllMovies').style.display = 'none'; // hide 'Show all'
 
-        // move the order by and views to filter box
-        if (!$('#orderByAndView').length && $('#topList').length) {
-            $('#topList').append('<div id="orderByAndView" ' +
-                'style="z-index:200; position:absolute; top:30px; right:0; width:300px; height:20px">');
-            $('#listOrdering').detach().appendTo('#orderByAndView');
-            $('#listViewswitch').detach().appendTo('#orderByAndView');
-        }
-
-        $(`#linkListFilter${titleCap}`).on('click', function () {
-            $movielist.children('li.listItem').hide();
-            $movielist.children(`li.${itemClass}`).show();
-            $('#topListAllMovies').hide();
-
-            const $tab = $(this).closest('li');
-            $tab.siblings().removeClass('active');
-            $tab.addClass('active');
-
-            return false;
+            const elTab = elTabLink.parentElement;
+            elTab.parentElement.querySelector('.active').classList.remove('active');
+            elTab.classList.add('active');
         });
     }
 
-    static movieData($markOwnedBtn, owned) {
-        const $checkbox = $markOwnedBtn.closest('.optionIconMenu').prev('.checkbox');
-        const $movie = $checkbox.parent();
-        const movieId = $checkbox.attr('id').replace('check', 'movie');
-        const posInStorage = owned.indexOf(movieId);
-        return { $movie, movieId, posInStorage };
-    }
+    trackOwned() {
+        const owned = load('icme_owned_movies') ?? {};
 
-    static trackOwned($markOwned) {
-        let owned = load('owned_movies') ?? [];
-        const $movielist = $('#itemListMovies');
-        const onListPage = $movielist.length !== 0;
+        const elMarkOwnedArr = document.querySelectorAll('.optionMarkOwned');
+        elMarkOwnedArr.forEach(elMarkOwned => {
+            const elCheckbox = elMarkOwned.closest('.optionIconMenu').previousElementSibling;
+            const elMovie = elCheckbox.parentElement;
+            const id = elCheckbox.id.replace('check', 'movie');
 
-        // mark owned movies as owned
-        $markOwned.each(function () {
-            const { $movie, posInStorage } = NewTabs.movieData($(this), owned);
-
-            // if movie id is found in cached owned movies
-            if (posInStorage !== -1) {
-                $movie.toggleClass('notowned owned');
+            if (owned[id]) {
+                elMovie.classList.remove('notowned');
+                elMovie.classList.add('owned');
             }
 
-            // Remove paid feature pop-up
-            // (Page script binds events with its own jQuery before TM loads the script,
-            //  can't find a way to unbind them without unsafeWindow.
-            //  And only in FF (46) does removing the class also unbind events, but not in Chrome.)
-            unsafeWindow.$(this)
-                .unbind('mouseenter mouseleave')
-                .removeClass('paidFeature');
-        });
+            // Remove the paid feature pop-up using two ways to unbind events from the button
+            // (only one is not enough because TM/VM launch the script at different times)
+            const elMarkOwnedClone = elMarkOwned.cloneNode(true);
+            elMarkOwned.replaceWith(elMarkOwnedClone);
+            elMarkOwned = elMarkOwnedClone;
+            elMarkOwned.classList.remove('paidFeature');
 
-        $markOwned.on('click', function () {
-            owned = load('owned_movies') ?? []; // reload storage
-            const { $movie, movieId, posInStorage } = NewTabs.movieData($(this), owned);
+            elMarkOwned.addEventListener('click', e => {
+                e.preventDefault();
+                // ICM intercepts clicks by the class name, throwing an error in the console
+                e.stopPropagation();
 
-            // remove if movie id is found in cached owned movies, else store
-            if (posInStorage !== -1) {
-                owned.splice(posInStorage, 1);
-            } else {
-                owned.push(movieId);
-            }
+                // Storage could've changed in the meanwhile in other tabs
+                const ownedFresh = load('icme_owned_movies') ?? {};
+                if (ownedFresh[id]) {
+                    delete ownedFresh[id];
+                } else {
+                    ownedFresh[id] = true;
+                }
 
-            $movie.toggleClass('notowned owned');
+                elMovie.classList.toggle('notowned');
+                elMovie.classList.toggle('owned');
 
-            if (onListPage) {
-                const ownedCount = $movielist.children('li.owned').length;
-                $('#topListMoviesOwnedCount').text(`(${ownedCount})`);
-            }
+                if (NewTabs.matchesPageType('movieList') && this.config.owned_tab) {
+                    const ownedCount = document.querySelectorAll('#itemListMovies li.owned').length;
+                    const elTabLabelCount = document.querySelector('#topListMoviesOwnedCount');
+                    elTabLabelCount.textContent = `(${ownedCount})`;
+                }
 
-            save('owned_movies', owned);
-
-            return false;
+                save('icme_owned_movies', ownedFresh);
+            });
         });
     }
 }
