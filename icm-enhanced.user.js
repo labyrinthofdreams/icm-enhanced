@@ -8,7 +8,6 @@
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js
-// @require        https://cdnjs.cloudflare.com/ajax/libs/jquery_lazyload/1.9.5/jquery.lazyload.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/jqModal/1.3.0/jqModal.min.js
 // @grant          unsafeWindow
 // ==/UserScript==
@@ -1272,18 +1271,18 @@ class NewTabs extends BaseModule {
     }
 }
 
-class LargeList extends BaseModule {
+class LargePosters extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
         this.metadata = {
             title: 'Large posters',
-            desc: 'Display large posters on individual lists (large posters are lazy loaded)',
-            id: 'large_lists',
+            desc: 'Show large posters on individual lists (replaces normal view)',
+            id: 'large_posters',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
             options: [BaseModule.getStatus(true), {
-                id: 'autoload',
-                desc: 'Autoload',
+                id: 'default_view',
+                desc: 'Use as the default list view',
                 type: 'checkbox',
                 default: false,
             }, {
@@ -1293,43 +1292,32 @@ class LargeList extends BaseModule {
                 default: false,
             }],
         };
-
-        this.loaded = false;
     }
 
     attach() {
-        if (this.config.autoload) {
+        if (this.config.default_view) {
             this.load();
             return;
         }
 
-        // create link
         const link = `
             <span style="float: right; margin-left: 15px">
-                <a id="icme_large_posters" href="#">Large posters</a>
+                <a id="icmeLPLink" href="#">Large posters</a>
             </span>`;
 
         addToMovieListBar(link);
 
-        const that = this;
-        $('#icme_large_posters').on('click', e => {
+        const elLink = document.querySelector('#icmeLPLink');
+        elLink.addEventListener('click', e => {
             e.preventDefault();
-            that.load();
+            this.load();
+            elLink.remove();
         });
     }
 
     load() {
-        if (this.loaded) {
-            return;
-        }
-
-        this.loaded = true;
-
-        // make sure normal view is enabled
-        LargeList.enableNormalView();
-
         const root = '#itemListMovies.listViewNormal';
-        let style = `
+        let css = `
             ${root} > .listItem {
                 float: left;
                 width: 255px;
@@ -1381,61 +1369,55 @@ class LargeList extends BaseModule {
             ${root} .optionIconMenu { top: 120px; right: 20px; }
             ${root} .optionIconMenu li { display: block; }
             ${root} .optionIconMenuCheckbox { right: 20px; }
+            ${root}.icmeLPNoInfo :is(h2, .tagList, .info) { display: none; }
+            ${root}.icmeLPNoInfo .listItem { height: 270px; }
             #itemListMovies.listViewCompact > .listItem { height: auto; }
         `;
+        css = css.replace(/;/g, ' !important;');
+        addCSS(css);
 
-        style = style.replace(/;/g, ' !important;');
+        // Normal view is used as the basis for the large posters view
+        LargePosters.enableNormalView();
 
-        addCSS(style);
-
-        const $c = $('#itemListMovies').find('div.coverImage').hide();
-        for (let i = 0; i < $c.length; i++) {
-            let cururl = $c[i].style.backgroundImage;
-            if (cururl.substr(4, 1) !== 'h') {
-                cururl = cururl.slice(5, -2).replace('small', 'medium').replace('Small', 'Medium');
-            } else { // chrome handles urls differently
-                cururl = cururl.slice(4, -1).replace('small', 'medium').replace('Small', 'Medium');
-            }
-
-            const img = document.createElement('img');
-            img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIA' +
-                'AACQd1PeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMA' +
-                'AA7DAcdvqGQAAAAMSURBVBhXY5j8rA8ABBcCCCnPKCcAAAAASUVORK5CYII=';
-            img.className = 'coverImage';
-            img.setAttribute('data-original', cururl);
-            $c[i].parentNode.appendChild(img);
-        }
-
-        $('img.coverImage').lazyload({ threshold: 200 });
+        document.querySelectorAll('#itemListMovies div.coverImage').forEach(elCover => {
+            elCover.style.display = 'none';
+            const imgUrl = elCover.style.backgroundImage.split('"')[1].replace(/small/i, 'medium');
+            const imgHtml = `<img class="coverImage" src="${imgUrl}" loading="lazy">`;
+            elCover.insertAdjacentHTML('afterend', imgHtml);
+        });
 
         if (this.config.noinfo) {
-            $('#itemListMovies > li').css('height', '270px').children('h2, span.info').remove();
+            document.querySelector('#itemListMovies').classList.add('icmeLPNoInfo');
         } else {
-            // tags and long titles can increase item's height
-            // only needs to be done if titles are shown
-            LargeList.adjustHeights();
+            // Imitate click on the 'Show all' button
+            document.querySelectorAll('#itemListMovies > .listItem')
+                .forEach(el => { el.style.display = ''; });
+            document.querySelector('#topListAllMovies').style.display = 'none';
+            // Tags and long titles (if they are shown) can increase item's height
+            LargePosters.adjustHeights();
         }
     }
 
     static enableNormalView() {
-        const $normalViewSwitch = $('#listViewNormal').find('a');
-        if (!$normalViewSwitch.hasClass('active')) {
-            // copied from ICM source code
-            $('#listViewCompact').find('a').removeClass('active');
-            $normalViewSwitch.addClass('active');
-            $('ol.itemList')
-                .removeClass('listViewCompact')
-                .addClass('listViewNormal');
-        }
+        const [elNormalView, elCompactView] = document.querySelectorAll('#listViewswitch a');
+        if (elNormalView.classList.contains('active')) return;
+        // Modified from ICM source code (triggering the click event requires @run-at document-idle)
+        elCompactView.classList.remove('active');
+        elNormalView.classList.add('active');
+        const elList = document.querySelector('.itemList');
+        elList.classList.replace('listViewCompact', 'listViewNormal');
     }
 
     static adjustHeights() {
-        $('.listItemMovie:nth-child(3n-2)').each(function () {
-            const $t = $(this);
-            const $t2 = $t.next();
-            const $t3 = $t2.next();
-            const maxHeight = Math.max($t.height(), $t2.height(), $t3.height());
-            $t.add($t2).add($t3).height(maxHeight);
+        const getHeight = el => parseFloat(getComputedStyle(el).height);
+        document.querySelectorAll('.listItemMovie:nth-child(3n-2)').forEach(el1 => {
+            const el2 = el1.nextElementSibling ?? el1;
+            const el3 = el2.nextElementSibling ?? el1;
+
+            const maxHeight = Math.max(...[el1, el2, el3].map(getHeight));
+            [el1, el2, el3].forEach(el => {
+                el.style.height = `${maxHeight}px`;
+            });
         });
     }
 }
@@ -1989,7 +1971,7 @@ const useModules = [
     UpcomingAwardsOverview,
     ListCrossRef,
     NewTabs,
-    LargeList,
+    LargePosters,
     ListOverviewSort,
     ListsTabDisplay,
     ExportLists,
