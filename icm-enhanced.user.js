@@ -1527,25 +1527,25 @@ class ProgressPage extends BaseModule {
     }
 }
 
-class ListsTabDisplay extends BaseModule {
+class GroupMovieLists extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
         this.metadata = {
-            title: 'Lists tab display',
+            title: 'Group movie lists',
             desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
                 '<a href="/movies/pulp+fiction/rankings/">example</a>)',
-            id: 'lists_tab_display',
+            id: 'group_movie_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
                 id: 'redirect',
-                desc: 'Redirect "in # lists" movie links to "All" lists tab',
+                desc: 'Redirect "In # lists" links to all lists (instead of only official lists)',
                 type: 'checkbox',
                 default: true,
             }, {
                 id: 'sort_official',
-                frontDesc: 'Auto-sort (move to the top): ',
+                frontDesc: 'Move to the top: ',
                 desc: 'official lists',
                 type: 'checkbox',
                 inline: true,
@@ -1558,7 +1558,7 @@ class ListsTabDisplay extends BaseModule {
                 default: true,
             }, {
                 id: 'sort_groups',
-                desc: 'lists from user defined groups',
+                desc: 'lists from user-defined groups',
                 type: 'checkbox',
                 inline: true,
                 default: true,
@@ -1575,115 +1575,90 @@ class ListsTabDisplay extends BaseModule {
             }],
         };
 
-        this.$block = $('#itemListToplists');
-        this.sep = '<li class="groupSeparator"><br><hr><br></li>';
+        this.elContainer = document.querySelector('#itemListToplists');
         // multiline regex that leaves only list name, excl. a common beginning and parameters
         this.reURL = /^[ \t]*(?:https?:\/\/)?(?:www\.)?(?:icheckmovies.com)?\/?(?:lists)?\/?([^?\s]+\/)(?:\?.+)?[ \t]*$/gm;
     }
 
     attach() {
-        if (ListsTabDisplay.matchesPageType('movieRankings')) {
-            this.sortLists();
-        } else if (this.config.redirect) {
-            // cross-referencing adds new blocks that must also be fixed
-            const onListOfLists = ListsTabDisplay.matchesPageType(['listsGeneral', 'listsSpecial']);
-            if (onListOfLists && this.globalCfg.data.list_cross_ref.enabled) {
-                const observer = new MutationObserver(mutations => {
-                    for (const mutation of mutations) {
-                        // Array.from is not needed in FF, but NodeList is not iterable in Chrome:
-                        // https://code.google.com/p/chromium/issues/detail?id=401699
-                        for (const el of Array.from(mutation.addedNodes)) {
-                            if (el.id === 'itemListMovies') {
-                                ListsTabDisplay.fixLinks($(el));
-                            }
-                        }
-                    }
-                });
-                observer.observe($('#icmeCRActions').parent()[0], { childList: true });
-            } else { // most common case
-                ListsTabDisplay.fixLinks();
-            }
-        }
+        if (GroupMovieLists.matchesPageType('movieRankings')) this.reorderLists();
+        if (!this.config.redirect) return;
+        GroupMovieLists.fixLinks();
+        this.fixLinksInNewNodes();
     }
 
-    sortLists() {
-        const lists = this.$block.children();
-        const cfg = this.config;
+    reorderLists() {
+        addCSS(`
+            .icmeGMLGroupEnd:not(:last-child) {
+                margin-bottom: 25px;
+                border-bottom: 2px solid #555;
+            }
+        `);
 
-        if (cfg.sort_official) {
-            const officialLists = lists
-                .has('ul.tagList a[href$="user%3Aicheckmovies"]')
-                .filter(function () {
-                    // icm bug: deleted lists reset to icheckmovies user
-                    return !$(this).find('.title').attr('href').endsWith('//');
-                });
-            this.move(officialLists);
+        const lists = [...this.elContainer.children];
+
+        if (this.config.sort_official) {
+            // icm bug: deleted lists reset to icheckmovies user
+            const official = lists.filter(el =>
+                el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
+                !el.querySelector('.title').href.endsWith('//'));
+            this.move(official);
         }
 
-        if (cfg.sort_groups) {
+        if (this.config.sort_groups) {
             for (const group of ['group1', 'group2']) {
-                let stored = cfg[group];
-                if (typeof stored === 'string') {
-                    // Parse textarea content
-                    console.log('Parsing ListsTabDisplay group', group);
-                    stored = stored.trim().replace(this.reURL, '$1').split('\n');
-                    cfg[group] = stored;
+                let groupUrls = this.config[group];
+                if (typeof groupUrls === 'string') { // Parse textarea content
+                    console.log('Parsing GroupMovieLists group', group);
+                    groupUrls = groupUrls.trim().replace(this.reURL, '$1').split('\n');
+                    this.config[group] = groupUrls;
                     this.globalCfg.save();
                 }
 
-                const $personal = this.getLists(stored);
-                this.move($personal);
+                const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
+                const personal = lists.filter(el => groupUrls.includes(getShortUrl(el)));
+                this.move(personal);
             }
         }
 
-        if (cfg.sort_filmos) {
-            const $filmos = lists.filter(function () {
-                return $(this).text().toLowerCase().indexOf('filmography') >= 0;
-            });
-            this.move($filmos);
+        if (this.config.sort_filmos) {
+            const filmos = lists.filter(el => el.textContent.toLowerCase().includes('filmography'));
+            this.move(filmos);
         }
-
-        // visual fix for edge cases when all lists are moved
-        lists.last().filter('.groupSeparator').hide();
     }
 
-    move(lists) {
-        if (!lists.length) {
-            return;
-        }
-
-        const $target = this.$block.find('li.groupSeparator').last();
-        if ($target.length) {
-            $target.after(lists, this.sep);
+    move(elLists) {
+        if (!elLists.length) return;
+        const elGroupEnds = this.elContainer.querySelectorAll('.icmeGMLGroupEnd');
+        if (elGroupEnds.length) {
+            elGroupEnds[elGroupEnds.length - 1].after(...elLists);
         } else {
-            this.$block.prepend(lists, this.sep);
+            this.elContainer.prepend(...elLists);
         }
+
+        elLists[elLists.length - 1].classList.add('icmeGMLGroupEnd');
     }
 
-    getLists(listIDs) {
-        if (!listIDs.length) {
-            return [];
-        }
-
-        const $selected = this.$block.children().filter(function () {
-            const href = $(this).find('a.title').attr('href');
-            return href && $.inArray(href.substring(7), listIDs) !== -1; // sep matches too
+    static fixLinks(elContainer = document) {
+        const elLinksToLists = elContainer.querySelectorAll('.listItemMovie .info a:last-of-type');
+        elLinksToLists.forEach(el => {
+            el.href = el.href.replace('?tags=user:icheckmovies', '');
         });
-        return $selected;
     }
 
-    // $container - Optional target that contains links to be fixed
-    static fixLinks($container) {
-        if ($container === undefined) {
-            $container = $('body');
-        }
-
-        const $linksToLists = $container.find('.listItemMovie > .info > a:nth-of-type(2)');
-        $linksToLists.each(function () {
-            const $link = $(this);
-            const url = $link.attr('href').replace('?tags=user:icheckmovies', '');
-            $link.attr('href', url);
-        });
+    // Cross-referencing adds new blocks that must also be fixed
+    fixLinksInNewNodes() {
+        const onListOfLists = GroupMovieLists.matchesPageType(['listsGeneral', 'listsSpecial']);
+        const isCREnabled = this.globalCfg.data.list_cross_ref.enabled;
+        if (!onListOfLists || !isCREnabled) return;
+        const mut = new MutationObserver(mutList => mutList.forEach(({ addedNodes }) => {
+            for (const el of addedNodes) {
+                if (el.classList?.contains('icmeCRResults')) {
+                    GroupMovieLists.fixLinks(el);
+                }
+            }
+        }));
+        mut.observe(document.querySelector('#icmeCRActions').parentElement, { childList: true });
     }
 }
 
@@ -1941,7 +1916,7 @@ const useModules = [
     NewTabs,
     LargePosters,
     ProgressPage,
-    ListsTabDisplay,
+    GroupMovieLists,
     ExportLists,
     ProgressTopX,
     FastReorderLists,
