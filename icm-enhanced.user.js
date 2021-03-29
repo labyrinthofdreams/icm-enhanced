@@ -1422,33 +1422,36 @@ class LargePosters extends BaseModule {
     }
 }
 
-class ListOverviewSort extends BaseModule {
+class ProgressPage extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
         this.metadata = {
             title: 'Progress page',
             desc: 'Change the order of lists on the progress page',
-            id: 'toplists_sort',
+            id: 'progress_page',
             enableOn: ['progress'],
             options: [BaseModule.getStatus(false), {
-                id: 'autosort',
+                id: 'sort_by_completion',
+                frontDesc: '',
                 desc: 'Sort lists by completion rate',
                 type: 'checkbox',
+                inline: true,
                 default: true,
             }, {
-                id: 'order',
-                desc: 'Descending',
+                id: 'desc_order',
+                desc: 'in descending order',
                 type: 'checkbox',
+                inline: true,
                 default: true,
             }, {
-                id: 'single_col',
-                desc: 'Single column',
+                id: 'left_to_right',
+                desc: 'Fill columns from left to right',
                 type: 'checkbox',
                 default: false,
             }, {
-                id: 'icebergs',
-                desc: 'Fill columns from left to right',
+                id: 'single_col',
+                desc: 'Show as a single column',
                 type: 'checkbox',
                 default: false,
             }, {
@@ -1465,74 +1468,47 @@ class ListOverviewSort extends BaseModule {
             addCSS('.itemList .listItem.listItemProgress { float: none !important; }');
         }
 
-        const order = this.config.order === true ? 'desc' : 'asc';
+        const order = this.config.desc_order === true ? 'desc' : 'asc';
         this.rearrange(order, 'all');
 
-        const that = this;
-        $('#progressFilter a').not('#progressFilter-all').one('click', function () {
-            const [, section] = $(this).attr('id').split('-');
-            that.rearrange(order, section);
-        });
+        const elFilters = document.querySelectorAll('#progressFilter [id^=progressFilter-]');
+        elFilters.forEach(el => el.addEventListener('click', () => {
+            const [, section] = el.id.split('-');
+            this.rearrange(order, section);
+        }));
     }
 
     rearrange(order, section) {
-        const $toplistList = $(`#progress${section}`);
-        let $toplistItems = $toplistList.children('li').detach();
-        let isInterweaved = true;
+        const elContainer = document.querySelector(`#progress${section}`);
+        let elLists = [...elContainer.children];
+        elLists.forEach(el => el.remove());
+
+        elLists = ProgressPage.straighten(elLists);
 
         if (this.config.hide_imdb && section === 'all') {
-            if (this.config.autosort) {
-                $toplistItems = $toplistItems.not('.imdb');
-                // list would be sorted anyway, but until then the order is incorrect
-            } else {
-                // preserve original order
-                $toplistItems = $(ListOverviewSort.straighten($toplistItems.toArray())).not('.imdb');
-                isInterweaved = false;
-            }
+            elLists = elLists.filter(el => !el.classList.contains('imdb'));
         }
 
-        let toplistArr = $toplistItems.toArray();
-
-        if (this.config.autosort) {
-            const lookupMap = toplistArr.map((item, index) => {
-                const width = $(item).find('span.progress').css('width').replace('px', '');
-                return { index, value: parseFloat(width) };
-            });
-
-            lookupMap.sort((a, b) => (order === 'asc' ? 1 : -1) * (a.value > b.value ? 1 : -1));
-            toplistArr = lookupMap.map(e => toplistArr[e.index]);
-            isInterweaved = false;
+        if (this.config.sort_by_completion) {
+            const getWidth = el => parseFloat(el.querySelector('.progress').style.width);
+            const widths = new Map(elLists.map(el => [el, getWidth(el)]));
+            elLists.sort((a, b) => (order === 'asc' ? 1 : -1) * (widths.get(a) - widths.get(b)));
         }
 
-        // check corner cases to avoid excessive sorting
-        const verticalOrder = this.config.icebergs || this.config.single_col;
-        if (!isInterweaved && !verticalOrder) {
-            // restore default two-column view after sorting/hiding
-            toplistArr = ListOverviewSort.interweave(toplistArr);
+        if (!this.config.single_col && !this.config.left_to_right) {
+            // Restore default two-column view
+            elLists = ProgressPage.interweave(elLists);
         }
 
-        if (isInterweaved && verticalOrder) {
-            // no sorting/hiding happened; rearrange the list with original order
-            toplistArr = ListOverviewSort.straighten(toplistArr);
-        }
-
-        $toplistList.append(toplistArr);
+        elContainer.append(...elLists);
     }
 
     // [1, 'a', 2, 'b', 3, 'c']    -> [1, 2, 3, 'a', 'b', 'c']
     // [1, 'a', 2, 'b', 3, 'c', 4] -> [1, 2, 3, 4, 'a', 'b', 'c']
     static straighten(list) {
-        const even = [];
-        const odd = [];
-        for (let i = 0; i < list.length; i++) {
-            if (i % 2 === 0) {
-                even.push(list[i]);
-            } else {
-                odd.push(list[i]);
-            }
-        }
-
-        return $.merge(even, odd);
+        const even = list.filter((_, i) => i % 2 === 0);
+        const odd = list.filter((_, i) => i % 2 !== 0);
+        return [...even, ...odd];
     }
 
     // [1, 2, 3, 'a', 'b', 'c']    -> [1, 'a', 2, 'b', 3, 'c']
@@ -1549,14 +1525,6 @@ class ListOverviewSort extends BaseModule {
 
         return res;
     }
-
-    // tests
-    /* a = [1, 'a', 2, 'b', 3, 'c', 4, 'd'];
-    b = [1, 'a', 2, 'b', 3, 'c', 4];
-    function test(arr) {
-        return JSON.stringify(arr) === JSON.stringify(interweave(straighten(arr)));
-    }
-    test(a) && test(b) */
 }
 
 class ListsTabDisplay extends BaseModule {
@@ -1972,7 +1940,7 @@ const useModules = [
     ListCrossRef,
     NewTabs,
     LargePosters,
-    ListOverviewSort,
+    ProgressPage,
     ListsTabDisplay,
     ExportLists,
     ProgressTopX,
