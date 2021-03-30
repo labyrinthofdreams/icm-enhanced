@@ -1687,49 +1687,39 @@ class ExportLists extends BaseModule {
     }
 
     attach() {
-        const cfg = this.config;
-        let sep = cfg.delimiter;
+        const elExport = document.querySelector('.optionExport');
+        elExport.href = '#';
+        const elMovies = document.querySelectorAll('#itemListMovies > li');
+        const filename = document.querySelector(':is(#topList, #listTitle) > h1').textContent;
+        ExportLists.export(elExport, elMovies, filename, this.config.delimiter, this.config.bom);
+    }
 
-        $('.optionExport').one('click', function () {
-            if (sep !== ',' && sep !== ';') {
-                sep = '\t';
-            }
-
-            const colNames = ['rank', 'title', 'aka', 'year', 'official_toplists',
-                'checked', 'favorite', 'dislike', 'imdb'];
-            let data = `${colNames.join(sep)}${sep}\n`;
-
-            const encodeField = field => (field.indexOf('"') !== -1 || field.indexOf(sep) !== -1 ?
-                `"${field.replace(/"/g, '""')}"` :
-                field);
-
-            $('#itemListMovies > li').each(function () {
-                const $item = $(this);
-                const rank = $item.find('.rank').text().trim().replace(/ .+/, '');
-                const title = encodeField($item.find('h2>a').text());
-                const aka = encodeField($item.find('.info > em').text());
-                const year = $item.find('.info a:first').text();
-                const toplists = parseInt($item.find('.info a:nth-of-type(2)').text(), 10);
-                const checked = $item.hasClass('checked') ? 'yes' : 'no';
-                const isFav = $item.hasClass('favorite') ? 'yes' : 'no';
-                const isDislike = $item.hasClass('hated') ? 'yes' : 'no';
-                const imdburl = $item.find('.optionIMDB').attr('href');
-                const cols = [rank, title, aka, year, toplists, checked, isFav, isDislike, imdburl];
-                const line = `${cols.join(sep)}${sep}\n`;
-                data += line;
+    static export(elExport, elMovies, filename, sep, useBom) {
+        if (sep !== ',' && sep !== ';') sep = '\t';
+        const wrap = field => (field.includes('"') || field.includes(sep) ?
+            `"${field.replace(/"/g, '""')}"` : field);
+        const colNames = ['rank', 'title', 'aka', 'year', 'official_toplists',
+            'checked', 'favorite', 'dislike', 'imdb'];
+        elExport.addEventListener('click', () => {
+            const rows = [...elMovies].map(el => {
+                const rank = el.querySelector('.rank').textContent.match(/\d+/)[0];
+                const title = wrap(el.querySelector('h2 > a').textContent);
+                const aka = wrap(el.querySelector('.info > em')?.textContent ?? '');
+                const year = el.querySelector('.info > a:first-of-type')?.textContent ?? '';
+                const toplists = el.querySelector('.info > a:nth-of-type(2)').textContent.match(/\d+/)[0];
+                const checked = el.classList.contains('checked') ? 'yes' : 'no';
+                const isFav = el.classList.contains('favorite') ? 'yes' : 'no';
+                const isDislike = el.classList.contains('hated') ? 'yes' : 'no';
+                const imdbUrl = el.querySelector('.optionIMDB').href;
+                const cols = [rank, title, aka, year, toplists, checked, isFav, isDislike, imdbUrl];
+                return `${cols.join(sep)}`;
             });
+            const data = `${colNames.join(sep)}\n${rows.join('\n')}`;
+            // For Excel compat: BOM, ; or , as separator and no sep=
+            const bom = useBom ? '\uFEFF' : '';
 
-            // BOM with ; or , as separator and without sep= - for Excel
-            const bom = cfg.bom ? '\uFEFF' : '';
-            const dataURI = `data:text/csv;charset=utf-8,${bom}${encodeURIComponent(data)}`;
-            const filename = $('#topList>h1').text().trim() || $('#listTitle > h1').text().trim();
-            // link swapping with a correct filename - http://caniuse.com/download
-            $(this).attr('href', dataURI).attr('download', `${filename}.csv`);
-
-            // after changing URL jQuery fires a default click event
-            // on the link user clicked on, and loads dataURI as URL (!)
-            // I could've used preventDefault + change window.location.href,
-            // but that way the file wouldn't have a correct filename
+            elExport.href = `data:text/csv;charset=utf-8,${bom}${encodeURIComponent(data)}`;
+            elExport.download = `${filename}.csv`;
         });
     }
 }
