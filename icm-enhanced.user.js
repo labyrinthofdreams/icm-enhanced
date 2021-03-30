@@ -1709,8 +1709,9 @@ class ProgressTopX extends BaseModule {
         super(globalCfg);
 
         this.metadata = {
-            title: 'Progress top X',
-            desc: 'Find out how many checks you need to get into Top 25/50/100/1000/...',
+            title: 'Progress: checks to get into Top-1000',
+            desc: 'Find out how many checks you need to get into Top-25/50/100/1000/...' +
+                '<br>Adds a link to the progress page that will attach this number to each list.',
             id: 'progress_top_x',
             enableOn: ['progress'],
             options: [BaseModule.getStatus(true), {
@@ -1723,43 +1724,50 @@ class ProgressTopX extends BaseModule {
     }
 
     attach() {
-        const style = 'float: left; margin-right: 0.5em';
-        const attr = { style, text: 'Load stats', id: 'icme_req_for_top', href: '#' };
-        // can't pass the value directly in case of user changing it and not reloading
-        const $loadLink = $('<a>', attr).click({ cfg: this.config }, ProgressTopX.addStats);
-        const $spanElem = $('<span>', { style, text: ' | ' });
-
-        $('#listOrderingWrapper').prepend($loadLink, $spanElem);
+        addCSS(`#icmePTXLink {
+            float: left;
+            margin-right: 1em;
+        }`);
+        const targetRank = Number(this.config.target_page) * 25;
+        const html = `<a id="icmePTXLink" href="#">Checks to get into Top-${targetRank}</a>`;
+        document.querySelector('#listOrderingWrapper').insertAdjacentHTML('afterbegin', html);
+        const elLink = document.querySelector('#icmePTXLink');
+        // Can't pass the value directly in case of user changing it and not reloading
+        elLink.addEventListener('click', event => this.addStats(event));
     }
 
-    static addStats(event) {
-        const targetPage = parseInt(event.data.cfg.target_page, 10); // * 25 = target rank
-        const $lists = $('.itemListCompact[id^="progress"]:visible span.rank a');
+    addStats(event) {
+        event.preventDefault();
+        const targetPage = Number(this.config.target_page); // * 25 = target rank
+        const elActiveTab = [...document.querySelectorAll('.itemListCompact[id^="progress"]')]
+            .filter(el => el.style.display !== 'none')[0];
+        const lists = [...elActiveTab.children].map(elList => ({
+            elTarget: elList.querySelector('.rank'),
+            listUrl: elList.querySelector('.title').href,
+            checks: Number(elList.querySelector('.rank').textContent.match(/\d+|-/g)[0]),
+            rank: Number(elList.querySelector('.rank').textContent.match(/\d+|-/g)[2]),
+        }));
 
-        $lists.each(function () {
-            const $list = $(this);
-            const oldText = $list.text();
-            const curRank = oldText.match(/\d+/);
+        const getMinChecksFromTopusersPage = el => {
+            const elLastProfile = el.querySelector('.listItemProfile:last-child');
+            return Number(elLastProfile.querySelector('.info strong').textContent);
+        };
 
-            if (curRank < targetPage * 25) {
-                return;
-            }
+        lists.forEach(async ({ elTarget, listUrl, checks, rank }) => {
+            if (rank < targetPage * 25) return; // don't skip NaNs for lists with 0 checks
+            // Pages higher than the last available page return the last page
+            const url = `${listUrl}topusers/?page=${targetPage}`;
+            const minChecks = await extractFrom(url, getMinChecksFromTopusersPage);
+            const dif = minChecks - checks;
 
-            const url = $list.attr('href').replace(/=.*$/, `=${targetPage}`);
-            const progress = parseInt($list.parent().text().match(/\d+/), 10);
-
-            $.get(url, data => {
-                data = data.match(/\d+<\/strong> checks in this list,/g).pop().match(/\d+/);
-                if (data) {
-                    const minchecks = parseInt(data[0], 10);
-                    const dif = minchecks - progress;
-                    $list.text(`${oldText} - ${minchecks} req - ${dif} dif`);
-                    $list.attr('href', url);
-                }
-            });
+            const elText = elTarget.childNodes[0];
+            elText.remove();
+            elTarget.insertAdjacentHTML('afterbegin', `
+                <a href="${url}" title="Checks needed to get into Top-${targetPage * 25}">
+                    ${elText.textContent} - ${dif}
+                </a>
+            `);
         });
-
-        return false; // prevents auto-scrolling to the top
     }
 }
 
