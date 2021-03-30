@@ -1015,6 +1015,7 @@ class ListCrossRef extends BaseModule {
             <ol id="itemListMovies" class="itemList listViewNormal"></ol>
         `);
 
+        // Target only the topmost list (in case there are several)
         const elMovieList = elResults.querySelector('#itemListMovies');
         for (const movie of movies) {
             movie.el.querySelector('.rank').innerHTML = movie.count;
@@ -1031,32 +1032,11 @@ class ListCrossRef extends BaseModule {
         });
 
         // Allow exporting results as a .csv file
-        // TODO: unify with ExportLists
-        elResults.querySelector('.icmeCRExport a').addEventListener('click', e => {
-            e.preventDefault();
-
-            const header = '"found_toplists","title","year","official_toplists","imdb"';
-            // Target only the list below the button (in case there are several)
-            const elMovies = e.target.closest('.icmeCRResults').querySelectorAll('#itemListMovies > li');
-            const wrap = s => `"${s}"`;
-            const rows = [...elMovies].map(el => {
-                const foundToplists = el.querySelector('.rank').textContent;
-                const title = el.querySelector('h2 a').textContent.trim();
-                const year = el.querySelector('.info > a:first-of-type').textContent;
-                const toplists = el.querySelector('.info > a:last-of-type').textContent.match(/\d+/)[0];
-                const imdbUrl = el.querySelector('.optionIMDB').href;
-                return [foundToplists, title, year, toplists, imdbUrl].map(wrap).join(',');
-            });
-            const data = `${header}\n${rows.join('\n')}`;
-
-            // This should use window instead of unsafeWindow, but
-            // FF 39.0.3 broke changing window.location in GM sandbox.
-            // When they fix that, either revert back to window
-            // or re-use code from ExportLists.
-            // https://bugzilla.mozilla.org/show_bug.cgi?id=1192821
-            // https://github.com/greasemonkey/greasemonkey/issues/2232
-            unsafeWindow.location.href = `data:text/csv;charset=utf-8,${encodeURIComponent(data)}`;
-        });
+        const elExport = elResults.querySelector('.icmeCRExport a');
+        const filename = 'Cross-referencing results';
+        const { delimiter, bom } = this.globalCfg.data.export_lists;
+        // eslint-disable-next-line no-use-before-define
+        ExportLists.export(elExport, elMovieList.children, filename, delimiter, bom);
     }
 }
 
