@@ -310,10 +310,6 @@ class ConfigWindow {
             #icmeCfgModule input { margin: 0px 3px; }
             #icmeCfgModule input[type=text] { font-family: monospace }
             #icmeCfgModule .icmeCfgTextareaDesc { vertical-align: top; margin-right: 5px }
-            #icmeCfgSave {
-                position: absolute;
-                top: 515px;
-            }
         `);
 
         // Create and append a new item in the drop down menu under your username
@@ -335,13 +331,11 @@ class ConfigWindow {
                 <select id="icmeCfgModuleList" name="modulelist">${options}</select>
                 <hr>
                 <div id="icmeCfgModule"></div>
-                <button id="icmeCfgSave">Save settings</button>
             </div>
         `;
 
         document.body.insertAdjacentHTML('beforeend', cfgMainHtml);
         const elCfgMain = document.querySelector('#icmeCfgMain');
-        const elSaveBtn = elCfgMain.querySelector('#icmeCfgSave');
         const elModuleList = elCfgMain.querySelector('#icmeCfgModuleList');
 
         elCfgMain.addEventListener('change', e => {
@@ -353,12 +347,7 @@ class ConfigWindow {
                 this.globalCfg.set(path, e.target.value);
             }
 
-            elSaveBtn.disabled = false;
-        });
-
-        elSaveBtn.addEventListener('click', () => {
             this.globalCfg.save();
-            elSaveBtn.disabled = true;
         });
 
         elModuleList.addEventListener('change', () => {
@@ -421,7 +410,8 @@ class ConfigWindow {
 
         elModal.append(elContent);
 
-        elTrigger.addEventListener('click', () => {
+        elTrigger.addEventListener('click', e => {
+            e.preventDefault();
             elModalOverlay.style.display = 'block';
         });
 
