@@ -1039,6 +1039,7 @@ class ListCrossRef extends BaseModule {
         if (!movies.length) return;
 
         const elResults = $('.icmeCRResults');
+        elResults.scrollIntoView();
         elResults.insertAdjacentHTML('beforeend', `
             <ul class="tabMenu tabMenuPush">
                 <li class="topListMoviesFilter active">
