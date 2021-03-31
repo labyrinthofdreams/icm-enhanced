@@ -16,6 +16,9 @@ const VERSION = '1.8.0';
 
 // ----- Utils -----
 
+const $ = sel => document.querySelector(sel); // eslint-disable-line no-redeclare
+const $$ = sel => document.querySelectorAll(sel);
+
 const save = (key, val) => localStorage.setItem(key, JSON.stringify(val));
 const load = key => JSON.parse(localStorage.getItem(key));
 const addCSS = css => document.head.insertAdjacentHTML('beforeend', `<style>${css}</style>`);
@@ -80,14 +83,14 @@ const reICM = Object.freeze({
 });
 
 const addToMovieListBar = htmlStr => {
-    if (!document.querySelector('#icmeControls')) {
+    if (!$('#icmeControls')) {
         const html = '<div id="icmeControls" style="height: 35px; position: relative"></div>';
         // movieList and movieListGeneral+Special use different headers
-        const elMain = document.querySelector(':is(#topList, #listTitle) ~ .container:last-of-type');
+        const elMain = $(':is(#topList, #listTitle) ~ .container:last-of-type');
         elMain.insertAdjacentHTML('beforebegin', html);
     }
 
-    document.querySelector('#icmeControls').insertAdjacentHTML('beforeend', htmlStr);
+    $('#icmeControls').insertAdjacentHTML('beforeend', htmlStr);
 };
 
 // ----- Base classes and config windows -----
@@ -275,18 +278,18 @@ class ConfigWindow {
         const buildHTML = opt => this.buildOptionHTML(`${id}.${opt.id}`, opt);
         const html = `<p>${desc}</p> ${options.map(buildHTML).join('')}`;
 
-        document.querySelector('#icmeCfgModule').innerHTML = html;
+        $('#icmeCfgModule').innerHTML = html;
         ConfigWindow.initColorPickers();
     }
 
     static initColorPickers() {
-        document.querySelectorAll('.icmeColorPicker').forEach(el => {
+        $$('.icmeColorPicker').forEach(el => {
             el.addEventListener('change', () => {
                 el.previousElementSibling.value = el.value;
             });
         });
 
-        document.querySelectorAll('.icmeColorPickerText').forEach(el => {
+        $$('.icmeColorPickerText').forEach(el => {
             el.addEventListener('change', () => {
                 el.nextElementSibling.value = el.value;
             });
@@ -319,7 +322,7 @@ class ConfigWindow {
                    title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a>
             </li>`;
 
-        document.querySelector('ul#profileOptions').insertAdjacentHTML('beforeend', cfgLink);
+        $('ul#profileOptions').insertAdjacentHTML('beforeend', cfgLink);
 
         this.modules.sort((a, b) => (a.title > b.title ? 1 : -1));
         const options = this.modules.map(m => `<option>${m.title}</option>`);
@@ -335,7 +338,7 @@ class ConfigWindow {
         `;
 
         document.body.insertAdjacentHTML('beforeend', cfgMainHtml);
-        const elCfgMain = document.querySelector('#icmeCfgMain');
+        const elCfgMain = $('#icmeCfgMain');
         const elModuleList = elCfgMain.querySelector('#icmeCfgModuleList');
 
         elCfgMain.addEventListener('change', e => {
@@ -356,7 +359,7 @@ class ConfigWindow {
 
         elModuleList.dispatchEvent(new Event('change'));
 
-        ConfigWindow.loadModal(elCfgMain, document.querySelector('#icmeCfgTrigger'));
+        ConfigWindow.loadModal(elCfgMain, $('#icmeCfgTrigger'));
     }
 
     static loadModal(elContent, elTrigger) {
@@ -404,9 +407,9 @@ class ConfigWindow {
             </div>
         `);
 
-        const elModalOverlay = document.querySelector('#icmeCfgModalOverlay');
+        const elModalOverlay = $('#icmeCfgModalOverlay');
         const elModal = elModalOverlay.querySelector('.icmeCfgModal');
-        const elClose = document.querySelector('.icmeCfgModalClose');
+        const elClose = $('.icmeCfgModalClose');
 
         elModal.append(elContent);
 
@@ -448,7 +451,7 @@ class RandomFilmLink extends BaseModule {
     attach() {
         // Disable on completed lists and list of checked/favs.
         // If a user unchecks a movie, it will show up only after reloading
-        if (!document.querySelectorAll('#itemListMovies > li.unchecked').length) return;
+        if (!$$('#itemListMovies > li.unchecked').length) return;
 
         const html =
             `<span style="float: right; margin-left: 15px">
@@ -457,16 +460,16 @@ class RandomFilmLink extends BaseModule {
 
         addToMovieListBar(html);
 
-        document.querySelector('#icmeRandomFilm').addEventListener('click', e => {
+        $('#icmeRandomFilm').addEventListener('click', e => {
             e.preventDefault();
             this.pickRandomFilm();
         });
 
         // Allow resetting visible movies on /movies/watchlist/ etc. by clicking on tab's label
-        const elActiveTab = document.querySelector('.tabMenu > .active');
+        const elActiveTab = $('.tabMenu > .active');
         if (!elActiveTab.querySelector('a')) {
             elActiveTab.addEventListener('click', () => {
-                document.querySelectorAll('#itemListMovies > li').forEach(el => {
+                $$('#itemListMovies > li').forEach(el => {
                     el.style.display = 'list-item';
                 });
             });
@@ -474,7 +477,7 @@ class RandomFilmLink extends BaseModule {
     }
 
     pickRandomFilm() {
-        const elUnchecked = document.querySelectorAll('#itemListMovies > li.unchecked');
+        const elUnchecked = $$('#itemListMovies > li.unchecked');
         if (!elUnchecked.length) return;
 
         if (!this.randomIndices.length) {
@@ -484,7 +487,7 @@ class RandomFilmLink extends BaseModule {
 
         const selectedIndex = this.randomIndices.pop();
 
-        document.querySelectorAll('#itemListMovies > li').forEach(el => {
+        $$('#itemListMovies > li').forEach(el => {
             el.style.display = 'none';
         });
         elUnchecked[selectedIndex].style.display = 'list-item';
@@ -520,9 +523,9 @@ class UpcomingAwardsList extends BaseModule {
     }
 
     attach() {
-        if (!document.querySelector('#itemListMovies')) return;
+        if (!$('#itemListMovies')) return;
 
-        const parseNum = sel => Number(document.querySelector(sel).textContent.match(/\d+/));
+        const parseNum = sel => Number($(sel).textContent.match(/\d+/));
         const totalItems = parseNum('#listFilterMovies');
         const checks = parseNum('#topListMoviesCheckedCount');
 
@@ -558,7 +561,7 @@ class UpcomingAwardsOverview extends BaseModule {
     }
 
     attach() {
-        if (!document.querySelector('.listItemToplist')) return;
+        if (!$('.listItemToplist')) return;
 
         this.lists = [];
         this.hiddenLists = load('icme_hidden_lists') ?? [];
@@ -579,7 +582,7 @@ class UpcomingAwardsOverview extends BaseModule {
         const curSel = UpcomingAwardsOverview.matchesPageType('progress') ? sel.progress : sel.lists;
         const awardTypes = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
 
-        const elLists = document.querySelectorAll('#progressall > li, #itemListToplists > li');
+        const elLists = $$('#progressall > li, #itemListToplists > li');
         return [...elLists].flatMap(el => {
             const counts = el.querySelector(curSel.rank).textContent.match(/\d+/g);
             if (!counts) return [];
@@ -709,7 +712,7 @@ class UpcomingAwardsOverview extends BaseModule {
             </div>`;
 
         const sel = UpcomingAwardsOverview.matchesPageType('progress') ? '#listOrdering' : '#itemContainer';
-        document.querySelector(sel).insertAdjacentHTML('beforebegin', html);
+        $(sel).insertAdjacentHTML('beforebegin', html);
 
         const htmlAwards = this.lists.map(el => {
             const isHidden = this.hiddenLists.includes(el.listUrl);
@@ -730,13 +733,13 @@ class UpcomingAwardsOverview extends BaseModule {
                 </tr>`;
         }).join('');
 
-        document.querySelector('#icmeAwardTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
+        $('#icmeAwardTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
     }
 
     addListeners() {
-        const elAwards = [...document.querySelectorAll('.icmeAward')];
+        const elAwards = [...$$('.icmeAward')];
 
-        document.querySelector('#icmeAwardTable tbody').addEventListener('click', e => {
+        $('#icmeAwardTable tbody').addEventListener('click', e => {
             if (!e.target.classList.contains('icmeToggleList')) return;
             e.preventDefault();
 
@@ -757,31 +760,31 @@ class UpcomingAwardsOverview extends BaseModule {
             save('icme_hidden_lists', this.hiddenLists);
         });
 
-        document.querySelector('#icmeShowHidden').addEventListener('click', e => {
+        $('#icmeShowHidden').addEventListener('click', e => {
             e.preventDefault();
             elAwards.forEach(el => {
                 el.style.display = el.classList.contains('icmeHidden') ? 'table-row' : 'none';
             });
         });
 
-        const elToggle = document.querySelector('#icmeUAOTableToggle');
+        const elToggle = $('#icmeUAOTableToggle');
         elToggle.addEventListener('click', e => {
             e.preventDefault();
 
-            const els = document.querySelectorAll('#icmeUAOLinks, #icmeUAOTableContainer');
+            const els = $$('#icmeUAOLinks, #icmeUAOTableContainer');
             [...els, ...elToggle.children].forEach(el => {
                 el.style.display = el.style.display === 'none' ? '' : 'none';
             });
         });
 
-        document.querySelector('#icmeShowAll').addEventListener('click', e => {
+        $('#icmeShowAll').addEventListener('click', e => {
             e.preventDefault();
             elAwards.forEach(aw => {
                 aw.style.display = '';
             });
         });
 
-        document.querySelectorAll('.icmeShowAward').forEach(el => el.addEventListener('click', e => {
+        $$('.icmeShowAward').forEach(el => el.addEventListener('click', e => {
             e.preventDefault();
 
             const awardType = el.textContent.trim();
@@ -792,8 +795,8 @@ class UpcomingAwardsOverview extends BaseModule {
             });
         }));
 
-        const elToggleSize = document.querySelector('#icmeToggleSize');
-        const elContainer = document.querySelector('#icmeUAOTableContainer');
+        const elToggleSize = $('#icmeToggleSize');
+        const elContainer = $('#icmeUAOTableContainer');
         elToggleSize.addEventListener('click', e => {
             e.preventDefault();
 
@@ -878,7 +881,7 @@ class ListCrossRef extends BaseModule {
     }
 
     attach() {
-        if (!document.querySelector('#itemListToplists')) return;
+        if (!$('#itemListToplists')) return;
 
         const htmlActions = `
             <div id="icmeCRActions">
@@ -887,7 +890,7 @@ class ListCrossRef extends BaseModule {
                 <button id="icmeCRCancelSel">Cancel selection</button>
                 <button id="icmeCRRun">Run</button>
             </div>`;
-        document.querySelector('#itemContainer').insertAdjacentHTML('beforebegin', htmlActions);
+        $('#itemContainer').insertAdjacentHTML('beforebegin', htmlActions);
 
         addCSS(`
             #icmeCRActions { margin-bottom: 18px; }
@@ -905,7 +908,7 @@ class ListCrossRef extends BaseModule {
 
         this.selectionStarted = false;
         this.attachSelectionHandlers();
-        const [elStart, elCancel, elRun] = document.querySelectorAll('#icmeCRActions button');
+        const [elStart, elCancel, elRun] = $$('#icmeCRActions button');
         elStart.addEventListener('click', () => {
             elStart.style.display = 'none';
             elCancel.style.display = 'inline';
@@ -918,7 +921,7 @@ class ListCrossRef extends BaseModule {
             elCancel.style.display = '';
             elRun.style.display = '';
             this.selectionStarted = false;
-            document.querySelectorAll('.icmeCRSelected, .icmeCRHover').forEach(el => {
+            $$('.icmeCRSelected, .icmeCRHover').forEach(el => {
                 el.classList.remove('icmeCRSelected', 'icmeCRHover');
             });
         });
@@ -939,7 +942,7 @@ class ListCrossRef extends BaseModule {
 
     attachSelectionHandlers() {
         const eventTypes = ['click', 'mouseover', 'mouseout'];
-        const elLists = document.querySelector('#itemListToplists');
+        const elLists = $('#itemListToplists');
         for (const type of eventTypes) {
             elLists.addEventListener(type, e => {
                 const elList = e.target.closest('.listItemToplist');
@@ -957,7 +960,7 @@ class ListCrossRef extends BaseModule {
     }
 
     async run() {
-        const elLists = [...document.querySelectorAll('.icmeCRSelected')];
+        const elLists = [...$$('.icmeCRSelected')];
         const results = await this.fetchMovies(elLists);
 
         const counter = {};
@@ -1020,12 +1023,12 @@ class ListCrossRef extends BaseModule {
             b.count - a.count || a.year - b.year || a.title.localeCompare(b.title));
 
         // Collapse visible lists from previous runs
-        document.querySelectorAll('.topListMoviesFilter.active a').forEach(el => el.click());
+        $$('.topListMoviesFilter.active a').forEach(el => el.click());
 
         const listTitles = elLists.map(el => `
             <li><b>${el.querySelector('h2').textContent.trim()}</b></li>
         `);
-        document.querySelector('#itemContainer').insertAdjacentHTML('afterend', `
+        $('#itemContainer').insertAdjacentHTML('afterend', `
             <div class="icmeCRResults">
                 ${movies.length} ${this.config.unchecked_only ? 'unchecked' : ''} movies
                 appear on ${this.config.match_all ? 'all' : `at least ${cutoff}`} of these lists:
@@ -1035,7 +1038,7 @@ class ListCrossRef extends BaseModule {
 
         if (!movies.length) return;
 
-        const elResults = document.querySelector('.icmeCRResults');
+        const elResults = $('.icmeCRResults');
         elResults.insertAdjacentHTML('beforeend', `
             <ul class="tabMenu tabMenuPush">
                 <li class="topListMoviesFilter active">
@@ -1174,7 +1177,7 @@ class NewTabs extends BaseModule {
             this.trackOwned();
         }
 
-        if (!document.querySelector('#itemListMovies')) return;
+        if (!$('#itemListMovies')) return;
         if (NewTabs.matchesPageType('movieList') && (this.config.wlist_tab || this.config.owned_tab)) {
             NewTabs.prepareTabBar();
             if (this.config.wlist_tab) NewTabs.addNewTab('watch', 'watchlist');
@@ -1184,11 +1187,11 @@ class NewTabs extends BaseModule {
 
     static prepareTabBar() {
         // Gain some extra space in the tab bar
-        const elAllTab = document.querySelector('#listFilterMovies a');
+        const elAllTab = $('#listFilterMovies a');
         elAllTab.textContent = elAllTab.textContent.replace(' movies', '');
 
         // Move the 'order by' and view switch elements to the list title
-        document.querySelector('#topList').insertAdjacentHTML('beforeend', `
+        $('#topList').insertAdjacentHTML('beforeend', `
             <div id="icmeOrderByAndView"></div>
         `);
         addCSS(`
@@ -1201,13 +1204,13 @@ class NewTabs extends BaseModule {
                 height: 20px;
             }
         `);
-        const elOrderBy = document.querySelector('#listOrdering');
-        const elView = document.querySelector('#listViewswitch');
-        document.querySelector('#icmeOrderByAndView').append(elOrderBy, elView);
+        const elOrderBy = $('#listOrdering');
+        const elView = $('#listViewswitch');
+        $('#icmeOrderByAndView').append(elOrderBy, elView);
     }
 
     static addNewTab(itemClass, title) {
-        const elMovieList = document.querySelector('#itemListMovies');
+        const elMovieList = $('#itemListMovies');
         title = title.toLowerCase();
         const titleCap = title[0].toUpperCase() + title.slice(1);
         const count = elMovieList.querySelectorAll(`:scope > li.${itemClass}`).length;
@@ -1219,16 +1222,16 @@ class NewTabs extends BaseModule {
                 </a>
             </li>`;
 
-        document.querySelector('#listFilterNew').insertAdjacentHTML('beforebegin', tabHtml);
+        $('#listFilterNew').insertAdjacentHTML('beforebegin', tabHtml);
 
-        const elTabLink = document.querySelector(`#listFilter${titleCap} a`);
+        const elTabLink = $(`#listFilter${titleCap} a`);
         elTabLink.addEventListener('click', e => {
             e.preventDefault();
             elMovieList.querySelectorAll(':scope > li.listItem')
                 .forEach(el => { el.style.display = 'none'; });
             elMovieList.querySelectorAll(`:scope > li.${itemClass}`)
                 .forEach(el => { el.style.display = ''; });
-            document.querySelector('#topListAllMovies').style.display = 'none'; // hide 'Show all'
+            $('#topListAllMovies').style.display = 'none'; // hide 'Show all'
 
             const elTab = elTabLink.parentElement;
             elTab.parentElement.querySelector('.active').classList.remove('active');
@@ -1239,7 +1242,7 @@ class NewTabs extends BaseModule {
     trackOwned() {
         const owned = load('icme_owned_movies') ?? {};
 
-        const elMarkOwnedArr = document.querySelectorAll('.optionMarkOwned');
+        const elMarkOwnedArr = $$('.optionMarkOwned');
         elMarkOwnedArr.forEach(elMarkOwned => {
             const elCheckbox = elMarkOwned.closest('.optionIconMenu').previousElementSibling;
             const elMovie = elCheckbox.parentElement;
@@ -1274,8 +1277,8 @@ class NewTabs extends BaseModule {
                 elMovie.classList.toggle('owned');
 
                 if (NewTabs.matchesPageType('movieList') && this.config.owned_tab) {
-                    const ownedCount = document.querySelectorAll('#itemListMovies li.owned').length;
-                    const elTabLabelCount = document.querySelector('#topListMoviesOwnedCount');
+                    const ownedCount = $$('#itemListMovies li.owned').length;
+                    const elTabLabelCount = $('#topListMoviesOwnedCount');
                     elTabLabelCount.textContent = `(${ownedCount})`;
                 }
 
@@ -1309,7 +1312,7 @@ class LargePosters extends BaseModule {
     }
 
     attach() {
-        if (!document.querySelector('#itemListMovies')) return;
+        if (!$('#itemListMovies')) return;
 
         if (this.config.default_view) {
             this.load();
@@ -1323,7 +1326,7 @@ class LargePosters extends BaseModule {
 
         addToMovieListBar(link);
 
-        const elLink = document.querySelector('#icmeLPLink');
+        const elLink = $('#icmeLPLink');
         elLink.addEventListener('click', e => {
             e.preventDefault();
             this.load();
@@ -1395,7 +1398,7 @@ class LargePosters extends BaseModule {
         // Normal view is used as the basis for the large posters view
         LargePosters.enableNormalView();
 
-        document.querySelectorAll('#itemListMovies div.coverImage').forEach(elCover => {
+        $$('#itemListMovies div.coverImage').forEach(elCover => {
             elCover.style.display = 'none';
             const imgUrl = elCover.style.backgroundImage.split('"')[1].replace(/small/i, 'medium');
             const imgHtml = `<img class="coverImage" src="${imgUrl}" loading="lazy">`;
@@ -1403,30 +1406,30 @@ class LargePosters extends BaseModule {
         });
 
         if (this.config.noinfo) {
-            document.querySelector('#itemListMovies').classList.add('icmeLPNoInfo');
+            $('#itemListMovies').classList.add('icmeLPNoInfo');
         } else {
             // Imitate click on the 'Show all' button
-            document.querySelectorAll('#itemListMovies > .listItem')
+            $$('#itemListMovies > .listItem')
                 .forEach(el => { el.style.display = ''; });
-            document.querySelector('#topListAllMovies').style.display = 'none';
+            $('#topListAllMovies').style.display = 'none';
             // Tags and long titles (if they are shown) can increase item's height
             LargePosters.adjustHeights();
         }
     }
 
     static enableNormalView() {
-        const [elNormalView, elCompactView] = document.querySelectorAll('#listViewswitch a');
+        const [elNormalView, elCompactView] = $$('#listViewswitch a');
         if (elNormalView.classList.contains('active')) return;
         // Modified from ICM source code (triggering the click event requires @run-at document-idle)
         elCompactView.classList.remove('active');
         elNormalView.classList.add('active');
-        const elList = document.querySelector('.itemList');
+        const elList = $('.itemList');
         elList.classList.replace('listViewCompact', 'listViewNormal');
     }
 
     static adjustHeights() {
         const getHeight = el => parseFloat(getComputedStyle(el).height);
-        document.querySelectorAll('.listItemMovie:nth-child(3n-2)').forEach(el1 => {
+        $$('.listItemMovie:nth-child(3n-2)').forEach(el1 => {
             const el2 = el1.nextElementSibling ?? el1;
             const el3 = el2.nextElementSibling ?? el1;
 
@@ -1487,7 +1490,7 @@ class ProgressPage extends BaseModule {
         const order = this.config.desc_order === true ? 'desc' : 'asc';
         this.rearrange(order, 'all');
 
-        const elFilters = document.querySelectorAll('#progressFilter [id^=progressFilter-]');
+        const elFilters = $$('#progressFilter [id^=progressFilter-]');
         elFilters.forEach(el => el.addEventListener('click', () => {
             const [, section] = el.id.split('-');
             this.rearrange(order, section);
@@ -1495,7 +1498,7 @@ class ProgressPage extends BaseModule {
     }
 
     rearrange(order, section) {
-        const elContainer = document.querySelector(`#progress${section}`);
+        const elContainer = $(`#progress${section}`);
         let elLists = [...elContainer.children];
         elLists.forEach(el => el.remove());
 
@@ -1591,7 +1594,7 @@ class GroupMovieLists extends BaseModule {
             }],
         };
 
-        this.elContainer = document.querySelector('#itemListToplists');
+        this.elContainer = $('#itemListToplists');
         // multiline regex that leaves only list name, excl. a common beginning and parameters
         this.reURL = /^[ \t]*(?:https?:\/\/)?(?:www\.)?(?:icheckmovies.com)?\/?(?:lists)?\/?([^?\s]+\/)(?:\?.+)?[ \t]*$/gm;
     }
@@ -1674,7 +1677,7 @@ class GroupMovieLists extends BaseModule {
                 }
             }
         }));
-        mut.observe(document.querySelector('#icmeCRActions').parentElement, { childList: true });
+        mut.observe($('#icmeCRActions').parentElement, { childList: true });
     }
 }
 
@@ -1703,11 +1706,11 @@ class ExportLists extends BaseModule {
     }
 
     attach() {
-        if (!document.querySelector('#itemListMovies')) return;
-        const elExport = document.querySelector('.optionExport');
+        if (!$('#itemListMovies')) return;
+        const elExport = $('.optionExport');
         elExport.href = '#';
-        const elMovies = document.querySelectorAll('#itemListMovies > li');
-        const filename = document.querySelector(':is(#topList, #listTitle) > h1').textContent;
+        const elMovies = $$('#itemListMovies > li');
+        const filename = $(':is(#topList, #listTitle) > h1').textContent;
         ExportLists.export(elExport, elMovies, filename, this.config.delimiter, this.config.bom);
     }
 
@@ -1767,8 +1770,8 @@ class ProgressTopX extends BaseModule {
         }`);
         const targetRank = Number(this.config.target_page) * 25;
         const html = `<a id="icmePTXLink" href="#">Checks to get into Top-${targetRank}</a>`;
-        document.querySelector('#listOrderingWrapper').insertAdjacentHTML('afterbegin', html);
-        const elLink = document.querySelector('#icmePTXLink');
+        $('#listOrderingWrapper').insertAdjacentHTML('afterbegin', html);
+        const elLink = $('#icmePTXLink');
         // Can't pass the value directly in case of user changing it and not reloading
         elLink.addEventListener('click', event => this.addStats(event));
     }
@@ -1776,7 +1779,7 @@ class ProgressTopX extends BaseModule {
     addStats(event) {
         event.preventDefault();
         const targetPage = Number(this.config.target_page); // * 25 = target rank
-        const elActiveTab = [...document.querySelectorAll('.itemListCompact[id^="progress"]')]
+        const elActiveTab = [...$$('.itemListCompact[id^="progress"]')]
             .filter(el => el.style.display !== 'none')[0];
         const lists = [...elActiveTab.children].map(elList => ({
             elTarget: elList.querySelector('.rank'),
@@ -1824,7 +1827,7 @@ class QuickListReorder extends BaseModule {
 
     attach() { // eslint-disable-line class-methods-use-this
         let oldRank;
-        const elContainer = document.querySelector('#itemListToplists');
+        const elContainer = $('#itemListToplists');
 
         elContainer.addEventListener('dblclick', e => {
             if (!e.target.matches('.rank')) return;
