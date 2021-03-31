@@ -1771,81 +1771,58 @@ class ProgressTopX extends BaseModule {
     }
 }
 
-class FastReorderLists extends BaseModule {
+class QuickListReorder extends BaseModule {
     constructor(globalCfg) {
         super(globalCfg);
 
         this.metadata = {
-            title: 'Fast reorder lists',
-            desc: 'Double-click a list to display an input field where you can input ' +
-                'a new position and hit Enter key to move the list to that position',
-            id: 'fast_reorder_lists',
+            title: 'Quick list reordering',
+            desc: 'Double-click a list\'s rank to edit it. ' +
+                'Hit Enter key or click outside to move the list to that position.',
+            id: 'quick_list_reorder',
             enableOn: ['listsSpecial'],
             options: [BaseModule.getStatus(true)],
         };
-
-        this.$active = null;
     }
 
-    attach() {
-        addCSS('#rankInput { width: 40px; position: absolute; }');
+    attach() { // eslint-disable-line class-methods-use-this
+        let oldRank;
+        const elContainer = document.querySelector('#itemListToplists');
 
-        const that = this;
-        $('#itemListToplists').on('dblclick', 'li', function () {
-            that.addRankInput(this);
+        elContainer.addEventListener('dblclick', e => {
+            if (!e.target.matches('.rank')) return;
+            e.target.contentEditable = 'true';
+            e.target.focus();
+            oldRank = Number(e.target.textContent.trim());
+        });
+
+        elContainer.addEventListener('keydown', e => {
+            if (!e.target.matches('.rank') || e.which !== 13) return;
+            e.target.blur(); // sends the 'focusout' event
+        });
+
+        elContainer.addEventListener('focusout', e => {
+            if (!e.target.matches('.rank')) return;
+            const newRank = Number(e.target.textContent.trim());
+            QuickListReorder.moveList(oldRank, newRank, e.target, elContainer);
         });
     }
 
-    addRankInput(elem) {
-        this.$active = $(elem);
-        $('#rankInput').remove();
-        const $input = $('<input>').attr('type', 'text').attr('id', 'rankInput');
-        $input.css('top', this.$active.offset().top);
-        $input.css('left', this.$active.offset().left - 45);
-        $('body').append($input);
-        $('#rankInput').focus();
-        const that = this;
-        $('#rankInput').on('keydown', e => {
-            if (e.which === 13) {
-                that.moveList();
-            }
-        });
-    }
-
-    moveList() {
-        if (this.$active === null) {
+    static moveList(oldRank, newRank, elRank, elContainer) {
+        const inProperRange = newRank > 0 && newRank <= elContainer.children.length;
+        if (!newRank || !inProperRange || newRank === oldRank) {
+            elRank.textContent = oldRank;
             return;
         }
 
-        const currentRank = Number(this.$active.find('.rank').text());
-        const newRank = Number($('#rankInput').val());
-
-        const isSameRank = newRank === currentRank;
-        if (isSameRank) {
-            $('#rankInput').remove();
-            this.$active = null;
-            return;
-        }
-
-        const outOfBounds = newRank > $('#itemListToplists > li').length ||
-            newRank < 1;
-        if (Number.isNaN(newRank) || outOfBounds) {
-            alert('Invalid position');
-            return;
-        }
-
-        const directionUp = newRank < currentRank;
-        if (directionUp) {
-            this.$active.insertBefore($('#itemListToplists > li').eq(newRank - 1));
-        } else {
-            this.$active.insertAfter($('#itemListToplists > li').eq(newRank - 1));
-        }
-
+        const elList = elRank.closest('.listItemToplist');
+        const elListToShift = elContainer.children[newRank - 1];
+        const moveDir = newRank < oldRank ? 'before' : 'after';
+        elListToShift[moveDir](elList);
+        // From ICM source code
         unsafeWindow.$.iCheckMovies.reOrderTypeSerializedItems.itemListToplists =
-            unsafeWindow.jQuery('#itemListToplists').sortable('serialize');
+            unsafeWindow.$('#itemListToplists').sortable('serialize');
         unsafeWindow.$.iCheckMovies.reOrder('itemListToplists');
-        $('#rankInput').remove();
-        this.$active = null;
     }
 }
 
@@ -1897,7 +1874,7 @@ const useModules = [
     GroupMovieLists,
     ExportLists,
     ProgressTopX,
-    FastReorderLists,
+    QuickListReorder,
 ];
 
 const app = new App(globalCfg);
