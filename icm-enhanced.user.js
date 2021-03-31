@@ -1821,14 +1821,15 @@ class QuickListReorder extends BaseModule {
             desc: 'Double-click a list\'s rank to edit it. ' +
                 'Hit Enter key or click outside to move the list to that position.',
             id: 'quick_list_reorder',
-            enableOn: ['listsSpecial'],
+            enableOn: ['listsSpecial', 'movieListSpecial'],
             options: [BaseModule.getStatus(true)],
         };
     }
 
     attach() { // eslint-disable-line class-methods-use-this
+        const elContainer = $('#itemListToplists.sortable, #itemListMovies.sortable');
+        if (!elContainer) return; // /movies/checked/ are not sortable
         let oldRank;
-        const elContainer = $('#itemListToplists');
 
         elContainer.addEventListener('dblclick', e => {
             if (!e.target.matches('.rank')) return;
@@ -1856,14 +1857,15 @@ class QuickListReorder extends BaseModule {
             return;
         }
 
-        const elList = elRank.closest('.listItemToplist');
+        const elList = elRank.closest('.listItem');
         const elListToShift = elContainer.children[newRank - 1];
         const moveDir = newRank < oldRank ? 'before' : 'after';
         elListToShift[moveDir](elList);
-        // From ICM source code
-        unsafeWindow.$.iCheckMovies.reOrderTypeSerializedItems.itemListToplists =
-            unsafeWindow.$('#itemListToplists').sortable('serialize');
-        unsafeWindow.$.iCheckMovies.reOrder('itemListToplists');
+        // Modified from ICM source code
+        const { id } = $('#itemListToplists, #itemListMovies');
+        unsafeWindow.$.iCheckMovies.reOrderTypeSerializedItems[id] =
+            unsafeWindow.$('#itemListToplists, #itemListMovies').sortable('serialize');
+        unsafeWindow.$.iCheckMovies.reOrder(id);
     }
 }
 
