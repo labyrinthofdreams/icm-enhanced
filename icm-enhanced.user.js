@@ -7,8 +7,6 @@
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
-// @require        https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js
-// @require        https://cdnjs.cloudflare.com/ajax/libs/jqModal/1.3.0/jqModal.min.js
 // @grant          unsafeWindow
 // ==/UserScript==
 
@@ -295,31 +293,17 @@ class ConfigWindow {
         });
     }
 
-    static css() {
+    load() {
         addCSS(`
-            .jqmOverlay { background-color: #000; }
-            #icmeCfgModal {
-                font-family: verdana, arial, sans-serif;
-                background-color: #fff;
-                color: #000;
-                padding: 12px 30px;
-
-                display: none;
-                position: absolute;
-                top: 17%;
-                left: 50%;
-                margin-left: -400px;
-                width: 800px;
-                height: 450px;
-            }
-            #icmeCfgModal hr {
+            #icmeCfgMain { font-family: verdana, arial, sans-serif; }
+            #icmeCfgMain hr {
                 border: 0;
                 height: 1px;
                 width: 100%;
                 background-color: #aaa;
                 margin: 7px 0px;
             }
-            #icmeCfgModal h3 { color: #bbb; }
+            #icmeCfgMain h3 { color: #bbb; }
             #icmeCfgModule { margin: 10px 0; }
             #icmeCfgModule > p { margin-bottom: 0.5em; }
             #icmeCfgModule > p.icmeCfgInlineOpt { display: inline-block; margin-right: 5px }
@@ -328,19 +312,14 @@ class ConfigWindow {
             #icmeCfgModule .icmeCfgTextareaDesc { vertical-align: top; margin-right: 5px }
             #icmeCfgSave {
                 position: absolute;
-                bottom:15px;
-                left: 30px
+                top: 515px;
             }
         `);
-    }
-
-    load() {
-        ConfigWindow.css();
 
         // Create and append a new item in the drop down menu under your username
         const cfgLink = `
             <li>
-                <a id="icmeCfgLink" href="#"
+                <a id="icmeCfgTrigger" href="#"
                    title="Configure iCheckMovies Enhanced script options">ICM Enhanced</a>
             </li>`;
 
@@ -351,7 +330,7 @@ class ConfigWindow {
         const ver = this.globalCfg.data.script_info.version;
 
         const cfgMainHtml = `
-            <div class="jqmWindow" id="icmeCfgModal">
+            <div id="icmeCfgMain">
                 <h3>iCheckMovies Enhanced ${ver} configuration</h3>
                 <select id="icmeCfgModuleList" name="modulelist">${options}</select>
                 <hr>
@@ -361,11 +340,11 @@ class ConfigWindow {
         `;
 
         document.body.insertAdjacentHTML('beforeend', cfgMainHtml);
-        const elCfgModal = document.querySelector('#icmeCfgModal');
-        const elSaveBtn = elCfgModal.querySelector('#icmeCfgSave');
-        const elModuleList = elCfgModal.querySelector('#icmeCfgModuleList');
+        const elCfgMain = document.querySelector('#icmeCfgMain');
+        const elSaveBtn = elCfgMain.querySelector('#icmeCfgSave');
+        const elModuleList = elCfgMain.querySelector('#icmeCfgModuleList');
 
-        elCfgModal.addEventListener('change', e => {
+        elCfgMain.addEventListener('change', e => {
             if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
             const path = e.target.dataset.cfgPath;
             if (!path) return;
@@ -388,8 +367,72 @@ class ConfigWindow {
 
         elModuleList.dispatchEvent(new Event('change'));
 
-        // initialize config window
-        $('#icmeCfgModal').jqm({ trigger: 'a#icmeCfgLink' });
+        ConfigWindow.loadModal(elCfgMain, document.querySelector('#icmeCfgTrigger'));
+    }
+
+    static loadModal(elContent, elTrigger) {
+        addCSS(`
+            #icmeCfgModalOverlay {
+                display: none;
+                position: fixed;
+                z-index: 3000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0, 0, 0, 0.4);
+            }
+
+            .icmeCfgModal {
+                background-color: #f5f5ef;
+                margin: 80px auto;
+                padding: 15px 30px;
+                border: 1px solid #888;
+                width: 800px;
+                height: 450px;
+            }
+
+            .icmeCfgModalClose {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+            }
+
+            .icmeCfgModalClose:hover,
+            .icmeCfgModalClose:focus {
+                color: black;
+                cursor: pointer;
+            }
+        `);
+
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="icmeCfgModalOverlay">
+                <div class="icmeCfgModal">
+                    <span class="icmeCfgModalClose">&times;</span>
+                </div>
+            </div>
+        `);
+
+        const elModalOverlay = document.querySelector('#icmeCfgModalOverlay');
+        const elModal = elModalOverlay.querySelector('.icmeCfgModal');
+        const elClose = document.querySelector('.icmeCfgModalClose');
+
+        elModal.append(elContent);
+
+        elTrigger.addEventListener('click', () => {
+            elModalOverlay.style.display = 'block';
+        });
+
+        elClose.addEventListener('click', () => {
+            elModalOverlay.style.display = 'none';
+        });
+
+        window.addEventListener('click', e => {
+            if (e.target !== elModalOverlay) return;
+            elModalOverlay.style.display = 'none';
+        });
     }
 }
 
@@ -1709,7 +1752,7 @@ class ProgressTopX extends BaseModule {
         super(globalCfg);
 
         this.metadata = {
-            title: 'Progress: checks to get into Top-1000',
+            title: 'Progress: checks for Top-1000',
             desc: 'Find out how many checks you need to get into Top-25/50/100/1000/...' +
                 '<br>Adds a link to the progress page that will attach this number to each list.',
             id: 'progress_top_x',
