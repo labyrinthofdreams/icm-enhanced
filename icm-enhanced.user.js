@@ -1174,6 +1174,7 @@ class NewTabs extends BaseModule {
             this.trackOwned();
         }
 
+        if (!document.querySelector('#itemListMovies')) return;
         if (NewTabs.matchesPageType('movieList') && (this.config.wlist_tab || this.config.owned_tab)) {
             NewTabs.prepareTabBar();
             if (this.config.wlist_tab) NewTabs.addNewTab('watch', 'watchlist');
@@ -1308,6 +1309,8 @@ class LargePosters extends BaseModule {
     }
 
     attach() {
+        if (!document.querySelector('#itemListMovies')) return;
+
         if (this.config.default_view) {
             this.load();
             return;
@@ -1700,6 +1703,7 @@ class ExportLists extends BaseModule {
     }
 
     attach() {
+        if (!document.querySelector('#itemListMovies')) return;
         const elExport = document.querySelector('.optionExport');
         elExport.href = '#';
         const elMovies = document.querySelectorAll('#itemListMovies > li');
