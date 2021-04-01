@@ -698,10 +698,10 @@ class UpcomingAwardsOverview extends BaseModule {
                     <a id="icmeSilver"   class="icmeUAOFilter" href="#">Silver</a>,
                     <a id="icmeGold"     class="icmeUAOFilter" href="#">Gold</a>,
                     <a id="icmePlatinum" class="icmeUAOFilter" href="#">Platinum</a>,
-                    <a id="icmeHidden"   class="icmeUAOFilter" href="#">Hidden</a>,
+                    <a id="icmeHidden"   class="icmeUAOFilter" href="#">Hidden</a>;
                     <a id="icmeToggleSize" href="#">
-                        <span style="display: none">Minimize full list</span>
-                        <span>Show full list</span>
+                        <span style="display: none">Minimize</span>
+                        <span>Maximize</span>
                     </a>
                 </p>
                 <div id="icmeUAOTableContainer" class="container">
