@@ -580,7 +580,7 @@ class UpcomingAwardsOverview extends BaseModule {
             lists: { rank: 'span.info > strong:first-of-type', title: 'h2 > a.title' },
         };
         const curSel = UpcomingAwardsOverview.matchesPageType('progress') ? sel.progress : sel.lists;
-        const awardTypes = [['Platinum', 1], ['Gold', 0.9], ['Silver', 0.75], ['Bronze', 0.5]];
+        const awardTypes = [['Bronze', 0.5], ['Silver', 0.75], ['Gold', 0.9], ['Platinum', 1]];
 
         const elLists = $$('#progressall > li, #itemListToplists > li');
         return [...elLists].flatMap(el => {
@@ -596,7 +596,7 @@ class UpcomingAwardsOverview extends BaseModule {
             return awardTypes
                 .map(([awardType, cutoff]) => ({ awardType, neededForAward: apply(cutoff) }))
                 .filter(({ neededForAward }) => neededForAward > 0)
-                .map(obj => ({ ...obj, listTitle, listUrl }));
+                .map((obj, i) => ({ ...obj, listTitle, listUrl, isNext: i === 0 }));
         });
     }
 
@@ -674,6 +674,7 @@ class UpcomingAwardsOverview extends BaseModule {
             #icmeUAOTable                  .icmeUAOAward               { display: none; }
             #icmeUAOTable:not(.icmeHidden) .icmeUAOAward.icmeHidden    { display: none !important; }
             #icmeUAOTable.icmeAll          .icmeUAOAward,
+            #icmeUAOTable.icmeNext         .icmeUAOAward.icmeNext,
             #icmeUAOTable.icmeBronze       .icmeUAOAward.icmeBronze,
             #icmeUAOTable.icmeSilver       .icmeUAOAward.icmeSilver,
             #icmeUAOTable.icmeGold         .icmeUAOAward.icmeGold,
@@ -694,11 +695,12 @@ class UpcomingAwardsOverview extends BaseModule {
                 <p id="icmeUAOLinks">
                     Display:
                     <a id="icmeAll"      class="icmeUAOFilter" href="#">All</a>,
+                    <a id="icmeNext"     class="icmeUAOFilter" href="#">Next</a>,
                     <a id="icmeBronze"   class="icmeUAOFilter" href="#">Bronze</a>,
                     <a id="icmeSilver"   class="icmeUAOFilter" href="#">Silver</a>,
                     <a id="icmeGold"     class="icmeUAOFilter" href="#">Gold</a>,
                     <a id="icmePlatinum" class="icmeUAOFilter" href="#">Platinum</a>,
-                    <a id="icmeHidden"   class="icmeUAOFilter" href="#">Hidden</a>;
+                    <a id="icmeHidden"   class="icmeUAOFilter" href="#">Hidden</a> |
                     <a id="icmeToggleSize" href="#">
                         <span style="display: none">Minimize</span>
                         <span>Maximize</span>
@@ -727,7 +729,8 @@ class UpcomingAwardsOverview extends BaseModule {
             const isHidden = this.hiddenLists.includes(el.listUrl);
 
             return `
-                <tr class="icmeUAOAward icme${el.awardType} ${isHidden ? 'icmeHidden' : ''}"
+                <tr class="icmeUAOAward icme${el.awardType}
+                        ${isHidden ? 'icmeHidden' : ''} ${el.isNext ? 'icmeNext' : ''}"
                         data-list-url="${el.listUrl}">
                     <td>${el.awardType}</td>
                     <td>${el.neededForAward}</td>
