@@ -1725,7 +1725,7 @@ class ExportLists extends BaseModule {
                 const title = wrap(el.querySelector('h2 > a').textContent);
                 const aka = wrap(el.querySelector('.info > em')?.textContent ?? '');
                 const year = el.querySelector('.info > a:first-of-type')?.textContent ?? '';
-                const toplists = el.querySelector('.info > a:nth-of-type(2)').textContent.match(/\d+/)[0];
+                const toplists = el.querySelector('.info > a:nth-of-type(2)')?.textContent.match(/\d+/)[0] ?? 0;
                 const checked = el.classList.contains('checked') ? 'yes' : 'no';
                 const isFav = el.classList.contains('favorite') ? 'yes' : 'no';
                 const isDislike = el.classList.contains('hated') ? 'yes' : 'no';
