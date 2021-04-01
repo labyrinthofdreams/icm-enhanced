@@ -659,18 +659,26 @@ class UpcomingAwardsOverview extends BaseModule {
                 top: 0;
                 font-weight: bold;
             }
-            .icmeAward td:nth-child(1) { width: 65px; }
-            .icmeAward td:nth-child(2) { width: 65px; }
-            .icmeAward td:nth-child(3) div { height: 28px; overflow: hidden; }
-            .icmeAward td:nth-child(4) { width: 70px; }
-            .icmeAward.icmeHidden { display: none; }
+            .icmeUAOAward td:nth-child(1) { width: 65px; }
+            .icmeUAOAward td:nth-child(2) { width: 65px; }
+            .icmeUAOAward td:nth-child(3) div { height: 28px; overflow: hidden; }
+            .icmeUAOAward td:nth-child(4) { width: 70px; }
             .icmeToggleList {
                 width: 16px;
                 height: 16px;
                 cursor: pointer;
             }
-            .icmeAward.icmeHidden .icmeToggleList { background-image: url(${unhideIcon}); }
-            .icmeAward:not(.icmeHidden) .icmeToggleList { background-image: url(${hideIcon}); }
+            .icmeUAOAward.icmeHidden .icmeToggleList { background-image: url(${unhideIcon}); }
+            .icmeUAOAward:not(.icmeHidden) .icmeToggleList { background-image: url(${hideIcon}); }
+
+            #icmeUAOTable                  .icmeUAOAward               { display: none; }
+            #icmeUAOTable:not(.icmeHidden) .icmeUAOAward.icmeHidden    { display: none !important; }
+            #icmeUAOTable.icmeAll          .icmeUAOAward,
+            #icmeUAOTable.icmeBronze       .icmeUAOAward.icmeBronze,
+            #icmeUAOTable.icmeSilver       .icmeUAOAward.icmeSilver,
+            #icmeUAOTable.icmeGold         .icmeUAOAward.icmeGold,
+            #icmeUAOTable.icmePlatinum     .icmeUAOAward.icmePlatinum,
+            #icmeUAOTable.icmeHidden       .icmeUAOAward.icmeHidden    { display: table-row; }
         `);
     }
 
@@ -684,19 +692,20 @@ class UpcomingAwardsOverview extends BaseModule {
                     </a>
                 </p>
                 <p id="icmeUAOLinks">
-                    Display: <a id="icmeShowAll" href="#">All</a>,
-                    <a class="icmeShowAward" href="#">Bronze</a>,
-                    <a class="icmeShowAward" href="#">Silver</a>,
-                    <a class="icmeShowAward" href="#">Gold</a>,
-                    <a class="icmeShowAward" href="#">Platinum</a>,
-                    <a id="icmeShowHidden" href="#">Hidden</a>,
+                    Display:
+                    <a id="icmeAll"      class="icmeUAOFilter" href="#">All</a>,
+                    <a id="icmeBronze"   class="icmeUAOFilter" href="#">Bronze</a>,
+                    <a id="icmeSilver"   class="icmeUAOFilter" href="#">Silver</a>,
+                    <a id="icmeGold"     class="icmeUAOFilter" href="#">Gold</a>,
+                    <a id="icmePlatinum" class="icmeUAOFilter" href="#">Platinum</a>,
+                    <a id="icmeHidden"   class="icmeUAOFilter" href="#">Hidden</a>,
                     <a id="icmeToggleSize" href="#">
                         <span style="display: none">Minimize full list</span>
                         <span>Show full list</span>
                     </a>
                 </p>
                 <div id="icmeUAOTableContainer" class="container">
-                    <table id="icmeAwardTable">
+                    <table id="icmeUAOTable" class="icmeAll">
                         <thead>
                             <tr>
                                 <th>Awards</th>
@@ -718,8 +727,8 @@ class UpcomingAwardsOverview extends BaseModule {
             const isHidden = this.hiddenLists.includes(el.listUrl);
 
             return `
-                <tr class="icmeAward ${isHidden ? 'icmeHidden' : ''}"
-                        data-award-type="${el.awardType}" data-list-url="${el.listUrl}">
+                <tr class="icmeUAOAward icme${el.awardType} ${isHidden ? 'icmeHidden' : ''}"
+                        data-list-url="${el.listUrl}">
                     <td>${el.awardType}</td>
                     <td>${el.neededForAward}</td>
                     <td>
@@ -733,17 +742,18 @@ class UpcomingAwardsOverview extends BaseModule {
                 </tr>`;
         }).join('');
 
-        $('#icmeAwardTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
+        $('#icmeUAOTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
     }
 
     addListeners() {
-        const elAwards = [...$$('.icmeAward')];
+        const elAwards = [...$$('#icmeUAOTable .icmeUAOAward')];
 
-        $('#icmeAwardTable tbody').addEventListener('click', e => {
+        const elTable = $('#icmeUAOTable');
+        elTable.addEventListener('click', e => {
             if (!e.target.classList.contains('icmeToggleList')) return;
             e.preventDefault();
 
-            const { listUrl } = e.target.closest('.icmeAward').dataset;
+            const { listUrl } = e.target.closest('.icmeUAOAward').dataset;
             const index = this.hiddenLists.indexOf(listUrl);
             const isVisible = index === -1;
 
@@ -760,13 +770,6 @@ class UpcomingAwardsOverview extends BaseModule {
             save('icme_hidden_lists', this.hiddenLists);
         });
 
-        $('#icmeShowHidden').addEventListener('click', e => {
-            e.preventDefault();
-            elAwards.forEach(el => {
-                el.style.display = el.classList.contains('icmeHidden') ? 'table-row' : 'none';
-            });
-        });
-
         const elToggle = $('#icmeUAOTableToggle');
         elToggle.addEventListener('click', e => {
             e.preventDefault();
@@ -776,24 +779,6 @@ class UpcomingAwardsOverview extends BaseModule {
                 el.style.display = el.style.display === 'none' ? '' : 'none';
             });
         });
-
-        $('#icmeShowAll').addEventListener('click', e => {
-            e.preventDefault();
-            elAwards.forEach(aw => {
-                aw.style.display = '';
-            });
-        });
-
-        $$('.icmeShowAward').forEach(el => el.addEventListener('click', e => {
-            e.preventDefault();
-
-            const awardType = el.textContent.trim();
-            elAwards.forEach(aw => {
-                const isVisible = !aw.classList.contains('icmeHidden');
-                const matchesType = aw.dataset.awardType === awardType;
-                aw.style.display = isVisible && matchesType ? '' : 'none';
-            });
-        }));
 
         const elToggleSize = $('#icmeToggleSize');
         const elContainer = $('#icmeUAOTableContainer');
@@ -805,6 +790,11 @@ class UpcomingAwardsOverview extends BaseModule {
                 el.style.display = el.style.display === 'none' ? '' : 'none';
             });
         });
+
+        $$('.icmeUAOFilter').forEach(elFilter => elFilter.addEventListener('click', e => {
+            e.preventDefault();
+            elTable.className = elFilter.id; // switch to data attr if you add more classes to table
+        }));
     }
 }
 
