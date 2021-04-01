@@ -881,13 +881,15 @@ class ListCrossRef extends BaseModule {
                 Cross-reference lists:
                 <button id="icmeCRStartSel">Start selection</button>
                 <button id="icmeCRCancelSel">Cancel selection</button>
+                <button id="icmeCRSelectAll">Select all</button>
                 <button id="icmeCRRun">Run</button>
             </div>`;
         $('#itemContainer').insertAdjacentHTML('beforebegin', htmlActions);
 
         addCSS(`
             #icmeCRActions { margin-bottom: 18px; }
-            #icmeCRCancelSel, #icmeCRRun { display: none; }
+            #icmeCRActions:not(.icmeCRSelecting) :not(#icmeCRStartSel) { display: none; }
+            #icmeCRActions.icmeCRSelecting       #icmeCRStartSel       { display: none; }
             .icmeCRSelected, .icmeCRSelected .progress {
                 background-color: #bbbbbb !important;
             }
@@ -901,34 +903,37 @@ class ListCrossRef extends BaseModule {
 
         this.selectionStarted = false;
         this.attachSelectionHandlers();
-        const [elStart, elCancel, elRun] = $$('#icmeCRActions button');
+        const elActions = $('#icmeCRActions');
+        const [elStart, elCancel, elSelectAll, elRun] = $$('#icmeCRActions button');
         elStart.addEventListener('click', () => {
-            elStart.style.display = 'none';
-            elCancel.style.display = 'inline';
-            elRun.style.display = 'inline';
+            elActions.classList.add('icmeCRSelecting');
             this.selectionStarted = true;
         });
 
         elCancel.addEventListener('click', () => {
-            elStart.style.display = '';
-            elCancel.style.display = '';
-            elRun.style.display = '';
+            elActions.classList.remove('icmeCRSelecting');
             this.selectionStarted = false;
             $$('.icmeCRSelected, .icmeCRHover').forEach(el => {
                 el.classList.remove('icmeCRSelected', 'icmeCRHover');
             });
         });
 
+        elSelectAll.addEventListener('click', () => {
+            $$('.listItemToplist').forEach(el => {
+                el.classList.add('icmeCRSelected');
+            });
+        });
+
+        const setButtonState = bool => [elCancel, elSelectAll, elRun].forEach(el => {
+            el.disabled = bool;
+        });
+
         elRun.addEventListener('click', () => {
-            elCancel.disabled = true;
-            elRun.disabled = true;
+            setButtonState(true);
             this.selectionStarted = false;
             this.run().then(() => {
-                elCancel.disabled = false;
-                elRun.disabled = false;
-                elStart.style.display = '';
-                elCancel.style.display = '';
-                elRun.style.display = '';
+                setButtonState(false);
+                elActions.classList.remove('icmeCRSelecting');
             });
         });
     }
