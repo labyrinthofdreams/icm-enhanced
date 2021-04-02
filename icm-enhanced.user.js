@@ -93,6 +93,14 @@ const addToMovieListBar = htmlStr => {
     $('#icmeControls').insertAdjacentHTML('beforeend', htmlStr);
 };
 
+const addNearOrderByLinks = htmlStr => {
+    addCSS(`.icmeOrderByLink {
+        float: left;
+        margin-right: 1em;
+    }`);
+    $('#listOrderingWrapper').insertAdjacentHTML('afterbegin', htmlStr);
+};
+
 // Remove the premium feature pop-up using two ways to unbind events from the button
 // (only one is not enough because TM/VM launch the script at different times)
 const removePremiumPopup = el => {
@@ -1791,13 +1799,11 @@ class ProgressTopX extends BaseModule {
     }
 
     attach() {
-        addCSS(`#icmePTXLink {
-            float: left;
-            margin-right: 1em;
-        }`);
-        const targetRank = Number(this.config.target_page) * 25;
-        const html = `<a id="icmePTXLink" href="#">Checks to get into Top-${targetRank}</a>`;
-        $('#listOrderingWrapper').insertAdjacentHTML('afterbegin', html);
+        addNearOrderByLinks(`
+            <a id="icmePTXLink" class="icmeOrderByLink" href="#">
+                Checks to get into Top-${Number(this.config.target_page) * 25}
+            </a>
+        `);
         const elLink = $('#icmePTXLink');
         // Can't pass the value directly in case of user changing it and not reloading
         elLink.addEventListener('click', event => this.addStats(event));
