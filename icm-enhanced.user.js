@@ -1404,7 +1404,9 @@ class LargePosters extends BaseModule {
 
         $$('#itemListMovies div.coverImage').forEach(elCover => {
             elCover.style.display = 'none';
-            const imgUrl = elCover.style.backgroundImage.split('"')[1].replace(/small/i, 'medium');
+            const imgUrl = elCover.style.backgroundImage.split('"')[1]
+                .replace('/small/', '/medium/')
+                .replace('defaultCoverSmall', 'defaultCoverMedium');
             const imgHtml = `<img class="coverImage" src="${imgUrl}" loading="lazy">`;
             elCover.insertAdjacentHTML('afterend', imgHtml);
         });
