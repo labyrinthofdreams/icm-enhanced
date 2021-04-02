@@ -93,6 +93,16 @@ const addToMovieListBar = htmlStr => {
     $('#icmeControls').insertAdjacentHTML('beforeend', htmlStr);
 };
 
+// Remove the premium feature pop-up using two ways to unbind events from the button
+// (only one is not enough because TM/VM launch the script at different times)
+const removePremiumPopup = el => {
+    const elClone = el.cloneNode(true);
+    el.replaceWith(elClone);
+    elClone.classList.remove('paidFeature');
+    elClone.href = '#';
+    return elClone;
+};
+
 // ----- Base classes and config windows -----
 
 class BaseModule {
@@ -1252,12 +1262,7 @@ class NewTabs extends BaseModule {
                 elMovie.classList.add('owned');
             }
 
-            // Remove the paid feature pop-up using two ways to unbind events from the button
-            // (only one is not enough because TM/VM launch the script at different times)
-            const elMarkOwnedClone = elMarkOwned.cloneNode(true);
-            elMarkOwned.replaceWith(elMarkOwnedClone);
-            elMarkOwned = elMarkOwnedClone;
-            elMarkOwned.classList.remove('paidFeature');
+            elMarkOwned = removePremiumPopup(elMarkOwned);
 
             elMarkOwned.addEventListener('click', e => {
                 e.preventDefault();
@@ -1687,7 +1692,7 @@ class ExportLists extends BaseModule {
         this.metadata = {
             title: 'Export lists',
             desc: 'Download any list as .csv (doesn\'t support search results). ' +
-                'Emulates the paid feature, so don\'t enable it if you have a paid account',
+                'Emulates the paid feature, enable only if you have a free account',
             id: 'export_lists',
             enableOn: ['movieList', 'movieListSpecial'],
             options: [BaseModule.getStatus(false), {
@@ -1706,8 +1711,7 @@ class ExportLists extends BaseModule {
 
     attach() {
         if (!$('#itemListMovies')) return;
-        const elExport = $('.optionExport');
-        elExport.href = '#';
+        const elExport = removePremiumPopup($('.optionExport'));
         const elMovies = $$('#itemListMovies > li');
         const filename = $(':is(#topList, #listTitle) > h1').textContent;
         ExportLists.export(elExport, elMovies, filename, this.config.delimiter, this.config.bom);
