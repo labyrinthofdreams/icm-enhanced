@@ -1413,9 +1413,13 @@ class LargePosters extends BaseModule {
             $('#itemListMovies').classList.add('icmeLPNoInfo');
         } else {
             // Imitate click on the 'Show all' button
-            $$('#itemListMovies > .listItem')
-                .forEach(el => { el.style.display = ''; });
-            $('#topListAllMovies').style.display = 'none';
+            const elShowAllBtn = $('#topListAllMovies');
+            if (elShowAllBtn) {
+                $$('#itemListMovies > .listItem')
+                    .forEach(el => { el.style.display = ''; });
+                elShowAllBtn.style.display = 'none';
+            }
+
             // Tags and long titles (if they are shown) can increase item's height
             LargePosters.adjustHeights();
         }
