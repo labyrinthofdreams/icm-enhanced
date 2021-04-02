@@ -1574,8 +1574,10 @@ class GroupMovieLists extends BaseModule {
 
         this.metadata = {
             title: 'Group movie lists',
-            desc: 'Organize movie info tab with all lists (/movies/*/rankings/, ' +
-                '<a href="/movies/pulp+fiction/rankings/">example</a>)',
+            desc: 'Organize a movie\'s "In lists" tab (<a href="/movies/pulp+fiction/rankings/">' +
+                'example</a>) by grouping lists together and moving them to the top.<br>To create ' +
+                'a group with your watchlisted/fav. lists click the "Get list group links" button ' +
+                'on their page and copy-paste the urls. You can also edit groups manually',
             id: 'group_movie_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
@@ -1623,6 +1625,7 @@ class GroupMovieLists extends BaseModule {
 
     attach() {
         if (GroupMovieLists.matchesPageType('movieRankings')) this.reorderLists();
+        if (GroupMovieLists.matchesPageType('listsSpecial')) GroupMovieLists.addExportLink();
         if (!this.config.redirect) return;
         GroupMovieLists.fixLinks();
         this.fixLinksInNewNodes();
@@ -1650,7 +1653,7 @@ class GroupMovieLists extends BaseModule {
             for (const group of ['group1', 'group2']) {
                 let groupUrls = this.config[group];
                 if (typeof groupUrls === 'string') { // Parse textarea content
-                    console.log('Parsing GroupMovieLists group', group);
+                    console.log(`Parsing GroupMovieLists textarea content: ${group}`);
                     groupUrls = groupUrls.trim().replace(this.reURL, '$1').split('\n');
                     this.config[group] = groupUrls;
                     this.globalCfg.save();
@@ -1680,6 +1683,19 @@ class GroupMovieLists extends BaseModule {
         elLists[elLists.length - 1].classList.add('icmeGMLGroupEnd');
     }
 
+    static addExportLink() {
+        addNearOrderByLinks(`
+            <a id="icmeGMLLink" class="icmeOrderByLink" href="#">Get list group links</a>
+        `);
+        $('#icmeGMLLink').addEventListener('click', () => {
+            const listLinks = [...document.querySelectorAll('#itemListToplists > li')]
+                .filter(el => !el.querySelector('.tagList a[href$="user%3Aicheckmovies"'))
+                .map(el => el.querySelector('.title').href.split('/lists/')[1]);
+            const msg = 'Copy and paste the following to the "Group 1/Group 2" fields in the "Group movie lists" settings';
+            alert(`${msg}:\n\n${listLinks.join('\n')}`);
+        });
+    }
+
     static fixLinks(elContainer = document) {
         const elLinksToLists = elContainer.querySelectorAll('.listItemMovie .info a:last-of-type');
         elLinksToLists.forEach(el => {
@@ -1691,7 +1707,8 @@ class GroupMovieLists extends BaseModule {
     fixLinksInNewNodes() {
         const onListOfLists = GroupMovieLists.matchesPageType(['listsGeneral', 'listsSpecial']);
         const isCREnabled = this.globalCfg.data.list_cross_ref.enabled;
-        if (!onListOfLists || !isCREnabled) return;
+        const elCRActions = $('#icmeCRActions');
+        if (!onListOfLists || !isCREnabled || !elCRActions) return;
         const mut = new MutationObserver(mutList => mutList.forEach(({ addedNodes }) => {
             for (const el of addedNodes) {
                 if (el.classList?.contains('icmeCRResults')) {
@@ -1699,7 +1716,7 @@ class GroupMovieLists extends BaseModule {
                 }
             }
         }));
-        mut.observe($('#icmeCRActions').parentElement, { childList: true });
+        mut.observe(elCRActions.parentElement, { childList: true });
     }
 }
 
