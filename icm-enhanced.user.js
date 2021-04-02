@@ -560,7 +560,8 @@ class UpcomingAwardsOverview extends BaseModule {
 
         this.metadata = {
             title: 'Upcoming awards overview',
-            desc: 'Show a summary of upcoming awards on the progress page and watchlisted/fav. lists',
+            desc: 'Show a summary of upcoming awards on the progress page and lists of your ' +
+                ' watchlisted/fav. lists',
             id: 'ua',
             enableOn: ['listsSpecial', 'progress'],
             options: [BaseModule.getStatus(true)],
