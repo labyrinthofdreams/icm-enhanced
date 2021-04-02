@@ -863,7 +863,7 @@ class ListCrossRef extends BaseModule {
             title: 'Cross-reference lists',
             desc: 'Cross-reference lists to find which movies they share',
             id: 'list_cross_ref',
-            enableOn: ['listsGeneral', 'listsSpecial'],
+            enableOn: ['listsGeneral', 'listsSpecial', 'progress'],
             options: [BaseModule.getStatus(true), {
                 id: 'match_all',
                 desc: 'Find movies that appear on all selected lists',
@@ -884,7 +884,7 @@ class ListCrossRef extends BaseModule {
     }
 
     attach() {
-        if (!$('#itemListToplists')) return;
+        if (!$('.listItemToplist')) return;
 
         const htmlActions = `
             <div id="icmeCRActions">
@@ -894,7 +894,8 @@ class ListCrossRef extends BaseModule {
                 <button id="icmeCRSelectAll">Select all</button>
                 <button id="icmeCRRun">Run</button>
             </div>`;
-        $('#itemContainer').insertAdjacentHTML('beforebegin', htmlActions);
+        const sel = ListCrossRef.matchesPageType('progress') ? '#listOrdering' : '#itemContainer';
+        $(sel).insertAdjacentHTML('beforebegin', htmlActions);
 
         addCSS(`
             #icmeCRActions { margin-bottom: 18px; }
@@ -929,7 +930,8 @@ class ListCrossRef extends BaseModule {
         });
 
         elSelectAll.addEventListener('click', () => {
-            $$('.listItemToplist').forEach(el => {
+            // Select lists only from the active tab (for /progress/)
+            $$(':is(ol[id^=progress]:not([style*=none]), #itemListToplists) .listItemToplist').forEach(el => {
                 el.classList.add('icmeCRSelected');
             });
         });
@@ -950,9 +952,9 @@ class ListCrossRef extends BaseModule {
 
     attachSelectionHandlers() {
         const eventTypes = ['click', 'mouseover', 'mouseout'];
-        const elLists = $('#itemListToplists');
+        const elContainers = $$('ol[id^=progress], #itemListToplists');
         for (const type of eventTypes) {
-            elLists.addEventListener(type, e => {
+            elContainers.forEach(elContainer => elContainer.addEventListener(type, e => {
                 const elList = e.target.closest('.listItemToplist');
                 if (!this.selectionStarted || !elList) return;
 
@@ -963,7 +965,7 @@ class ListCrossRef extends BaseModule {
                 } else if (e.type === 'click') {
                     elList.classList.toggle('icmeCRSelected');
                 }
-            });
+            }));
         }
     }
 
@@ -1034,9 +1036,10 @@ class ListCrossRef extends BaseModule {
         $$('.topListMoviesFilter.active a').forEach(el => el.click());
 
         const listTitles = elLists.map(el => `
-            <li><b>${el.querySelector('h2').textContent.trim()}</b></li>
+            <li><b>${el.querySelector('.title').textContent.trim()}</b></li>
         `);
-        $('#itemContainer').insertAdjacentHTML('afterend', `
+        const sel = ListCrossRef.matchesPageType('progress') ? '#progressall' : '#itemContainer';
+        $(sel).insertAdjacentHTML('afterend', `
             <div class="icmeCRResults">
                 ${movies.length} ${this.config.unchecked_only ? 'unchecked' : ''} movies
                 appear on ${this.config.match_all ? 'all' : `at least ${cutoff}`} of these lists:
