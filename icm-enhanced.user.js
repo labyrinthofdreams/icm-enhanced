@@ -1711,7 +1711,21 @@ class ExportLists extends BaseModule {
 
     attach() {
         if (!$('#itemListMovies')) return;
-        const elExport = removePremiumPopup($('.optionExport'));
+        let elExport = $('.optionExport');
+        if (!elExport) { // /movies/unchecked/, /movies/checked/
+            $('#listTitle').insertAdjacentHTML('afterbegin', `
+                <ul class="optionIconMenu">
+                    <li>
+                        <a class="optionIcon optionExport" href="#" title="Export this list to CSV">
+                            Export this list to CSV
+                        </a>
+                    </li>
+                </ul>
+            `);
+            elExport = $('.optionExport');
+        }
+
+        elExport = removePremiumPopup(elExport);
         const elMovies = $$('#itemListMovies > li');
         const filename = $(':is(#topList, #listTitle) > h1').textContent;
         ExportLists.export(elExport, elMovies, filename, this.config.delimiter, this.config.bom);
@@ -1725,7 +1739,7 @@ class ExportLists extends BaseModule {
             'checked', 'favorite', 'dislike', 'imdb'];
         elExport.addEventListener('click', () => {
             const rows = [...elMovies].map(el => {
-                const rank = el.querySelector('.rank').textContent.match(/\d+/)[0];
+                const rank = el.querySelector('.rank')?.textContent.match(/\d+/)[0] ?? '-';
                 const title = wrap(el.querySelector('h2 > a').textContent);
                 const aka = wrap(el.querySelector('.info > em')?.textContent ?? '');
                 const year = el.querySelector('.info > a:first-of-type')?.textContent ?? '';
