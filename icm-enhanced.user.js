@@ -1797,7 +1797,7 @@ class ExportLists extends BaseModule {
 
             elExport.href = `data:text/csv;charset=utf-8,${bom}${encodeURIComponent(data)}`;
             elExport.download = `${filename}.csv`;
-        });
+        }, { once: true });
     }
 }
 
