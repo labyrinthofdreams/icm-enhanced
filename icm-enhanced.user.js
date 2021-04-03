@@ -2017,3 +2017,10 @@ const app = new App(globalCfg);
 useModules.forEach(m => app.register(m));
 app.load();
 console.log('ICM Enhanced is ready.');
+
+// Links for testing, make sure every attached module works (check the console):
+// https://www.icheckmovies.com/lists/favorited/
+// https://www.icheckmovies.com/profiles/progress/
+// https://www.icheckmovies.com/lists/venice+film+festival+-+golden+lion/
+// https://www.icheckmovies.com/movies/watchlist/
+// https://www.icheckmovies.com/movies/metropolis/rankings/
