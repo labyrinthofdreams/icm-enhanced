@@ -1155,6 +1155,7 @@ class HideTags extends BaseModule {
         if (this.config.show_on_hover) {
             addCSS(`
                 #itemListToplists.listViewNormal > li:hover > .info:last-child,
+                #itemListToplists > li:hover > .tagList,
                 #itemListMovies.listViewNormal > li:hover > .tagList {
                     display: block !important;
                 }
