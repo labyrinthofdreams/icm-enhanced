@@ -1475,7 +1475,8 @@ class ProgressPage extends BaseModule {
 
         this.metadata = {
             title: 'Progress page',
-            desc: 'Change the order of lists on the progress page',
+            desc: 'Change the order of lists on the progress page.<br>All settings can be toggled ' +
+                'without reloading the page; click on the tab label to apply them',
             id: 'progress_page',
             enableOn: ['progress'],
             options: [BaseModule.getStatus(false), {
@@ -1511,39 +1512,44 @@ class ProgressPage extends BaseModule {
     }
 
     attach() {
-        if (this.config.single_col) {
-            addCSS('.itemList .listItem.listItemProgress { float: none !important; }');
-        }
+        addCSS('.itemList.icmePPSingleCol .listItem.listItemProgress { float: none !important; }');
 
-        const order = this.config.desc_order === true ? 'desc' : 'asc';
-        this.rearrange(order, 'all');
+        this.originalOrder = {};
+        this.rearrange('all');
 
         const elFilters = $$('#progressFilter [id^=progressFilter-]');
         elFilters.forEach(el => el.addEventListener('click', () => {
             const [, section] = el.id.split('-');
-            this.rearrange(order, section);
+            this.rearrange(section);
         }));
     }
 
-    rearrange(order, section) {
+    rearrange(section) {
         const elContainer = $(`#progress${section}`);
+        elContainer.classList.toggle('icmePPSingleCol', this.config.single_col);
         let elLists = [...elContainer.children];
         elLists.forEach(el => el.remove());
 
         elLists = ProgressPage.straighten(elLists);
 
+        // Remember the original order at the page load (elLists must not be mutated)
+        this.originalOrder[section] ??= elLists;
+        // Undo further manipulations in case settings have changed
+        elLists = this.originalOrder[section];
+
+        if (this.config.sort_by_completion) {
+            const order = this.config.desc_order === true ? -1 : 1;
+            const getWidth = el => parseFloat(el.querySelector('.progress').style.width);
+            const widths = new Map(elLists.map(el => [el, getWidth(el)]));
+            elLists = [...elLists].sort((a, b) => order * (widths.get(a) - widths.get(b)));
+        }
+
         if (this.config.hide_imdb && section === 'all') {
             elLists = elLists.filter(el => !el.classList.contains('imdb'));
         }
 
-        if (this.config.sort_by_completion) {
-            const getWidth = el => parseFloat(el.querySelector('.progress').style.width);
-            const widths = new Map(elLists.map(el => [el, getWidth(el)]));
-            elLists.sort((a, b) => (order === 'asc' ? 1 : -1) * (widths.get(a) - widths.get(b)));
-        }
-
         if (!this.config.single_col && !this.config.left_to_right) {
-            // Restore default two-column view
+            // Restore the default two-column view
             elLists = ProgressPage.interweave(elLists);
         }
 
