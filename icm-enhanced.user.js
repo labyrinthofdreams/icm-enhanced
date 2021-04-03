@@ -1742,7 +1742,7 @@ class ExportLists extends BaseModule {
             desc: 'Download any list as .csv (doesn\'t support search results). ' +
                 'Emulates the paid feature, enable only if you have a free account',
             id: 'export_lists',
-            enableOn: ['movieList', 'movieListSpecial'],
+            enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
             options: [BaseModule.getStatus(false), {
                 id: 'delimiter',
                 desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
