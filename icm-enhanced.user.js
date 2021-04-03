@@ -2,12 +2,15 @@
 // @name           iCheckMovies Enhanced
 // @namespace      iCheckMovies
 // @description    Adds new features to enhance the iCheckMovies user experience
-// @version        1.8.0
+// @license        MIT; https://opensource.org/licenses/MIT
+// @author         themagician, monk-time
 // @include        http://icheckmovies.com*
 // @include        http://www.icheckmovies.com*
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
 // @grant          unsafeWindow
+// @icon           https://www.icheckmovies.com/favicon.ico
+// @version        1.8.0
 // ==/UserScript==
 
 'use strict';
