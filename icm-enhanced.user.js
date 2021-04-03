@@ -1837,7 +1837,9 @@ class ProgressTopX extends BaseModule {
         const targetPage = Number(this.config.target_page); // * 25 = target rank
         const elActiveTab = [...$$('.itemListCompact[id^="progress"]')]
             .filter(el => el.style.display !== 'none')[0];
-        const lists = [...elActiveTab.children].map(elList => ({
+        const elListsWithoutStats = [...elActiveTab.children]
+            .filter(el => !el.querySelector('.rank a:first-child'));
+        const lists = elListsWithoutStats.map(elList => ({
             elTarget: elList.querySelector('.rank'),
             listUrl: elList.querySelector('.title').href,
             checks: Number(elList.querySelector('.rank').textContent.match(/\d+|-/g)[0]),
