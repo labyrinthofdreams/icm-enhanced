@@ -1197,15 +1197,13 @@ class NewTabs extends BaseModule {
     }
 
     attach() {
-        if (this.config.free_account) {
-            this.trackOwned();
-        }
+        if (this.config.free_account) NewTabs.trackOwned();
 
         if (!$('#itemListMovies')) return;
         if (NewTabs.matchesPageType('movieList') && (this.config.wlist_tab || this.config.owned_tab)) {
             NewTabs.prepareTabBar();
-            if (this.config.wlist_tab) NewTabs.addNewTab('watch', 'watchlist');
-            if (this.config.owned_tab) NewTabs.addNewTab('owned', 'owned');
+            if (this.config.wlist_tab) NewTabs.addNewTab('watch', 'watchlist', 'optionAddWatchlist');
+            if (this.config.owned_tab) NewTabs.addNewTab('owned', 'owned', 'optionMarkOwned');
         }
     }
 
@@ -1233,7 +1231,7 @@ class NewTabs extends BaseModule {
         $('#icmeOrderByAndView').append(elOrderBy, elView);
     }
 
-    static addNewTab(itemClass, title) {
+    static addNewTab(itemClass, title, btnClass) {
         const elMovieList = $('#itemListMovies');
         title = title.toLowerCase();
         const titleCap = title[0].toUpperCase() + title.slice(1);
@@ -1261,9 +1259,19 @@ class NewTabs extends BaseModule {
             elTab.parentElement.querySelector('.active').classList.remove('active');
             elTab.classList.add('active');
         });
+
+        // To work around the owned button click bubbling to ICM, the button stops propagation,
+        // so the tab count update must happen before that, at the capturing phase
+        elMovieList.addEventListener('click', e => {
+            if (!e.target.classList.contains(btnClass)) return;
+            const curCount = elMovieList.querySelectorAll(`:scope > li.${itemClass}`).length;
+            // This capture happens before the movie class is updated (by ICM or the script)
+            const delta = e.target.closest('li.listItem').classList.contains(itemClass) ? -1 : 1;
+            $(`#topListMovies${titleCap}Count`).textContent = `(${curCount + delta})`;
+        }, true);
     }
 
-    trackOwned() {
+    static trackOwned() {
         const owned = load('icme_owned_movies') ?? {};
 
         const elMarkOwnedArr = $$('.optionMarkOwned');
@@ -1294,12 +1302,6 @@ class NewTabs extends BaseModule {
 
                 elMovie.classList.toggle('notowned');
                 elMovie.classList.toggle('owned');
-
-                if (NewTabs.matchesPageType('movieList') && this.config.owned_tab) {
-                    const ownedCount = $$('#itemListMovies li.owned').length;
-                    const elTabLabelCount = $('#topListMoviesOwnedCount');
-                    elTabLabelCount.textContent = `(${ownedCount})`;
-                }
 
                 save('icme_owned_movies', ownedFresh);
             });
