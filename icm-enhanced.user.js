@@ -11,12 +11,12 @@
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @icon           https://www.icheckmovies.com/favicon.ico
-// @version        1.8.0
+// @version        2.0.0
 // ==/UserScript==
 
 'use strict';
 
-const VERSION = '1.8.0';
+const VERSION = '2.0.0';
 
 // ----- Utils -----
 
