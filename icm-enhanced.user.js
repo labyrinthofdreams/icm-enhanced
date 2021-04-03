@@ -1691,14 +1691,15 @@ class GroupMovieLists extends BaseModule {
 
     static addExportLink() {
         addNearOrderByLinks(`
-            <a id="icmeGMLLink" class="icmeOrderByLink" href="#">Get list group links</a>
+            <a id="icmeGMLLink" class="icmeOrderByLink" href="#">Copy urls for a list group</a>
         `);
-        $('#icmeGMLLink').addEventListener('click', () => {
+        $('#icmeGMLLink').addEventListener('click', e => {
+            e.preventDefault();
             const listLinks = [...document.querySelectorAll('#itemListToplists > li')]
                 .filter(el => !el.querySelector('.tagList a[href$="user%3Aicheckmovies"'))
                 .map(el => el.querySelector('.title').href.split('/lists/')[1]);
-            const msg = 'Copy and paste the following to the "Group 1/Group 2" fields in the "Group movie lists" settings';
-            alert(`${msg}:\n\n${listLinks.join('\n')}`);
+            const msg = 'Done! Now you can paste the urls into the "Group 1/Group 2" fields in the "Group movie lists" settings.';
+            navigator.clipboard.writeText(listLinks.join('\n')).then(() => alert(msg));
         });
     }
 
