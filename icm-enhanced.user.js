@@ -612,7 +612,7 @@ class UpcomingAwardsOverview extends BaseModule {
             const [checks, totalItems] = counts.map(Number);
             const elTitle = el.querySelector(curSel.title);
             const listTitle = elTitle.title.replace(/^View the | top list$/g, '');
-            const listUrl = elTitle.href;
+            const listUrl = elTitle.pathname;
 
             const apply = cutoff => Math.ceil(totalItems * cutoff) - checks;
             return awardTypes
