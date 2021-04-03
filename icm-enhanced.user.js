@@ -9,6 +9,7 @@
 // @include        https://icheckmovies.com*
 // @include        https://www.icheckmovies.com*
 // @grant          unsafeWindow
+// @grant          GM_getValue
 // @icon           https://www.icheckmovies.com/favicon.ico
 // @version        1.8.0
 // ==/UserScript==
@@ -34,6 +35,34 @@ const extractFrom = async (url, extractor) => {
 };
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// ----- Data migration for 1.8.0 -> 2.0.0; remove afterwards -----
+
+const migrateData = () => {
+    // 1.8.0 didn't work in GM
+    if (typeof GM_getValue === 'undefined') return; // eslint-disable-line camelcase
+    const hasMigrated = localStorage.getItem('icme_migrated_1_8_0');
+    if (hasMigrated) return;
+
+    const strHiddenLists = GM_getValue('hidden_lists');
+    if (strHiddenLists) {
+        const hiddenLists = JSON.parse(strHiddenLists);
+        console.log('Migrating hidden_lists from GM storage', hiddenLists);
+        save('icme_hidden_lists', hiddenLists);
+    }
+
+    const strOwnedMovies = GM_getValue('owned_movies');
+    if (strOwnedMovies) {
+        const ownedMoviesArr = JSON.parse(strOwnedMovies);
+        console.log('Migrating owned_movies from GM storage', ownedMoviesArr);
+        const ownedMovies = Object.fromEntries(ownedMoviesArr.map(id => [id, true]));
+        save('icme_owned_movies', ownedMovies);
+    }
+
+    localStorage.setItem('icme_migrated_1_8_0', true);
+};
+
+migrateData();
 
 // ----- Interacting with ICM -----
 
