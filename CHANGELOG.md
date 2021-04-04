@@ -1,3 +1,6 @@
+## v2.0.1 - [2021-04-04]
+* **Cross-reference lists:** Chrome didn't scroll the results fully into view
+
 ## v2.0.0 - [2021-04-03]
 * **General:** the settings now auto-save
 * **Cross-reference lists:** the UI has been fully remade, the workflow should now be much less confusing

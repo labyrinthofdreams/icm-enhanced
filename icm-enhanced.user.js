@@ -11,12 +11,12 @@
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @icon           https://www.icheckmovies.com/favicon.ico
-// @version        2.0.0
+// @version        2.0.1
 // ==/UserScript==
 
 'use strict';
 
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 
 // ----- Utils -----
 
@@ -1091,7 +1091,6 @@ class ListCrossRef extends BaseModule {
         if (!movies.length) return;
 
         const elResults = $('.icmeCRResults');
-        elResults.scrollIntoView();
         elResults.insertAdjacentHTML('beforeend', `
             <ul class="tabMenu tabMenuPush">
                 <li class="topListMoviesFilter active">
@@ -1111,6 +1110,8 @@ class ListCrossRef extends BaseModule {
             movie.el.style.display = ''; // movies from fetched lists might be hidden
             elMovieList.append(movie.el);
         }
+
+        elResults.scrollIntoView(); // scroll only after all elements have been added
 
         // Make movie lists collapsible
         elResults.querySelector('.topListMoviesFilter a').addEventListener('click', e => {
