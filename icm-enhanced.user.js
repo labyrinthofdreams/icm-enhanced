@@ -11,12 +11,12 @@
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @icon           https://www.icheckmovies.com/favicon.ico
-// @version        2.0.1
+// @version        2.0.2
 // ==/UserScript==
 
 'use strict';
 
-const VERSION = '2.0.1';
+const VERSION = '2.0.2';
 
 // ----- Utils -----
 
@@ -1563,7 +1563,10 @@ class ProgressPage extends BaseModule {
         elLists = ProgressPage.straighten(elLists);
 
         // Remember the original order at the page load (elLists must not be mutated)
-        this.originalOrder[section] ??= elLists;
+        if (!this.originalOrder[section]) {
+            this.originalOrder[section] = elLists;
+        }
+
         // Undo further manipulations in case settings have changed
         elLists = this.originalOrder[section];
 
