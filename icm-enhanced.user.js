@@ -1644,8 +1644,8 @@ class GroupMovieLists extends BaseModule {
             title: 'Group movie lists',
             desc: 'Organize a movie\'s "In lists" tab (<a href="/movies/pulp+fiction/rankings/">' +
                 'example</a>) by grouping lists together and moving them to the top.<br>To create ' +
-                'a group with your watchlisted/fav. lists click the "Get list group links" button ' +
-                'on their page and copy-paste the urls. You can also edit groups manually',
+                'a group with your watchlisted/fav. lists click "Copy urls for a list group" ' +
+                'on their page and paste into the fields below. You can also edit the groups manually',
             id: 'group_movie_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
@@ -1662,14 +1662,14 @@ class GroupMovieLists extends BaseModule {
                 inline: true,
                 default: true,
             }, {
-                id: 'sort_filmos',
-                desc: 'filmographies',
+                id: 'sort_groups',
+                desc: 'lists from groups 1-2',
                 type: 'checkbox',
                 inline: true,
                 default: true,
             }, {
-                id: 'sort_groups',
-                desc: 'lists from user-defined groups',
+                id: 'sort_filmos',
+                desc: 'filmographies',
                 type: 'checkbox',
                 inline: true,
                 default: true,
