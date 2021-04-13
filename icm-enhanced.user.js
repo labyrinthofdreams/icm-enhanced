@@ -197,6 +197,9 @@ class BaseModule {
             config[opt.id] = this.globalCfg.get(`${id}.${opt.id}`) ?? opt.default;
         }
 
+        // Link module's config values to the whole config.
+        // As they both reference the same object, you can modify module's config from inside it.
+        // Changes through the ConfigWindow will be immediately available to modules.
         this.config = config;
         this.globalCfg.data[id] = config;
     }
@@ -604,7 +607,12 @@ class UpcomingAwardsOverview extends BaseModule {
                 ' watchlisted/fav. lists',
             id: 'ua',
             enableOn: ['listsSpecial', 'progress'],
-            options: [BaseModule.getStatus(true)],
+            options: [BaseModule.getStatus(true), {
+                id: 'hide_imdb',
+                desc: 'Add all IMDb top-50s to hidden lists (you can unhide them afterwards)',
+                type: 'checkbox',
+                default: false,
+            }],
         };
 
         this.lists = [];
@@ -614,14 +622,32 @@ class UpcomingAwardsOverview extends BaseModule {
     attach() {
         if (!$('.listItemToplist')) return;
 
-        this.lists = [];
-        this.hiddenLists = load('icme_hidden_lists') ?? [];
+        const hiddenLists = this.loadHiddenLists();
+        const listObjs = UpcomingAwardsOverview.parseLists();
+        UpcomingAwardsOverview.sortListObjects(listObjs);
+        UpcomingAwardsOverview.loadCss();
+        UpcomingAwardsOverview.loadHtml(listObjs, hiddenLists);
+        UpcomingAwardsOverview.addListeners(hiddenLists);
+    }
 
-        this.lists = UpcomingAwardsOverview.parseLists();
-        this.sortLists();
-        UpcomingAwardsOverview.css();
-        this.loadHtml();
-        this.addListeners();
+    loadHiddenLists() {
+        const hiddenLists = load('icme_hidden_lists') ?? [];
+        if (!this.config.hide_imdb) return hiddenLists;
+
+        const imdbUrls = [
+            '1910s', '1920s', '1930s', '1940s', '1950s', '1960s', '1970s', '1980s', '1990s',
+            '2000s', '2010s', 'action', 'adventure', 'animation', 'biography', 'comedy',
+            'crime', 'documentary', 'drama', 'family', 'fantasy', 'film-noir', 'history',
+            'horror', 'independent', 'mini-series', 'music', 'musical', 'mystery', 'romance',
+            'sci-fi', 'shorts', 'sport', 'thriller', 'war', 'western',
+        ].map(s => `/lists/imdbs+${s}+top+50/`);
+        const hiddenAndImdb = [...new Set([...hiddenLists, ...imdbUrls])]; // remove duplicates
+        save('icme_hidden_lists', hiddenAndImdb);
+
+        // This is a one-off action, disable the option so that it's not repeated every time
+        this.config.hide_imdb = false;
+        this.globalCfg.save();
+        return hiddenAndImdb;
     }
 
     static parseLists() {
@@ -651,16 +677,16 @@ class UpcomingAwardsOverview extends BaseModule {
         });
     }
 
-    sortLists() {
+    static sortListObjects(listObjs) {
         // By least required checks ASC, then by award type DESC, then by list title ASC
         const awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
-        this.lists.sort((a, b) =>
+        listObjs.sort((a, b) =>
             a.neededForAward - b.neededForAward ||
             awardOrder[b.awardType] - awardOrder[a.awardType] ||
             a.listTitle.localeCompare(b.listTitle));
     }
 
-    static css() {
+    static loadCss() {
         const unhideIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
             'AQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW' +
             '1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjR' +
@@ -734,7 +760,7 @@ class UpcomingAwardsOverview extends BaseModule {
         `);
     }
 
-    loadHtml() {
+    static loadHtml(listObjs, hiddenLists) {
         const html = `
             <div id="icmeUAO">
                 <p id="icmeUAOTableToggleContainer">
@@ -776,30 +802,27 @@ class UpcomingAwardsOverview extends BaseModule {
         const sel = UpcomingAwardsOverview.matchesPageType('progress') ? '#listOrdering' : '#itemContainer';
         $(sel).insertAdjacentHTML('beforebegin', html);
 
-        const htmlAwards = this.lists.map(el => {
-            const isHidden = this.hiddenLists.includes(el.listUrl);
-
-            return `
-                <tr class="icmeUAOAward icme${el.awardType}
-                        ${isHidden ? 'icmeHidden' : ''} ${el.isNext ? 'icmeNext' : ''}"
-                        data-list-url="${el.listUrl}">
-                    <td>${el.awardType}</td>
-                    <td>${el.neededForAward}</td>
-                    <td>
-                        <div>
-                            <a class="icmeListTitle" href="${el.listUrl}">${el.listTitle}</a>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="icmeToggleList" title="Toggle the list's visibility"></div>
-                    </td>
-                </tr>`;
-        }).join('');
+        const htmlAwards = listObjs.map(({ listTitle, listUrl, awardType, neededForAward, isNext }) => `
+            <tr class="icmeUAOAward icme${awardType} ${isNext ? 'icmeNext' : ''}
+                    ${hiddenLists.includes(listUrl) ? 'icmeHidden' : ''}"
+                    data-list-url="${listUrl}">
+                <td>${awardType}</td>
+                <td>${neededForAward}</td>
+                <td>
+                    <div>
+                        <a class="icmeListTitle" href="${listUrl}">${listTitle}</a>
+                    </div>
+                </td>
+                <td>
+                    <div class="icmeToggleList" title="Toggle the list's visibility"></div>
+                </td>
+            </tr>
+        `).join('');
 
         $('#icmeUAOTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
     }
 
-    addListeners() {
+    static addListeners(hiddenLists) {
         const elAwards = [...$$('#icmeUAOTable .icmeUAOAward')];
 
         const elTable = $('#icmeUAOTable');
@@ -808,20 +831,20 @@ class UpcomingAwardsOverview extends BaseModule {
             e.preventDefault();
 
             const { listUrl } = e.target.closest('.icmeUAOAward').dataset;
-            const index = this.hiddenLists.indexOf(listUrl);
+            const index = hiddenLists.indexOf(listUrl);
             const isVisible = index === -1;
 
             if (isVisible) {
-                this.hiddenLists.push(listUrl);
+                hiddenLists.push(listUrl);
             } else {
-                this.hiddenLists.splice(index, 1);
+                hiddenLists.splice(index, 1);
             }
 
             elAwards
                 .filter(el => el.dataset.listUrl === listUrl)
                 .forEach(el => { el.classList.toggle('icmeHidden'); });
 
-            save('icme_hidden_lists', this.hiddenLists);
+            save('icme_hidden_lists', hiddenLists);
         });
 
         const elToggle = $('#icmeUAOTableToggle');
