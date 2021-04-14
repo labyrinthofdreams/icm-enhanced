@@ -286,7 +286,7 @@ class ConfigWindow {
         }
     }
 
-    buildOptionHTML(path, opt) {
+    buildOptionHTML(path, { frontDesc, desc, type, default: def, inline, newline }) {
         let value = this.globalCfg.get(path); // always up to date
         // optValue can be a string (until a module parses it) or an array (after)
         if (Array.isArray(value)) {
@@ -295,35 +295,36 @@ class ConfigWindow {
 
         const attrPath = `data-cfg-path="${path}"`;
         const checkbox = () => `
-            <p${opt.inline ? ' class="icmeCfgInlineOpt"' : ''}>
-                ${opt.frontDesc ?? ''}
+            ${newline ? '<br>' : ''}
+            <p${inline ? ' class="icmeCfgInlineOpt"' : ''}>
+                ${frontDesc ?? ''}
                 <label>
                     <input type="checkbox" ${attrPath} ${value ? 'checked="checked"' : ''}
-                        title="default: ${opt.default ? 'yes' : 'no'}">
-                    ${opt.desc}
+                        title="default: ${def ? 'yes' : 'no'}">
+                    ${desc}
                 </label>
             </p>`;
         const textinput = () => `
             <p>
-                ${opt.desc}:
-                <input type="text" ${attrPath} value="${value}" title="default: ${opt.default}">
+                ${desc}:
+                <input type="text" ${attrPath} value="${value}" title="default: ${def}">
             </p>`;
         const textarea = () => `
             <p>
-                <span class="icmeCfgTextareaDesc">${opt.desc}:</span>
+                <span class="icmeCfgTextareaDesc">${desc}:</span>
                 <textarea rows="4" cols="70" ${attrPath}>${value}</textarea>
             </p>`;
         const textinputcolor = () => `
             <p>
-                ${opt.desc}:
+                ${desc}:
                 <input type="text" class="icmeColorPickerText" ${attrPath}
-                    value="${value}" title="default: ${opt.default}">
+                    value="${value}" title="default: ${def}">
                 <input type="color" class="icmeColorPicker" ${attrPath}
-                    value="${value}" title="default: ${opt.default}">
+                    value="${value}" title="default: ${def}">
             </p>`;
 
         const htmlByType = { checkbox, textinput, textarea, textinputcolor };
-        return htmlByType[opt.type]();
+        return htmlByType[type]();
     }
 
     loadOptions(index) {
@@ -1651,15 +1652,23 @@ class GroupMovieLists extends BaseModule {
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
                 id: 'redirect',
-                desc: 'Redirect "In # lists" links to all lists (instead of only official lists)',
+                desc: 'Redirect "in # lists" links to the tab with all lists',
                 type: 'checkbox',
+                inline: true,
                 default: true,
+            }, {
+                id: 'by_name',
+                desc: 'sorted by name',
+                type: 'checkbox',
+                inline: true,
+                default: false,
             }, {
                 id: 'sort_official',
                 frontDesc: 'Move to the top: ',
                 desc: 'official lists',
                 type: 'checkbox',
                 inline: true,
+                newline: true,
                 default: true,
             }, {
                 id: 'sort_groups',
@@ -1700,7 +1709,7 @@ class GroupMovieLists extends BaseModule {
         if (GroupMovieLists.matchesPageType('movieRankings')) this.reorderLists();
         if (GroupMovieLists.matchesPageType('listsSpecial')) GroupMovieLists.addExportLink();
         if (!this.config.redirect) return;
-        GroupMovieLists.fixLinks();
+        this.fixLinks();
         this.fixLinksInNewNodes();
     }
 
@@ -1785,10 +1794,11 @@ class GroupMovieLists extends BaseModule {
         });
     }
 
-    static fixLinks(elContainer = document) {
+    fixLinks(elContainer = document) {
         const elLinks = elContainer.querySelectorAll('.listItemMovie .info a[href*="/rankings/"]');
         elLinks.forEach(el => {
-            el.href = el.href.replace('?tags=user:icheckmovies', '');
+            const newParams = this.config.by_name ? '?sort=name' : '';
+            el.href = el.href.replace('?tags=user:icheckmovies', newParams);
         });
     }
 
@@ -1801,7 +1811,7 @@ class GroupMovieLists extends BaseModule {
         const mut = new MutationObserver(mutList => mutList.forEach(({ addedNodes }) => {
             for (const el of addedNodes) {
                 if (el.classList?.contains('icmeCRResults')) {
-                    GroupMovieLists.fixLinks(el);
+                    this.fixLinks(el);
                 }
             }
         }));
