@@ -1786,8 +1786,8 @@ class GroupMovieLists extends BaseModule {
     }
 
     static fixLinks(elContainer = document) {
-        const elLinksToLists = elContainer.querySelectorAll('.listItemMovie .info a:last-of-type');
-        elLinksToLists.forEach(el => {
+        const elLinks = elContainer.querySelectorAll('.listItemMovie .info a[href*="/rankings/"]');
+        elLinks.forEach(el => {
             el.href = el.href.replace('?tags=user:icheckmovies', '');
         });
     }
