@@ -1686,7 +1686,6 @@ class GroupMovieLists extends BaseModule {
             }],
         };
 
-        this.elContainer = $('#itemListToplists');
         // multiline regex that leaves only list name, excl. a common beginning and parameters
         this.reURL = /^[ \t]*(?:https?:\/\/)?(?:www\.)?(?:icheckmovies.com)?\/?(?:lists)?\/?([^?\s]+\/)(?:\?.+)?[ \t]*$/gm;
     }
@@ -1707,48 +1706,56 @@ class GroupMovieLists extends BaseModule {
             }
         `);
 
-        const lists = [...this.elContainer.children];
+        const elContainer = $('#itemListToplists');
+        let lists = [...elContainer.children];
+        const isNotInList = toExclude => el => !toExclude.includes(el);
 
         if (this.config.sort_official) {
             // icm bug: deleted lists reset to icheckmovies user
             const official = lists.filter(el =>
                 el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
                 !el.querySelector('.title').href.endsWith('//'));
-            this.move(official);
+            GroupMovieLists.move(official, elContainer);
+            lists = lists.filter(isNotInList(official));
         }
 
         if (this.config.sort_groups) {
             for (const group of ['group1', 'group2']) {
-                let groupUrls = this.config[group];
-                if (typeof groupUrls === 'string') { // Parse textarea content
-                    console.log(`Parsing GroupMovieLists textarea content: ${group}`);
-                    groupUrls = groupUrls.trim().replace(this.reURL, '$1').split('\n');
-                    this.config[group] = groupUrls;
-                    this.globalCfg.save();
-                }
-
+                const groupUrls = this.parseGroup(group);
                 const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
                 const personal = lists.filter(el => groupUrls.includes(getShortUrl(el)));
-                this.move(personal);
+                GroupMovieLists.move(personal, elContainer);
+                lists = lists.filter(isNotInList(personal));
             }
         }
 
         if (this.config.sort_filmos) {
             const filmos = lists.filter(el => el.textContent.toLowerCase().includes('filmography'));
-            this.move(filmos);
+            GroupMovieLists.move(filmos, elContainer);
+            lists = lists.filter(isNotInList(filmos));
         }
     }
 
-    move(elLists) {
+    static move(elLists, elContainer) {
         if (!elLists.length) return;
-        const elGroupEnds = this.elContainer.querySelectorAll('.icmeGMLGroupEnd');
+        const elGroupEnds = elContainer.querySelectorAll('.icmeGMLGroupEnd');
         if (elGroupEnds.length) {
             elGroupEnds[elGroupEnds.length - 1].after(...elLists);
         } else {
-            this.elContainer.prepend(...elLists);
+            elContainer.prepend(...elLists);
         }
 
         elLists[elLists.length - 1].classList.add('icmeGMLGroupEnd');
+    }
+
+    parseGroup(group) {
+        let groupUrls = this.config[group];
+        if (typeof groupUrls !== 'string') return groupUrls;
+        console.log(`GroupMovieLists: parsing ${group}`);
+        groupUrls = groupUrls.trim().replace(this.reURL, '$1').split('\n');
+        this.config[group] = groupUrls;
+        this.globalCfg.save();
+        return groupUrls;
     }
 
     static addExportLink() {
