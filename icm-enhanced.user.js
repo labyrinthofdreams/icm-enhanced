@@ -1674,6 +1674,12 @@ class GroupMovieLists extends BaseModule {
                 inline: true,
                 default: true,
             }, {
+                id: 'sort_nonpersonal',
+                desc: 'non-personal lists',
+                type: 'checkbox',
+                inline: true,
+                default: true,
+            }, {
                 id: 'group1',
                 desc: 'Group 1',
                 type: 'textarea',
@@ -1708,31 +1714,38 @@ class GroupMovieLists extends BaseModule {
 
         const elContainer = $('#itemListToplists');
         let lists = [...elContainer.children];
-        const isNotInList = toExclude => el => !toExclude.includes(el);
+        const isNotInArr = toExclude => el => !toExclude.includes(el);
+        const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
+        const group1Urls = this.getGroup('group1');
+        const group2Urls = this.getGroup('group2');
 
-        if (this.config.sort_official) {
-            // icm bug: deleted lists reset to icheckmovies user
-            const official = lists.filter(el =>
-                el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
-                !el.querySelector('.title').href.endsWith('//'));
-            GroupMovieLists.move(official, elContainer);
-            lists = lists.filter(isNotInList(official));
-        }
+        const groupLogic = [
+            {
+                option: this.config.sort_official,
+                isInGroup: el =>
+                    el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
+                    // ICM bug: deleted lists reset to icheckmovies user
+                    !el.querySelector('.title').href.endsWith('//'),
+            }, {
+                option: this.config.sort_groups,
+                isInGroup: el => group1Urls.includes(getShortUrl(el)),
+            }, {
+                option: this.config.sort_groups,
+                isInGroup: el => group2Urls.includes(getShortUrl(el)),
+            }, {
+                option: this.config.sort_filmos,
+                isInGroup: el => el.textContent.toLowerCase().includes('filmography'),
+            }, {
+                option: this.config.sort_nonpersonal,
+                isInGroup: el => !el.querySelector('.tagList a[href$="category%3Apersonal"]'),
+            },
+        ];
 
-        if (this.config.sort_groups) {
-            for (const group of ['group1', 'group2']) {
-                const groupUrls = this.parseGroup(group);
-                const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
-                const personal = lists.filter(el => groupUrls.includes(getShortUrl(el)));
-                GroupMovieLists.move(personal, elContainer);
-                lists = lists.filter(isNotInList(personal));
-            }
-        }
-
-        if (this.config.sort_filmos) {
-            const filmos = lists.filter(el => el.textContent.toLowerCase().includes('filmography'));
-            GroupMovieLists.move(filmos, elContainer);
-            lists = lists.filter(isNotInList(filmos));
+        for (const { option, isInGroup } of groupLogic) {
+            if (!option) continue;
+            const group = lists.filter(isInGroup);
+            GroupMovieLists.move(group, elContainer);
+            lists = lists.filter(isNotInArr(group));
         }
     }
 
@@ -1748,7 +1761,7 @@ class GroupMovieLists extends BaseModule {
         elLists[elLists.length - 1].classList.add('icmeGMLGroupEnd');
     }
 
-    parseGroup(group) {
+    getGroup(group) {
         let groupUrls = this.config[group];
         if (typeof groupUrls !== 'string') return groupUrls;
         console.log(`GroupMovieLists: parsing ${group}`);
