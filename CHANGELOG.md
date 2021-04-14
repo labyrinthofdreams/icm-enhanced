@@ -1,3 +1,11 @@
+## v2.0.3 - [2021-04-14]
+* **Group movie lists:** changed the order of the settings
+* **Group movie lists:** movies are moved into the first matching group instead of the last
+* **Group movie lists:** added a new group for non-personal lists
+* **Group movie lists:** added a new group for lists created by the user
+* **Group movie lists:** added an option to redirect to a tab sorted by list name
+* **Upcoming awards overview:** added an option to auto-hide IMDb lists
+
 ## v2.0.1 - [2021-04-04]
 * **Cross-reference lists:** Chrome didn't scroll the results fully into view
 
