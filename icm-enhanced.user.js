@@ -1665,14 +1665,20 @@ class GroupMovieLists extends BaseModule {
             }, {
                 id: 'sort_official',
                 frontDesc: 'Move to the top: ',
-                desc: 'official lists',
+                desc: 'official',
                 type: 'checkbox',
                 inline: true,
                 newline: true,
                 default: true,
             }, {
+                id: 'sort_own',
+                desc: 'created by you',
+                type: 'checkbox',
+                inline: true,
+                default: true,
+            }, {
                 id: 'sort_groups',
-                desc: 'lists from groups 1-2',
+                desc: 'from groups 1-2',
                 type: 'checkbox',
                 inline: true,
                 default: true,
@@ -1684,7 +1690,7 @@ class GroupMovieLists extends BaseModule {
                 default: true,
             }, {
                 id: 'sort_nonpersonal',
-                desc: 'non-personal lists',
+                desc: 'non-personal',
                 type: 'checkbox',
                 inline: true,
                 default: true,
@@ -1727,6 +1733,7 @@ class GroupMovieLists extends BaseModule {
         const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
         const group1Urls = this.getGroup('group1');
         const group2Urls = this.getGroup('group2');
+        const username = $('.showProfileOptions').href.match(/profiles\/(.+)\//)?.[1];
 
         const groupLogic = [
             {
@@ -1735,6 +1742,9 @@ class GroupMovieLists extends BaseModule {
                     el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
                     // ICM bug: deleted lists reset to icheckmovies user
                     !el.querySelector('.title').href.endsWith('//'),
+            }, {
+                option: this.config.sort_own,
+                isInGroup: el => el.querySelector(`.tagList a[href$="user%3A${username}"]`),
             }, {
                 option: this.config.sort_groups,
                 isInGroup: el => group1Urls.includes(getShortUrl(el)),
@@ -1786,7 +1796,7 @@ class GroupMovieLists extends BaseModule {
         `);
         $('#icmeGMLLink').addEventListener('click', e => {
             e.preventDefault();
-            const listLinks = [...document.querySelectorAll('#itemListToplists > li')]
+            const listLinks = [...$$('#itemListToplists > li')]
                 .filter(el => !el.querySelector('.tagList a[href$="user%3Aicheckmovies"'))
                 .map(el => el.querySelector('.title').href.split('/lists/')[1]);
             const msg = 'Done! Now you can paste the urls into the "Group 1/Group 2" fields in the "Group movie lists" settings.';
