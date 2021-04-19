@@ -1844,7 +1844,7 @@ class ExportLists extends BaseModule {
                 id: 'delimiter',
                 desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
                 type: 'textinput',
-                default: ';',
+                default: ',',
             }, {
                 id: 'bom',
                 desc: 'Include BOM (required for Excel)',
@@ -1881,7 +1881,7 @@ class ExportLists extends BaseModule {
         const wrap = field => (field.includes('"') || field.includes(sep) ?
             `"${field.replace(/"/g, '""')}"` : field);
         const colNames = ['rank', 'title', 'aka', 'year', 'official_toplists',
-            'checked', 'favorite', 'dislike', 'imdb'];
+            'checked', 'favorite', 'dislike', 'imdburl'];
         elExport.addEventListener('click', () => {
             const rows = [...elMovies].map(el => {
                 const rank = el.querySelector('.rank')?.textContent.match(/\d+/)[0] ?? '-';
