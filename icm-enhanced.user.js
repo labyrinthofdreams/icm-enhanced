@@ -1648,7 +1648,7 @@ class GroupMovieLists extends BaseModule {
                 'a group with your watchlisted/fav. lists click "Copy urls for a list group" ' +
                 'on their page and paste into the fields below. You can also edit the groups manually',
             id: 'group_movie_lists',
-            enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
+            enableOn: ['movie', 'movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
                 id: 'redirect',
@@ -1805,10 +1805,11 @@ class GroupMovieLists extends BaseModule {
     }
 
     fixLinks(elContainer = document) {
-        const elLinks = elContainer.querySelectorAll('.listItemMovie .info a[href*="/rankings/"]');
+        const sel = '.listItemMovie .info a[href*="/rankings/"], #listFilterLists a';
+        const elLinks = elContainer.querySelectorAll(sel);
         elLinks.forEach(el => {
-            const newParams = this.config.by_name ? '?sort=name' : '';
-            el.href = el.href.replace('?tags=user:icheckmovies', newParams);
+            el.href = el.href.replace('?tags=user:icheckmovies', '');
+            el.href += this.config.by_name ? '?sort=name' : '';
         });
     }
 
