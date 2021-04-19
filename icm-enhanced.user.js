@@ -11,12 +11,12 @@
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @icon           https://www.icheckmovies.com/favicon.ico
-// @version        2.0.2
+// @version        2.0.3
 // ==/UserScript==
 
 'use strict';
 
-const VERSION = '2.0.2';
+const VERSION = '2.0.3';
 
 // ----- Utils -----
 
@@ -197,6 +197,9 @@ class BaseModule {
             config[opt.id] = this.globalCfg.get(`${id}.${opt.id}`) ?? opt.default;
         }
 
+        // Link module's config values to the whole config.
+        // As they both reference the same object, you can modify module's config from inside it.
+        // Changes through the ConfigWindow will be immediately available to modules.
         this.config = config;
         this.globalCfg.data[id] = config;
     }
@@ -283,7 +286,7 @@ class ConfigWindow {
         }
     }
 
-    buildOptionHTML(path, opt) {
+    buildOptionHTML(path, { frontDesc, desc, type, default: def, inline, newline }) {
         let value = this.globalCfg.get(path); // always up to date
         // optValue can be a string (until a module parses it) or an array (after)
         if (Array.isArray(value)) {
@@ -292,35 +295,36 @@ class ConfigWindow {
 
         const attrPath = `data-cfg-path="${path}"`;
         const checkbox = () => `
-            <p${opt.inline ? ' class="icmeCfgInlineOpt"' : ''}>
-                ${opt.frontDesc ?? ''}
+            ${newline ? '<br>' : ''}
+            <p${inline ? ' class="icmeCfgInlineOpt"' : ''}>
+                ${frontDesc ?? ''}
                 <label>
                     <input type="checkbox" ${attrPath} ${value ? 'checked="checked"' : ''}
-                        title="default: ${opt.default ? 'yes' : 'no'}">
-                    ${opt.desc}
+                        title="default: ${def ? 'yes' : 'no'}">
+                    ${desc}
                 </label>
             </p>`;
         const textinput = () => `
             <p>
-                ${opt.desc}:
-                <input type="text" ${attrPath} value="${value}" title="default: ${opt.default}">
+                ${desc}:
+                <input type="text" ${attrPath} value="${value}" title="default: ${def}">
             </p>`;
         const textarea = () => `
             <p>
-                <span class="icmeCfgTextareaDesc">${opt.desc}:</span>
+                <span class="icmeCfgTextareaDesc">${desc}:</span>
                 <textarea rows="4" cols="70" ${attrPath}>${value}</textarea>
             </p>`;
         const textinputcolor = () => `
             <p>
-                ${opt.desc}:
+                ${desc}:
                 <input type="text" class="icmeColorPickerText" ${attrPath}
-                    value="${value}" title="default: ${opt.default}">
+                    value="${value}" title="default: ${def}">
                 <input type="color" class="icmeColorPicker" ${attrPath}
-                    value="${value}" title="default: ${opt.default}">
+                    value="${value}" title="default: ${def}">
             </p>`;
 
         const htmlByType = { checkbox, textinput, textarea, textinputcolor };
-        return htmlByType[opt.type]();
+        return htmlByType[type]();
     }
 
     loadOptions(index) {
@@ -604,7 +608,12 @@ class UpcomingAwardsOverview extends BaseModule {
                 ' watchlisted/fav. lists',
             id: 'ua',
             enableOn: ['listsSpecial', 'progress'],
-            options: [BaseModule.getStatus(true)],
+            options: [BaseModule.getStatus(true), {
+                id: 'hide_imdb',
+                desc: 'Add all IMDb top-50s to hidden lists (you can unhide them afterwards)',
+                type: 'checkbox',
+                default: false,
+            }],
         };
 
         this.lists = [];
@@ -614,14 +623,32 @@ class UpcomingAwardsOverview extends BaseModule {
     attach() {
         if (!$('.listItemToplist')) return;
 
-        this.lists = [];
-        this.hiddenLists = load('icme_hidden_lists') ?? [];
+        const hiddenLists = this.loadHiddenLists();
+        const listObjs = UpcomingAwardsOverview.parseLists();
+        UpcomingAwardsOverview.sortListObjects(listObjs);
+        UpcomingAwardsOverview.loadCss();
+        UpcomingAwardsOverview.loadHtml(listObjs, hiddenLists);
+        UpcomingAwardsOverview.addListeners(hiddenLists);
+    }
 
-        this.lists = UpcomingAwardsOverview.parseLists();
-        this.sortLists();
-        UpcomingAwardsOverview.css();
-        this.loadHtml();
-        this.addListeners();
+    loadHiddenLists() {
+        const hiddenLists = load('icme_hidden_lists') ?? [];
+        if (!this.config.hide_imdb) return hiddenLists;
+
+        const imdbUrls = [
+            '1910s', '1920s', '1930s', '1940s', '1950s', '1960s', '1970s', '1980s', '1990s',
+            '2000s', '2010s', 'action', 'adventure', 'animation', 'biography', 'comedy',
+            'crime', 'documentary', 'drama', 'family', 'fantasy', 'film-noir', 'history',
+            'horror', 'independent', 'mini-series', 'music', 'musical', 'mystery', 'romance',
+            'sci-fi', 'shorts', 'sport', 'thriller', 'war', 'western',
+        ].map(s => `/lists/imdbs+${s}+top+50/`);
+        const hiddenAndImdb = [...new Set([...hiddenLists, ...imdbUrls])]; // remove duplicates
+        save('icme_hidden_lists', hiddenAndImdb);
+
+        // This is a one-off action, disable the option so that it's not repeated every time
+        this.config.hide_imdb = false;
+        this.globalCfg.save();
+        return hiddenAndImdb;
     }
 
     static parseLists() {
@@ -651,16 +678,16 @@ class UpcomingAwardsOverview extends BaseModule {
         });
     }
 
-    sortLists() {
+    static sortListObjects(listObjs) {
         // By least required checks ASC, then by award type DESC, then by list title ASC
         const awardOrder = { Bronze: 0, Silver: 1, Gold: 2, Platinum: 3 };
-        this.lists.sort((a, b) =>
+        listObjs.sort((a, b) =>
             a.neededForAward - b.neededForAward ||
             awardOrder[b.awardType] - awardOrder[a.awardType] ||
             a.listTitle.localeCompare(b.listTitle));
     }
 
-    static css() {
+    static loadCss() {
         const unhideIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAA' +
             'AQCAYAAAAf8/9hAAAABGdBTUEAAK/INwWK6QAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW' +
             '1hZ2VSZWFkeXHJZTwAAAGrSURBVDjLvZPZLkNhFIV75zjvYm7VGFNCqoZUJ+roKUUpjR' +
@@ -734,7 +761,7 @@ class UpcomingAwardsOverview extends BaseModule {
         `);
     }
 
-    loadHtml() {
+    static loadHtml(listObjs, hiddenLists) {
         const html = `
             <div id="icmeUAO">
                 <p id="icmeUAOTableToggleContainer">
@@ -776,30 +803,27 @@ class UpcomingAwardsOverview extends BaseModule {
         const sel = UpcomingAwardsOverview.matchesPageType('progress') ? '#listOrdering' : '#itemContainer';
         $(sel).insertAdjacentHTML('beforebegin', html);
 
-        const htmlAwards = this.lists.map(el => {
-            const isHidden = this.hiddenLists.includes(el.listUrl);
-
-            return `
-                <tr class="icmeUAOAward icme${el.awardType}
-                        ${isHidden ? 'icmeHidden' : ''} ${el.isNext ? 'icmeNext' : ''}"
-                        data-list-url="${el.listUrl}">
-                    <td>${el.awardType}</td>
-                    <td>${el.neededForAward}</td>
-                    <td>
-                        <div>
-                            <a class="icmeListTitle" href="${el.listUrl}">${el.listTitle}</a>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="icmeToggleList" title="Toggle the list's visibility"></div>
-                    </td>
-                </tr>`;
-        }).join('');
+        const htmlAwards = listObjs.map(({ listTitle, listUrl, awardType, neededForAward, isNext }) => `
+            <tr class="icmeUAOAward icme${awardType} ${isNext ? 'icmeNext' : ''}
+                    ${hiddenLists.includes(listUrl) ? 'icmeHidden' : ''}"
+                    data-list-url="${listUrl}">
+                <td>${awardType}</td>
+                <td>${neededForAward}</td>
+                <td>
+                    <div>
+                        <a class="icmeListTitle" href="${listUrl}">${listTitle}</a>
+                    </div>
+                </td>
+                <td>
+                    <div class="icmeToggleList" title="Toggle the list's visibility"></div>
+                </td>
+            </tr>
+        `).join('');
 
         $('#icmeUAOTable tbody').insertAdjacentHTML('beforeend', htmlAwards);
     }
 
-    addListeners() {
+    static addListeners(hiddenLists) {
         const elAwards = [...$$('#icmeUAOTable .icmeUAOAward')];
 
         const elTable = $('#icmeUAOTable');
@@ -808,20 +832,20 @@ class UpcomingAwardsOverview extends BaseModule {
             e.preventDefault();
 
             const { listUrl } = e.target.closest('.icmeUAOAward').dataset;
-            const index = this.hiddenLists.indexOf(listUrl);
+            const index = hiddenLists.indexOf(listUrl);
             const isVisible = index === -1;
 
             if (isVisible) {
-                this.hiddenLists.push(listUrl);
+                hiddenLists.push(listUrl);
             } else {
-                this.hiddenLists.splice(index, 1);
+                hiddenLists.splice(index, 1);
             }
 
             elAwards
                 .filter(el => el.dataset.listUrl === listUrl)
                 .forEach(el => { el.classList.toggle('icmeHidden'); });
 
-            save('icme_hidden_lists', this.hiddenLists);
+            save('icme_hidden_lists', hiddenLists);
         });
 
         const elToggle = $('#icmeUAOTableToggle');
@@ -1621,20 +1645,40 @@ class GroupMovieLists extends BaseModule {
             title: 'Group movie lists',
             desc: 'Organize a movie\'s "In lists" tab (<a href="/movies/pulp+fiction/rankings/">' +
                 'example</a>) by grouping lists together and moving them to the top.<br>To create ' +
-                'a group with your watchlisted/fav. lists click the "Get list group links" button ' +
-                'on their page and copy-paste the urls. You can also edit groups manually',
+                'a group with your watchlisted/fav. lists click "Copy urls for a list group" ' +
+                'on their page and paste into the fields below. You can also edit the groups manually',
             id: 'group_movie_lists',
-            enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial',
+            enableOn: ['movie', 'movieList', 'movieListGeneral', 'movieListSpecial',
                 'movieRankings', 'movieSearch', 'listsGeneral', 'listsSpecial'],
             options: [BaseModule.getStatus(true), {
                 id: 'redirect',
-                desc: 'Redirect "In # lists" links to all lists (instead of only official lists)',
+                desc: 'Redirect "in # lists" links to the tab with all lists',
                 type: 'checkbox',
+                inline: true,
                 default: true,
+            }, {
+                id: 'by_name',
+                desc: 'sorted by name',
+                type: 'checkbox',
+                inline: true,
+                default: false,
             }, {
                 id: 'sort_official',
                 frontDesc: 'Move to the top: ',
-                desc: 'official lists',
+                desc: 'official',
+                type: 'checkbox',
+                inline: true,
+                newline: true,
+                default: true,
+            }, {
+                id: 'sort_own',
+                desc: 'created by you',
+                type: 'checkbox',
+                inline: true,
+                default: true,
+            }, {
+                id: 'sort_groups',
+                desc: 'from groups 1-2',
                 type: 'checkbox',
                 inline: true,
                 default: true,
@@ -1645,8 +1689,8 @@ class GroupMovieLists extends BaseModule {
                 inline: true,
                 default: true,
             }, {
-                id: 'sort_groups',
-                desc: 'lists from user-defined groups',
+                id: 'sort_nonpersonal',
+                desc: 'non-personal',
                 type: 'checkbox',
                 inline: true,
                 default: true,
@@ -1663,7 +1707,6 @@ class GroupMovieLists extends BaseModule {
             }],
         };
 
-        this.elContainer = $('#itemListToplists');
         // multiline regex that leaves only list name, excl. a common beginning and parameters
         this.reURL = /^[ \t]*(?:https?:\/\/)?(?:www\.)?(?:icheckmovies.com)?\/?(?:lists)?\/?([^?\s]+\/)(?:\?.+)?[ \t]*$/gm;
     }
@@ -1672,7 +1715,7 @@ class GroupMovieLists extends BaseModule {
         if (GroupMovieLists.matchesPageType('movieRankings')) this.reorderLists();
         if (GroupMovieLists.matchesPageType('listsSpecial')) GroupMovieLists.addExportLink();
         if (!this.config.redirect) return;
-        GroupMovieLists.fixLinks();
+        this.fixLinks();
         this.fixLinksInNewNodes();
     }
 
@@ -1684,48 +1727,67 @@ class GroupMovieLists extends BaseModule {
             }
         `);
 
-        const lists = [...this.elContainer.children];
+        const elContainer = $('#itemListToplists');
+        let lists = [...elContainer.children];
+        const isNotInArr = toExclude => el => !toExclude.includes(el);
+        const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
+        const group1Urls = this.getGroup('group1');
+        const group2Urls = this.getGroup('group2');
+        const username = $('.showProfileOptions').href.match(/profiles\/(.+)\//)?.[1];
 
-        if (this.config.sort_official) {
-            // icm bug: deleted lists reset to icheckmovies user
-            const official = lists.filter(el =>
-                el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
-                !el.querySelector('.title').href.endsWith('//'));
-            this.move(official);
-        }
+        const groupLogic = [
+            {
+                option: this.config.sort_official,
+                isInGroup: el =>
+                    el.querySelector('.tagList a[href$="user%3Aicheckmovies"]') &&
+                    // ICM bug: deleted lists reset to icheckmovies user
+                    !el.querySelector('.title').href.endsWith('//'),
+            }, {
+                option: this.config.sort_own,
+                isInGroup: el => el.querySelector(`.tagList a[href$="user%3A${username}"]`),
+            }, {
+                option: this.config.sort_groups,
+                isInGroup: el => group1Urls.includes(getShortUrl(el)),
+            }, {
+                option: this.config.sort_groups,
+                isInGroup: el => group2Urls.includes(getShortUrl(el)),
+            }, {
+                option: this.config.sort_filmos,
+                isInGroup: el => el.textContent.toLowerCase().includes('filmography'),
+            }, {
+                option: this.config.sort_nonpersonal,
+                isInGroup: el => !el.querySelector('.tagList a[href$="category%3Apersonal"]'),
+            },
+        ];
 
-        if (this.config.sort_groups) {
-            for (const group of ['group1', 'group2']) {
-                let groupUrls = this.config[group];
-                if (typeof groupUrls === 'string') { // Parse textarea content
-                    console.log(`Parsing GroupMovieLists textarea content: ${group}`);
-                    groupUrls = groupUrls.trim().replace(this.reURL, '$1').split('\n');
-                    this.config[group] = groupUrls;
-                    this.globalCfg.save();
-                }
-
-                const getShortUrl = el => el.querySelector('a.title').pathname.slice(7);
-                const personal = lists.filter(el => groupUrls.includes(getShortUrl(el)));
-                this.move(personal);
-            }
-        }
-
-        if (this.config.sort_filmos) {
-            const filmos = lists.filter(el => el.textContent.toLowerCase().includes('filmography'));
-            this.move(filmos);
+        for (const { option, isInGroup } of groupLogic) {
+            if (!option) continue;
+            const group = lists.filter(isInGroup);
+            GroupMovieLists.move(group, elContainer);
+            lists = lists.filter(isNotInArr(group));
         }
     }
 
-    move(elLists) {
+    static move(elLists, elContainer) {
         if (!elLists.length) return;
-        const elGroupEnds = this.elContainer.querySelectorAll('.icmeGMLGroupEnd');
+        const elGroupEnds = elContainer.querySelectorAll('.icmeGMLGroupEnd');
         if (elGroupEnds.length) {
             elGroupEnds[elGroupEnds.length - 1].after(...elLists);
         } else {
-            this.elContainer.prepend(...elLists);
+            elContainer.prepend(...elLists);
         }
 
         elLists[elLists.length - 1].classList.add('icmeGMLGroupEnd');
+    }
+
+    getGroup(group) {
+        let groupUrls = this.config[group];
+        if (typeof groupUrls !== 'string') return groupUrls;
+        console.log(`GroupMovieLists: parsing ${group}`);
+        groupUrls = groupUrls.trim().replace(this.reURL, '$1').split('\n');
+        this.config[group] = groupUrls;
+        this.globalCfg.save();
+        return groupUrls;
     }
 
     static addExportLink() {
@@ -1734,7 +1796,7 @@ class GroupMovieLists extends BaseModule {
         `);
         $('#icmeGMLLink').addEventListener('click', e => {
             e.preventDefault();
-            const listLinks = [...document.querySelectorAll('#itemListToplists > li')]
+            const listLinks = [...$$('#itemListToplists > li')]
                 .filter(el => !el.querySelector('.tagList a[href$="user%3Aicheckmovies"'))
                 .map(el => el.querySelector('.title').href.split('/lists/')[1]);
             const msg = 'Done! Now you can paste the urls into the "Group 1/Group 2" fields in the "Group movie lists" settings.';
@@ -1742,10 +1804,12 @@ class GroupMovieLists extends BaseModule {
         });
     }
 
-    static fixLinks(elContainer = document) {
-        const elLinksToLists = elContainer.querySelectorAll('.listItemMovie .info a:last-of-type');
-        elLinksToLists.forEach(el => {
+    fixLinks(elContainer = document) {
+        const sel = '.listItemMovie .info a[href*="/rankings/"], #listFilterLists a';
+        const elLinks = elContainer.querySelectorAll(sel);
+        elLinks.forEach(el => {
             el.href = el.href.replace('?tags=user:icheckmovies', '');
+            el.href += this.config.by_name ? '?sort=name' : '';
         });
     }
 
@@ -1758,7 +1822,7 @@ class GroupMovieLists extends BaseModule {
         const mut = new MutationObserver(mutList => mutList.forEach(({ addedNodes }) => {
             for (const el of addedNodes) {
                 if (el.classList?.contains('icmeCRResults')) {
-                    GroupMovieLists.fixLinks(el);
+                    this.fixLinks(el);
                 }
             }
         }));
@@ -1780,7 +1844,7 @@ class ExportLists extends BaseModule {
                 id: 'delimiter',
                 desc: 'Use as delimiter (accepts \';\' or \',\'; otherwise uses \\t)',
                 type: 'textinput',
-                default: ';',
+                default: ',',
             }, {
                 id: 'bom',
                 desc: 'Include BOM (required for Excel)',
@@ -1817,7 +1881,7 @@ class ExportLists extends BaseModule {
         const wrap = field => (field.includes('"') || field.includes(sep) ?
             `"${field.replace(/"/g, '""')}"` : field);
         const colNames = ['rank', 'title', 'aka', 'year', 'official_toplists',
-            'checked', 'favorite', 'dislike', 'imdb'];
+            'checked', 'favorite', 'dislike', 'imdburl'];
         elExport.addEventListener('click', () => {
             const rows = [...elMovies].map(el => {
                 const rank = el.querySelector('.rank')?.textContent.match(/\d+/)[0] ?? '-';
