@@ -1836,8 +1836,9 @@ class ExportLists extends BaseModule {
 
         this.metadata = {
             title: 'Export lists',
-            desc: 'Download any list as .csv (doesn\'t support search results). ' +
-                'Emulates the paid feature, enable only if you have a free account',
+            desc: 'Download any list as .csv (doesn\'t support search results).<br>' +
+                'Emulates the paid feature, enable only if you have a free account. Keep in mind ' +
+                'that some sites (like Letterboxd) accept only comma-separated .csv',
             id: 'export_lists',
             enableOn: ['movieList', 'movieListGeneral', 'movieListSpecial'],
             options: [BaseModule.getStatus(false), {
