@@ -24,4 +24,4 @@ You can enable, disable and configure all features by mousing over your username
 
 ### List cross-referencing demo
 
-![](https://i.imgur.com/TCvMxXI.gif)
+![TCvMxXI](https://github.com/labyrinthofdreams/icm-enhanced/assets/7759622/6fc8bce1-bfb7-4ee0-a818-0e8ab98c2585)
